@@ -72,7 +72,7 @@ function redirect_after_login_by_role($role) {
     }
 
     if ($role === "player") {
-        return "/colesterol_game/pages/game.php";
+        return "/colesterol_game/pages/player_dashboard.php";
     }
 
     return "/colesterol_game/index.php";

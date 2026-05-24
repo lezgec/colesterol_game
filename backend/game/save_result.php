@@ -1,15 +1,14 @@
 <?php
-session_start();
-
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=utf-8");
 
-require_once __DIR__ . '/../../config/db.php'; 
+require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
-if (!isset($_SESSION["user_id"])) {
+if (!is_logged_in()) {
     echo json_encode([
         "success" => false,
         "message" => "Usuario no autenticado"
@@ -31,19 +30,34 @@ if (!$data) {
     exit;
 }
 
-$score = isset($data["score"]) ? (int)$data["score"] : 0;
-$correct = isset($data["correct_answers"]) ? (int)$data["correct_answers"] : 0;
-$total = isset($data["total_questions"]) ? (int)$data["total_questions"] : 0;
-$lives = isset($data["lives_remaining"]) ? (int)$data["lives_remaining"] : 0;
-$difficulty = isset($data["difficulty"]) ? trim($data["difficulty"]) : "easy";
+$score = (int)($data["score"] ?? 0);
+$correct = (int)($data["correct_answers"] ?? 0);
+$total = (int)($data["total_questions"] ?? 0);
+$lives = (int)($data["lives_remaining"] ?? 0);
+$final_difficulty = (float)($data["final_difficulty"] ?? 1.0);
 
-$allowedDifficulties = ["easy", "medium", "hard"];
-if (!in_array($difficulty, $allowedDifficulties, true)) {
-    $difficulty = "easy";
+if ($final_difficulty < 1.0) {
+    $final_difficulty = 1.0;
 }
 
-$sql = "INSERT INTO game_results (user_id, score, correct_answers, total_questions, lives_remaining, difficulty)
-        VALUES (?, ?, ?, ?, ?, ?)";
+if ($final_difficulty > 5.0) {
+    $final_difficulty = 5.0;
+}
+
+$final_difficulty = round($final_difficulty, 1);
+
+$sql = "INSERT INTO game_results 
+        (
+            user_id, 
+            room_id,
+            player_name,
+            score, 
+            correct_answers, 
+            total_questions, 
+            lives_remaining, 
+            final_difficulty
+        )
+        VALUES (?, NULL, NULL, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 
@@ -56,12 +70,21 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("iiiiis", $user_id, $score, $correct, $total, $lives, $difficulty);
+$stmt->bind_param(
+    "iiiiid",
+    $user_id,
+    $score,
+    $correct,
+    $total,
+    $lives,
+    $final_difficulty
+);
 
 if ($stmt->execute()) {
     echo json_encode([
         "success" => true,
-        "message" => "Resultado guardado correctamente"
+        "message" => "Resultado guardado correctamente",
+        "final_difficulty" => $final_difficulty
     ], JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode([

@@ -1,6 +1,4 @@
 <?php
-session_start();
-
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -9,21 +7,11 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 
-$difficulty = $_GET['difficulty'] ?? 'easy';
 $lang = $_GET['lang'] ?? 'es';
+$target_difficulty = (float)($_GET['difficulty_level'] ?? 1.0);
+$limit = (int)($_GET['limit'] ?? 10);
 
-$allowedDifficulties = ['easy', 'medium', 'hard'];
-$allowedLangs = ['es', 'en'];
-
-if (!in_array($difficulty, $allowedDifficulties, true)) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Dificultad no válida"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-if (!in_array($lang, $allowedLangs, true)) {
+if (!in_array($lang, ['es', 'en'], true)) {
     echo json_encode([
         "success" => false,
         "message" => "Idioma no válido"
@@ -31,11 +19,43 @@ if (!in_array($lang, $allowedLangs, true)) {
     exit;
 }
 
-$sql = "SELECT id, question, option_a, option_b, option_c, option_d, correct_option, explanation, category, difficulty, language
-        FROM questions
-        WHERE difficulty = ? AND language = ?
-        ORDER BY RAND()
-        LIMIT 10";
+if ($target_difficulty < 1.0) {
+    $target_difficulty = 1.0;
+}
+
+if ($target_difficulty > 5.0) {
+    $target_difficulty = 5.0;
+}
+
+if ($limit < 1) {
+    $limit = 10;
+}
+
+if ($limit > 50) {
+    $limit = 50;
+}
+
+$sql = "
+    SELECT 
+        id, 
+        question, 
+        option_a, 
+        option_b, 
+        option_c, 
+        option_d, 
+        correct_option, 
+        explanation, 
+        category, 
+        difficulty_level, 
+        language
+    FROM questions
+    WHERE 
+        language = ?
+        AND status = 'verified'
+        AND is_active = 1
+    ORDER BY ABS(difficulty_level - ?) ASC, RAND()
+    LIMIT ?
+";
 
 $stmt = $conn->prepare($sql);
 
@@ -48,7 +68,7 @@ if (!$stmt) {
     exit;
 }
 
-$stmt->bind_param("ss", $difficulty, $lang);
+$stmt->bind_param("sdi", $lang, $target_difficulty, $limit);
 
 if (!$stmt->execute()) {
     echo json_encode([
@@ -60,6 +80,7 @@ if (!$stmt->execute()) {
 }
 
 $result = $stmt->get_result();
+
 $questions = [];
 
 while ($row = $result->fetch_assoc()) {
@@ -69,6 +90,16 @@ while ($row = $result->fetch_assoc()) {
 
     if ($correctIndex === false) {
         $correctIndex = 0;
+    }
+
+    $difficultyLevel = (float)$row["difficulty_level"];
+
+    if ($difficultyLevel < 1.0) {
+        $difficultyLevel = 1.0;
+    }
+
+    if ($difficultyLevel > 5.0) {
+        $difficultyLevel = 5.0;
     }
 
     $questions[] = [
@@ -84,7 +115,7 @@ while ($row = $result->fetch_assoc()) {
         "correct_option" => $correctOption,
         "explanation" => $row["explanation"],
         "category" => $row["category"],
-        "difficulty" => $row["difficulty"],
+        "difficulty_level" => round($difficultyLevel, 1),
         "language" => $row["language"]
     ];
 }

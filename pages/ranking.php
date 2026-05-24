@@ -1,73 +1,96 @@
 <?php
-session_start();
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../lang/translate.php';
 
-if (!isset($_SESSION["user_id"])) {
-    header("Location: /colesterol_game/pages/login.php");
-    exit;
-    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-    header("Pragma: no-cache");
-}
+require_login();
+
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ranking global</title>
+    <title><?php echo t("ranking"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
 </head>
 <body>
 
 <div class="game-container">
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
-        <h1 style="margin:0;">🏆 Ranking global</h1>
-        <div>
-            <a href="/colesterol_game/pages/game.php" class="logout-btn" style="background:#222;">Volver al juego</a>
+
+    <div class="top-actions">
+        <h1>🏆 <?php echo t("ranking"); ?></h1>
+
+        <div class="top-links">
+            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
+                <?php echo t("back_to_game"); ?>
+            </a>
         </div>
     </div>
 
-    <p>Se muestran los 10 mejores jugadores según su mejor puntaje registrado.</p>
+    <p>
+        <?php echo current_lang() === "en"
+            ? "Top 10 players based on their best registered score."
+            : "Se muestran los 10 mejores jugadores según su mejor puntaje registrado."; ?>
+    </p>
 
-    <table id="rankingTable" width="100%" border="1">
+    <table id="rankingTable" class="admin-table" width="100%">
         <thead>
             <tr>
                 <th>#</th>
-                <th>Jugador</th>
-                <th>Mejor puntaje</th>
-                <th>Total de partidas</th>
+                <th><?php echo t("player_name"); ?></th>
+                <th><?php echo t("best_score"); ?></th>
+                <th><?php echo t("total_games"); ?></th>
+                <th><?php echo t("precision"); ?></th>
+                <th><?php echo t("average_difficulty"); ?></th>
             </tr>
         </thead>
+
         <tbody></tbody>
     </table>
 </div>
 
 <script>
-fetch("/colesterol_game/backend/get_ranking.php")
-  .then(res => res.json())
-  .then(data => {
-    const tbody = document.querySelector("#rankingTable tbody");
+const RANKING_I18N = {
+    noData: "<?php echo current_lang() === 'en' ? 'No ranking data available' : 'No hay datos de ranking disponibles'; ?>",
+    error: "<?php echo t('error'); ?>"
+};
 
-    if (!Array.isArray(data) || data.length === 0) {
-      tbody.innerHTML = "<tr><td colspan='4'>No hay datos de ranking disponibles</td></tr>";
-      return;
-    }
+fetch("/colesterol_game/backend/game/get_ranking.php")
+    .then(res => res.json())
+    .then(data => {
+        const tbody = document.querySelector("#rankingTable tbody");
 
-    data.forEach((player, index) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${index + 1}</td>
-        <td>${player.name}</td>
-        <td>${player.best_score}</td>
-        <td>${player.total_games}</td>
-      `;
-      tbody.appendChild(row);
+        if (!Array.isArray(data) || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6">${RANKING_I18N.noData}</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = "";
+
+        data.forEach((player, index) => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${player.name}</td>
+                <td>${player.best_score}</td>
+                <td>${player.total_games}</td>
+                <td>${player.precision}%</td>
+                <td>${player.avg_difficulty} / 5</td>
+            `;
+
+            tbody.appendChild(row);
+        });
+    })
+    .catch(error => {
+        console.error(error);
+
+        const tbody = document.querySelector("#rankingTable tbody");
+
+        tbody.innerHTML = `<tr><td colspan="6">${RANKING_I18N.error}</td></tr>`;
     });
-  })
-  .catch(error => {
-    console.error(error);
-    const tbody = document.querySelector("#rankingTable tbody");
-    tbody.innerHTML = "<tr><td colspan='4'>Error al cargar el ranking</td></tr>";
-  });
 </script>
 
 </body>

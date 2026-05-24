@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../../lang/translate.php';
 
-
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 $playerName = trim($_GET["name"] ?? "");
 
@@ -15,9 +14,15 @@ if ($roomCode === "" || $playerName === "") {
 <head>
     <meta charset="UTF-8">
     <title><?php echo t("game"); ?></title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossorigin>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap"
+          rel="stylesheet">
+
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
 </head>
 <body>
@@ -26,8 +31,12 @@ if ($roomCode === "" || $playerName === "") {
 
     <div class="top-actions">
         <div>
-            <strong><?php echo t("room_code"); ?>:</strong> <?php echo htmlspecialchars($roomCode); ?><br>
-            <strong><?php echo t("player_name"); ?>:</strong> <?php echo htmlspecialchars($playerName); ?>
+            <strong><?php echo t("room_code"); ?>:</strong>
+            <?php echo htmlspecialchars($roomCode); ?>
+            <br>
+
+            <strong><?php echo t("player_name"); ?>:</strong>
+            <?php echo htmlspecialchars($playerName); ?>
         </div>
 
         <a href="/colesterol_game/pages/rooms/index.php" class="logout-btn">
@@ -38,21 +47,41 @@ if ($roomCode === "" || $playerName === "") {
     <h1><?php echo t("game"); ?></h1>
 
     <div id="game-screen">
+
         <div class="hud">
-            <p><strong><?php echo t("score"); ?>:</strong> <span id="score">0</span></p>
-            <p><strong><?php echo t("time"); ?>:</strong> <span id="timer">--</span></p>
+            <p>
+                <strong><?php echo t("score"); ?>:</strong>
+                <span id="score">0</span>
+            </p>
+
+            <p>
+                <strong><?php echo t("time"); ?>:</strong>
+                <span id="timer">--</span>
+            </p>
+
+            <p>
+                <strong><?php echo t("adaptive_difficulty"); ?>:</strong>
+                <span id="adaptive-difficulty">1.0 / 5</span>
+            </p>
+
             <p id="progress"></p>
         </div>
 
         <div class="question-box">
             <h2 id="question-text"><?php echo t("loading"); ?></h2>
+
             <div id="options-container"></div>
+
             <p id="feedback"></p>
-            <div id="live-ranking-box" class="admin-section" style="display:none;">
+
+            <div id="live-ranking-box"
+                 class="admin-section"
+                 style="display:none;">
                 <h2><?php echo t("live_ranking"); ?></h2>
                 <div id="live-ranking-list"></div>
             </div>
         </div>
+
     </div>
 
 </div>
@@ -77,6 +106,9 @@ const ROOM_I18N = {
     timeOut: "<?php echo t('time_out'); ?>",
     savingResult: "<?php echo t('saving_result'); ?>",
     noResults: "<?php echo current_lang() === 'en' ? 'No results yet' : 'No hay resultados todavía'; ?>",
+    newDifficulty: "<?php echo t('new_difficulty'); ?>",
+    finalDifficulty: "<?php echo t('final_difficulty'); ?>",
+    correctAnswer: "<?php echo t('correct_answer'); ?>"
 };
 </script>
 

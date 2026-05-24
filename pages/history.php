@@ -1,68 +1,128 @@
 <?php
-session_start();
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../lang/translate.php';
 
-if (!isset($_SESSION["user_id"])) {
-    header("Location: /colesterol_game/pages/login.php");
-    exit;
-    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
-    header("Pragma: no-cache");
-}
+require_login();
+
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
-    <title>Historial</title>
+    <title><?php echo t("history"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
 </head>
 <body>
 
 <div class="game-container">
-    <h1>📊 Historial de partidas</h1>
 
-    <table border="1" width="100%" id="historyTable">
+    <div class="top-actions">
+        <h1>📊 <?php echo t("history"); ?></h1>
+
+        <div class="top-links">
+            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
+                <?php echo t("back_to_game"); ?>
+            </a>
+        </div>
+    </div>
+
+    <table class="admin-table" width="100%" id="historyTable">
+
         <thead>
             <tr>
-                <th>Fecha</th>
-                <th>Puntaje</th>
-                <th>Correctas</th>
-                <th>Total</th>
-                <th>Vidas</th>
-                <th>Dificultad</th>
+                <th><?php echo t("date"); ?></th>
+                <th><?php echo t("score"); ?></th>
+                <th><?php echo t("correct_answers"); ?></th>
+                <th><?php echo t("precision"); ?></th>
+                <th><?php echo t("lives"); ?></th>
+                <th><?php echo t("average_difficulty"); ?></th>
+                <th><?php echo t("mode"); ?></th>
             </tr>
         </thead>
+
         <tbody></tbody>
     </table>
 
-    <br>
-    <a href="/colesterol_game/pages/game.php">Volver al juego</a>
 </div>
 
 <script>
-fetch("/colesterol_game/backend/get_user_results.php")
+
+const HISTORY_I18N = {
+    noGames: "<?php echo current_lang() === 'en'
+        ? 'No games registered'
+        : 'No hay partidas registradas'; ?>",
+
+    error: "<?php echo t('error'); ?>",
+
+    room: "<?php echo current_lang() === 'en'
+        ? 'Room'
+        : 'Sala'; ?>",
+
+    solo: "<?php echo current_lang() === 'en'
+        ? 'Solo'
+        : 'Solo'; ?>"
+};
+
+fetch("/colesterol_game/backend/game/get_user_results.php")
 .then(res => res.json())
-.then(data => {
+.then(response => {
+
     const tbody = document.querySelector("#historyTable tbody");
 
-    if (!Array.isArray(data) || data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6'>No hay partidas registradas</td></tr>";
+    if (!response.success || !Array.isArray(response.results)) {
+
+        tbody.innerHTML =
+            `<tr><td colspan="7">${HISTORY_I18N.error}</td></tr>`;
+
         return;
     }
 
+    const data = response.results;
+
+    if (data.length === 0) {
+
+        tbody.innerHTML =
+            `<tr><td colspan="7">${HISTORY_I18N.noGames}</td></tr>`;
+
+        return;
+    }
+
+    tbody.innerHTML = "";
+
     data.forEach(item => {
+
+        const mode = item.room_id
+            ? `${HISTORY_I18N.room} #${item.room_id}`
+            : HISTORY_I18N.solo;
+
         const row = document.createElement("tr");
 
         row.innerHTML = `
             <td>${item.played_at}</td>
             <td>${item.score}</td>
-            <td>${item.correct_answers}</td>
-            <td>${item.total_questions}</td>
+            <td>${item.correct_answers} / ${item.total_questions}</td>
+            <td>${item.precision}%</td>
             <td>${item.lives_remaining}</td>
-            <td>${item.difficulty}</td>
+            <td>${item.final_difficulty} / 5</td>
+            <td>${mode}</td>
         `;
 
         tbody.appendChild(row);
+
     });
+
+})
+.catch(error => {
+
+    console.error(error);
+
+    const tbody = document.querySelector("#historyTable tbody");
+
+    tbody.innerHTML =
+        `<tr><td colspan="7">${HISTORY_I18N.error}</td></tr>`;
+
 });
 </script>
 

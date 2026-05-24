@@ -5,9 +5,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 if (
-    !isset($_SESSION["user_id"]) ||
-    !isset($_SESSION["user_role"]) ||
-    $_SESSION["user_role"] !== "admin"
+     !has_role(["teacher", "super_admin"])
 ) {
     echo json_encode([
         "success" => false,

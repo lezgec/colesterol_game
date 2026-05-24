@@ -1,15 +1,16 @@
 <?php
+
 session_start();
 
-// borrar variables de sesión
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Pragma: no-cache");
+
 $_SESSION = [];
 
-// destruir sesión
-session_destroy();
-
-// eliminar cookie de sesión (importante)
 if (ini_get("session.use_cookies")) {
+
     $params = session_get_cookie_params();
+
     setcookie(
         session_name(),
         '',
@@ -21,7 +22,9 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// redirigir con mensaje
-header("Location: /colesterol_game/pages/register.php?logout=1");
+session_destroy();
+
+header("Location: /colesterol_game/pages/login.php?logout=1");
 exit;
+
 ?>

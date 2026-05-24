@@ -1,19 +1,11 @@
 <?php
+require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../lang/translate.php';
-require_once __DIR__ . '/../assets/includes/auth.php';
+
 require_role(["teacher", "super_admin"]);
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
-
-if (
-    !isset($_SESSION["user_id"]) ||
-    !isset($_SESSION["user_role"]) ||
-    $_SESSION["user_role"] !== "admin"
-) {
-    header("Location: /colesterol_game/pages/login.php");
-    exit;
-}
 
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 
@@ -34,9 +26,9 @@ if ($roomCode === "") {
 <div class="game-container">
 
     <div class="top-actions">
-        <div class="language-switch">
-            <a href="?lang=es">ES</a> |
-            <a href="?lang=en">EN</a>
+        <div class="language-pill">
+            <a href="?code=<?php echo urlencode($roomCode); ?>&lang=es">ES</a> |
+            <a href="?code=<?php echo urlencode($roomCode); ?>&lang=en">EN</a>
         </div>
 
         <a href="/colesterol_game/pages/admin_dashboard.php" class="logout-btn secondary-btn">
@@ -65,9 +57,46 @@ if ($roomCode === "") {
         <ul id="players-list"></ul>
     </section>
 
-    <button id="start-room-btn" class="primary-btn" type="button">
-        <?php echo t("start_game"); ?>
-    </button>
+    <section class="admin-section">
+        <h2>Control de sala</h2>
+
+        <p>
+            <strong>Estado:</strong>
+            <span id="room-status">...</span>
+        </p>
+
+        <p>
+            <strong>Pregunta actual:</strong>
+            <span id="current-question">...</span>
+        </p>
+
+        <p>
+            <strong>Tiempo restante:</strong>
+            <span id="time-left">...</span>
+        </p>
+
+        <div class="admin-room-controls">
+            <button id="start-room-btn" class="primary-btn" type="button">
+                <?php echo t("start_game"); ?>
+            </button>
+
+            <button id="pause-room-btn" class="primary-btn secondary-btn" type="button">
+                Pausar
+            </button>
+
+            <button id="resume-room-btn" class="primary-btn secondary-btn" type="button">
+                Reanudar
+            </button>
+
+            <button id="next-room-btn" class="primary-btn secondary-btn" type="button">
+                Siguiente pregunta
+            </button>
+
+            <button id="finish-room-btn" class="logout-btn" type="button">
+                Finalizar sala
+            </button>
+        </div>
+    </section>
 
     <p id="admin-lobby-message"></p>
 </div>
@@ -97,9 +126,30 @@ document.getElementById("copy-link-btn").addEventListener("click", async () => {
     }
 });
 
+async function postRoomAction(endpoint) {
+    const res = await fetch(`/colesterol_game/backend/rooms/${endpoint}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ room_code: ROOM_CODE })
+    });
+
+    const text = await res.text();
+
+    let result;
+
+    try {
+        result = JSON.parse(text);
+    } catch (error) {
+        console.error("Respuesta no JSON:", text);
+        throw error;
+    }
+
+    return result;
+}
+
 async function loadPlayers() {
     try {
-        const res = await fetch(`/colesterol_game/backend/get_room_players.php?code=${encodeURIComponent(ROOM_CODE)}`);
+        const res = await fetch(`/colesterol_game/backend/rooms/get_room_players.php?code=${encodeURIComponent(ROOM_CODE)}`);
         const players = await res.json();
 
         const list = document.getElementById("players-list");
@@ -120,25 +170,92 @@ async function loadPlayers() {
     }
 }
 
+async function loadRoomState() {
+    try {
+        const res = await fetch(`/colesterol_game/backend/rooms/get_room_game_state.php?code=${encodeURIComponent(ROOM_CODE)}`);
+        const state = await res.json();
+
+        if (!state.success) return;
+
+        document.getElementById("room-status").textContent = state.status;
+        document.getElementById("current-question").textContent =
+            `${state.current_question_index + 1} / ${state.question_count}`;
+        document.getElementById("time-left").textContent =
+            `${state.time_left}s`;
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+
 document.getElementById("start-room-btn").addEventListener("click", async () => {
-    const res = await fetch("/colesterol_game/backend/start_room.php", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ room_code: ROOM_CODE })
-    });
+    try {
+        const result = await postRoomAction("start_room.php");
 
-    const result = await res.json();
+        document.getElementById("admin-lobby-message").textContent =
+            result.message || LOBBY_I18N.gameStarted;
 
-    if (result.success) {
-        document.getElementById("admin-lobby-message").textContent = LOBBY_I18N.gameStarted + " ✅";
-        window.location.href = `/colesterol_game/pages/rooms/ranking.php?code=${encodeURIComponent(ROOM_CODE)}`;
-    } else {
-        document.getElementById("admin-lobby-message").textContent = result.message || LOBBY_I18N.error;
+        await loadRoomState();
+    } catch (error) {
+        console.error(error);
+        document.getElementById("admin-lobby-message").textContent = LOBBY_I18N.error;
+    }
+});
+
+document.getElementById("pause-room-btn").addEventListener("click", async () => {
+    try {
+        const result = await postRoomAction("pause_room.php");
+        document.getElementById("admin-lobby-message").textContent = result.message || "Sala pausada";
+        await loadRoomState();
+    } catch (error) {
+        console.error(error);
+        document.getElementById("admin-lobby-message").textContent = LOBBY_I18N.error;
+    }
+});
+
+document.getElementById("resume-room-btn").addEventListener("click", async () => {
+    try {
+        const result = await postRoomAction("resume_room.php");
+        document.getElementById("admin-lobby-message").textContent = result.message || "Sala reanudada";
+        await loadRoomState();
+    } catch (error) {
+        console.error(error);
+        document.getElementById("admin-lobby-message").textContent = LOBBY_I18N.error;
+    }
+});
+
+document.getElementById("next-room-btn").addEventListener("click", async () => {
+    try {
+        const result = await postRoomAction("next_room_question.php");
+        document.getElementById("admin-lobby-message").textContent = result.message || "Pregunta avanzada";
+        await loadRoomState();
+    } catch (error) {
+        console.error(error);
+        document.getElementById("admin-lobby-message").textContent = LOBBY_I18N.error;
+    }
+});
+
+document.getElementById("finish-room-btn").addEventListener("click", async () => {
+    if (!confirm("¿Seguro que deseas finalizar la sala?")) return;
+
+    try {
+        const result = await postRoomAction("finish_room.php");
+        document.getElementById("admin-lobby-message").textContent = result.message || "Sala finalizada";
+        await loadRoomState();
+
+        window.location.href =
+            `/colesterol_game/pages/rooms/ranking.php?code=${encodeURIComponent(ROOM_CODE)}`;
+    } catch (error) {
+        console.error(error);
+        document.getElementById("admin-lobby-message").textContent = LOBBY_I18N.error;
     }
 });
 
 loadPlayers();
+loadRoomState();
+
 setInterval(loadPlayers, 2000);
+setInterval(loadRoomState, 1000);
 </script>
 
 </body>

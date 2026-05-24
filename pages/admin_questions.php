@@ -1,19 +1,11 @@
 <?php
+require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
-require_once __DIR__ . '/../assets/includes/auth.php';
+
 require_role(["teacher", "super_admin"]);
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
-
-if (
-    !isset($_SESSION["user_id"]) ||
-    !isset($_SESSION["user_role"]) ||
-    $_SESSION["user_role"] !== "admin"
-) {
-    header("Location: /colesterol_game/pages/login.php");
-    exit;
-}
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -21,6 +13,7 @@ if (
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("admin_title"); ?></title>
+
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
 </head>
 <body>
@@ -28,8 +21,9 @@ if (
 <div class="game-container admin-container">
 
     <div class="top-actions">
-        <div class="language-switch">
-            <a href="?lang=es">ES</a> |
+        <div class="language-pill">
+            <a href="?lang=es">ES</a>
+            <span>|</span>
             <a href="?lang=en">EN</a>
         </div>
 
@@ -37,6 +31,7 @@ if (
             <a href="/colesterol_game/pages/admin_dashboard.php" class="logout-btn secondary-btn">
                 <?php echo t("back_to_admin"); ?>
             </a>
+
             <a href="/colesterol_game/logout.php" class="logout-btn">
                 <?php echo t("logout"); ?>
             </a>
@@ -91,12 +86,16 @@ if (
                 </div>
 
                 <div class="form-group">
-                    <label for="difficulty"><?php echo t("difficulty"); ?></label>
-                    <select id="difficulty" required>
-                        <option value="easy"><?php echo t("easy"); ?></option>
-                        <option value="medium"><?php echo t("medium"); ?></option>
-                        <option value="hard"><?php echo t("hard"); ?></option>
-                    </select>
+                    <label for="difficulty_level"><?php echo t("difficulty_level"); ?></label>
+                    <input 
+                        type="number" 
+                        id="difficulty_level" 
+                        min="1" 
+                        max="5" 
+                        step="0.1" 
+                        value="1.0" 
+                        required
+                    >
                 </div>
 
                 <div class="form-group">
@@ -110,6 +109,34 @@ if (
                 <div class="form-group">
                     <label for="category"><?php echo t("category"); ?></label>
                     <input type="text" id="category" placeholder="<?php echo t("category_placeholder"); ?>" required>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="status"><?php echo t("status"); ?></label>
+                    <select id="status" required>
+                        <option value="verified"><?php echo t("verified"); ?></option>
+                        <option value="pending"><?php echo t("pending"); ?></option>
+                        <option value="rejected"><?php echo t("rejected"); ?></option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="origin"><?php echo t("origin"); ?></label>
+                    <select id="origin" required>
+                        <option value="manual"><?php echo t("manual"); ?></option>
+                        <option value="ai"><?php echo t("ai"); ?></option>
+                        <option value="csv">CSV</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="is_active"><?php echo t("active_status"); ?></label>
+                    <select id="is_active" required>
+                        <option value="1"><?php echo t("active"); ?></option>
+                        <option value="0"><?php echo t("inactive"); ?></option>
+                    </select>
                 </div>
             </div>
 
@@ -142,12 +169,16 @@ if (
                 </div>
 
                 <div class="form-group">
-                    <label for="generator_difficulty"><?php echo t("difficulty"); ?></label>
-                    <select id="generator_difficulty">
-                        <option value="easy"><?php echo t("easy"); ?></option>
-                        <option value="medium"><?php echo t("medium"); ?></option>
-                        <option value="hard"><?php echo t("hard"); ?></option>
-                    </select>
+                    <label for="generator_difficulty_level"><?php echo t("difficulty_level"); ?></label>
+                    <input 
+                        type="number" 
+                        id="generator_difficulty_level" 
+                        min="1" 
+                        max="5" 
+                        step="0.1" 
+                        value="1.0" 
+                        required
+                    >
                 </div>
 
                 <div class="form-group">
@@ -168,8 +199,8 @@ if (
     </section>
 
     <section class="admin-section">
-    <h2><?php echo t("mass_generator"); ?></h2>
-    <p><?php echo t("mass_generator_description"); ?></p>
+        <h2><?php echo t("mass_generator"); ?></h2>
+        <p><?php echo t("mass_generator_description"); ?></p>
 
         <form id="mass-generator-form" class="admin-form">
             <div class="form-grid">
@@ -184,12 +215,16 @@ if (
                 </div>
 
                 <div class="form-group">
-                    <label for="mass_difficulty"><?php echo t("difficulty"); ?></label>
-                    <select id="mass_difficulty">
-                        <option value="easy"><?php echo t("easy"); ?></option>
-                        <option value="medium"><?php echo t("medium"); ?></option>
-                        <option value="hard"><?php echo t("hard"); ?></option>
-                    </select>
+                    <label for="mass_difficulty_level"><?php echo t("difficulty_level"); ?></label>
+                    <input 
+                        type="number" 
+                        id="mass_difficulty_level" 
+                        min="1" 
+                        max="5" 
+                        step="0.1" 
+                        value="1.0" 
+                        required
+                    >
                 </div>
 
                 <div class="form-group">
@@ -237,12 +272,16 @@ if (
                         <th>ID</th>
                         <th><?php echo t("question"); ?></th>
                         <th><?php echo t("correct_option"); ?></th>
-                        <th><?php echo t("difficulty"); ?></th>
+                        <th><?php echo t("difficulty_level"); ?></th>
                         <th><?php echo t("language"); ?></th>
                         <th><?php echo t("category"); ?></th>
+                        <th><?php echo t("status"); ?></th>
+                        <th><?php echo t("origin"); ?></th>
+                        <th><?php echo t("active_status"); ?></th>
                         <th><?php echo t("actions"); ?></th>
                     </tr>
                 </thead>
+
                 <tbody></tbody>
             </table>
         </div>
@@ -264,7 +303,12 @@ const ADMIN_I18N = {
     updateQuestion: "<?php echo t('update_question'); ?>",
     cancelEdit: "<?php echo t('cancel_edit'); ?>",
     generatedReady: "<?php echo t('generated_ready'); ?>",
-    massGeneratedSuccess: "<?php echo t('mass_generated_success'); ?>"
+    massGeneratedSuccess: "<?php echo t('mass_generated_success'); ?>",
+    verified: "<?php echo t('verified'); ?>",
+    pending: "<?php echo t('pending'); ?>",
+    rejected: "<?php echo t('rejected'); ?>",
+    active: "<?php echo t('active'); ?>",
+    inactive: "<?php echo t('inactive'); ?>"
 };
 </script>
 

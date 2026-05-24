@@ -1,14 +1,13 @@
 <?php
-session_start();
-
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
-if (!isset($_SESSION["user_id"])) {
+if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
         "success" => false,
-        "message" => "Usuario no autenticado"
+        "message" => "No autorizado"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -60,7 +59,7 @@ $requiredHeaders = [
     "correct_option",
     "explanation",
     "category",
-    "difficulty",
+    "difficulty_level",
     "language"
 ];
 
@@ -93,8 +92,22 @@ if (!empty($missingHeaders)) {
 $headerIndexes = array_flip($headers);
 
 $sql = "INSERT INTO questions 
-(question, option_a, option_b, option_c, option_d, correct_option, explanation, category, difficulty, language)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        (
+            question, 
+            option_a, 
+            option_b, 
+            option_c, 
+            option_d, 
+            correct_option, 
+            explanation, 
+            category, 
+            difficulty_level, 
+            language,
+            status,
+            origin,
+            is_active
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', 'csv', 1)";
 
 $stmt = $conn->prepare($sql);
 
@@ -121,12 +134,16 @@ while (($row = fgetcsv($handle)) !== false) {
     $correct_option = strtoupper(trim($row[$headerIndexes["correct_option"]] ?? ""));
     $explanation = trim($row[$headerIndexes["explanation"]] ?? "");
     $category = trim($row[$headerIndexes["category"]] ?? "");
-    $difficulty = trim($row[$headerIndexes["difficulty"]] ?? "easy");
+    $difficulty_level = (float)($row[$headerIndexes["difficulty_level"]] ?? 1.0);
     $language = trim($row[$headerIndexes["language"]] ?? "es");
 
     if (
-        $question === "" || $option_a === "" || $option_b === "" ||
-        $option_c === "" || $option_d === "" || $explanation === "" ||
+        $question === "" ||
+        $option_a === "" ||
+        $option_b === "" ||
+        $option_c === "" ||
+        $option_d === "" ||
+        $explanation === "" ||
         $category === ""
     ) {
         $skipped++;
@@ -139,16 +156,22 @@ while (($row = fgetcsv($handle)) !== false) {
         continue;
     }
 
-    if (!in_array($difficulty, ["easy", "medium", "hard"], true)) {
-        $difficulty = "easy";
+    if ($difficulty_level < 1.0) {
+        $difficulty_level = 1.0;
     }
+
+    if ($difficulty_level > 5.0) {
+        $difficulty_level = 5.0;
+    }
+
+    $difficulty_level = round($difficulty_level, 1);
 
     if (!in_array($language, ["es", "en"], true)) {
         $language = "es";
     }
 
     $stmt->bind_param(
-        "ssssssssss",
+        "sssssssdss",
         $question,
         $option_a,
         $option_b,
@@ -157,7 +180,7 @@ while (($row = fgetcsv($handle)) !== false) {
         $correct_option,
         $explanation,
         $category,
-        $difficulty,
+        $difficulty_level,
         $language
     );
 

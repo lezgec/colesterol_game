@@ -6,16 +6,31 @@ const editIdInput = document.getElementById("edit-id");
 const saveBtn = document.getElementById("save-question-btn");
 const cancelBtn = document.getElementById("cancel-edit-btn");
 
+const TABLE_COLS = 10;
+
+function getStatusLabel(status) {
+    if (status === "verified") return ADMIN_I18N.verified || "Verified";
+    if (status === "pending") return ADMIN_I18N.pending || "Pending";
+    if (status === "rejected") return ADMIN_I18N.rejected || "Rejected";
+    return status || "-";
+}
+
+function getActiveLabel(value) {
+    return parseInt(value, 10) === 1
+        ? (ADMIN_I18N.active || "Active")
+        : (ADMIN_I18N.inactive || "Inactive");
+}
+
 // Cargar preguntas
 async function loadQuestions() {
-    tableBody.innerHTML = `<tr><td colspan="7">${ADMIN_I18N.loading}</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">${ADMIN_I18N.loading}</td></tr>`;
 
     try {
         const res = await fetch("/colesterol_game/backend/questions/get_all_questions.php");
         const data = await res.json();
 
         if (!Array.isArray(data)) {
-            tableBody.innerHTML = `<tr><td colspan="7">${data.message || ADMIN_I18N.error}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">${data.message || ADMIN_I18N.error}</td></tr>`;
             console.error(data);
             return;
         }
@@ -23,20 +38,25 @@ async function loadQuestions() {
         tableBody.innerHTML = "";
 
         if (data.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="7">No hay preguntas registradas</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">No hay preguntas registradas</td></tr>`;
             return;
         }
 
         data.forEach(q => {
             const row = document.createElement("tr");
 
+            const difficultyLevel = parseFloat(q.difficulty_level || 1.0);
+
             row.innerHTML = `
                 <td>${q.id}</td>
                 <td>${q.question}</td>
                 <td>${q.correct_option}</td>
-                <td>${q.difficulty}</td>
+                <td>${difficultyLevel.toFixed(1)} / 5</td>
                 <td>${q.language}</td>
-                <td>${q.category}</td>
+                <td>${q.category || "-"}</td>
+                <td>${getStatusLabel(q.status)}</td>
+                <td>${q.origin || "-"}</td>
+                <td>${getActiveLabel(q.is_active)}</td>
                 <td>
                     <button class="table-btn edit-btn" onclick="editQuestion(${q.id})">
                         ${ADMIN_I18N.edit}
@@ -51,7 +71,7 @@ async function loadQuestions() {
         });
     } catch (error) {
         console.error(error);
-        tableBody.innerHTML = `<tr><td colspan="7">${ADMIN_I18N.error}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">${ADMIN_I18N.error}</td></tr>`;
     }
 }
 
@@ -61,17 +81,23 @@ form.addEventListener("submit", async (e) => {
 
     const payload = {
         id: editIdInput.value,
-        question: document.getElementById("question").value,
-        option_a: document.getElementById("option_a").value,
-        option_b: document.getElementById("option_b").value,
-        option_c: document.getElementById("option_c").value,
-        option_d: document.getElementById("option_d").value,
+        question: document.getElementById("question").value.trim(),
+        option_a: document.getElementById("option_a").value.trim(),
+        option_b: document.getElementById("option_b").value.trim(),
+        option_c: document.getElementById("option_c").value.trim(),
+        option_d: document.getElementById("option_d").value.trim(),
         correct_option: document.getElementById("correct_option").value,
-        explanation: document.getElementById("explanation").value,
-        category: document.getElementById("category").value,
-        difficulty: document.getElementById("difficulty").value,
-        language: document.getElementById("language").value
+        explanation: document.getElementById("explanation").value.trim(),
+        category: document.getElementById("category").value.trim(),
+        difficulty_level: parseFloat(document.getElementById("difficulty_level").value || "1"),
+        language: document.getElementById("language").value,
+        status: document.getElementById("status").value,
+        origin: document.getElementById("origin").value,
+        is_active: parseInt(document.getElementById("is_active").value, 10)
     };
+
+    if (payload.difficulty_level < 1) payload.difficulty_level = 1;
+    if (payload.difficulty_level > 5) payload.difficulty_level = 5;
 
     const url = payload.id
         ? "/colesterol_game/backend/questions/update_question.php"
@@ -79,58 +105,90 @@ form.addEventListener("submit", async (e) => {
 
     message.textContent = ADMIN_I18N.loading;
 
-    const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
+    try {
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
 
-    const result = await res.json();
+        const result = await res.json();
 
-    if (result.success) {
-        message.textContent = payload.id
-            ? ADMIN_I18N.updated
-            : ADMIN_I18N.saved;
+        if (result.success) {
+            message.textContent = payload.id
+                ? ADMIN_I18N.updated
+                : ADMIN_I18N.saved;
 
-        form.reset();
-        editIdInput.value = "";
-        saveBtn.textContent = ADMIN_I18N.saveQuestion;
-        cancelBtn.style.display = "none";
+            form.reset();
 
-        loadQuestions();
-    } else {
+            document.getElementById("difficulty_level").value = "1.0";
+            document.getElementById("status").value = "verified";
+            document.getElementById("origin").value = "manual";
+            document.getElementById("is_active").value = "1";
+
+            editIdInput.value = "";
+            saveBtn.textContent = ADMIN_I18N.saveQuestion;
+            cancelBtn.style.display = "none";
+
+            loadQuestions();
+        } else {
+            message.textContent = result.message || ADMIN_I18N.error;
+            console.error(result);
+        }
+    } catch (error) {
+        console.error(error);
         message.textContent = ADMIN_I18N.error;
     }
 });
 
 // Editar
 async function editQuestion(id) {
-    const res = await fetch("/colesterol_game/backend/questions/get_all_questions.php");
-    const data = await res.json();
+    try {
+        const res = await fetch("/colesterol_game/backend/questions/get_all_questions.php");
+        const data = await res.json();
 
-    const q = data.find(x => x.id == id);
-    if (!q) return;
+        if (!Array.isArray(data)) return;
 
-    document.getElementById("question").value = q.question;
-    document.getElementById("option_a").value = q.option_a;
-    document.getElementById("option_b").value = q.option_b;
-    document.getElementById("option_c").value = q.option_c;
-    document.getElementById("option_d").value = q.option_d;
-    document.getElementById("correct_option").value = q.correct_option;
-    document.getElementById("explanation").value = q.explanation;
-    document.getElementById("category").value = q.category;
-    document.getElementById("difficulty").value = q.difficulty;
-    document.getElementById("language").value = q.language;
+        const q = data.find(x => parseInt(x.id, 10) === parseInt(id, 10));
+        if (!q) return;
 
-    editIdInput.value = q.id;
+        document.getElementById("question").value = q.question || "";
+        document.getElementById("option_a").value = q.option_a || "";
+        document.getElementById("option_b").value = q.option_b || "";
+        document.getElementById("option_c").value = q.option_c || "";
+        document.getElementById("option_d").value = q.option_d || "";
+        document.getElementById("correct_option").value = q.correct_option || "A";
+        document.getElementById("explanation").value = q.explanation || "";
+        document.getElementById("category").value = q.category || "";
+        document.getElementById("difficulty_level").value = q.difficulty_level || "1.0";
+        document.getElementById("language").value = q.language || "es";
+        document.getElementById("status").value = q.status || "verified";
+        document.getElementById("origin").value = q.origin || "manual";
+        document.getElementById("is_active").value = parseInt(q.is_active, 10) === 1 ? "1" : "0";
 
-    saveBtn.textContent = ADMIN_I18N.updateQuestion;
-    cancelBtn.style.display = "block";
+        editIdInput.value = q.id;
+
+        saveBtn.textContent = ADMIN_I18N.updateQuestion;
+        cancelBtn.style.display = "block";
+
+        form.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    } catch (error) {
+        console.error(error);
+    }
 }
 
 // Cancelar edición
 cancelBtn.addEventListener("click", () => {
     form.reset();
+
+    document.getElementById("difficulty_level").value = "1.0";
+    document.getElementById("status").value = "verified";
+    document.getElementById("origin").value = "manual";
+    document.getElementById("is_active").value = "1";
+
     editIdInput.value = "";
     saveBtn.textContent = ADMIN_I18N.saveQuestion;
     cancelBtn.style.display = "none";
@@ -140,12 +198,14 @@ cancelBtn.addEventListener("click", () => {
 async function deleteQuestion(id) {
     if (!confirm(ADMIN_I18N.confirmDelete)) return;
 
-    await fetch("/colesterol_game/backend/questions/delete_question.php?id=" + id);
-
-    loadQuestions();
+    try {
+        await fetch("/colesterol_game/backend/questions/delete_question.php?id=" + id);
+        loadQuestions();
+    } catch (error) {
+        console.error(error);
+    }
 }
 
-// GENERADOR AUTOMÁTICO (GEMINI)
 // GENERADOR AUTOMÁTICO CON GEMINI
 document.getElementById("generator-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -153,7 +213,9 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
     const generatorMessage = document.getElementById("generator-message");
 
     const topic = document.getElementById("generator_topic").value.trim();
-    const difficulty = document.getElementById("generator_difficulty").value;
+    const difficulty_level = parseFloat(
+        document.getElementById("generator_difficulty_level").value || "1"
+    );
     const language = document.getElementById("generator_language").value;
 
     generatorMessage.textContent = ADMIN_I18N.loading;
@@ -164,7 +226,11 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ topic, difficulty, language })
+            body: JSON.stringify({
+                topic,
+                difficulty_level,
+                language
+            })
         });
 
         const result = await res.json();
@@ -184,14 +250,20 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
         document.getElementById("correct_option").value = result.correct_option || "A";
         document.getElementById("explanation").value = result.explanation || "";
         document.getElementById("category").value = result.category || topic;
-        document.getElementById("difficulty").value = result.difficulty || difficulty;
+        document.getElementById("difficulty_level").value = result.difficulty_level || difficulty_level;
         document.getElementById("language").value = result.language || language;
+
+        // IA genera pendiente por seguridad
+        document.getElementById("status").value = "pending";
+        document.getElementById("origin").value = "ai";
+        document.getElementById("is_active").value = "0";
 
         editIdInput.value = "";
         saveBtn.textContent = ADMIN_I18N.saveQuestion;
         cancelBtn.style.display = "none";
 
-        generatorMessage.textContent = ADMIN_I18N.generatedReady || "Pregunta generada. Revísala antes de guardar.";
+        generatorMessage.textContent =
+            ADMIN_I18N.generatedReady || "Pregunta generada. Revísala antes de guardar.";
 
         document.getElementById("manual-question-form").scrollIntoView({
             behavior: "smooth",
@@ -213,15 +285,20 @@ document.getElementById("csv-form").addEventListener("submit", async (e) => {
 
     formData.append("file", fileInput.files[0]);
 
-    const res = await fetch("/colesterol_game/backend/questions/import_questions_csv.php", {
-        method: "POST",
-        body: formData
-    });
+    try {
+        const res = await fetch("/colesterol_game/backend/questions/import_questions_csv.php", {
+            method: "POST",
+            body: formData
+        });
 
-    const result = await res.json();
+        const result = await res.json();
 
-    alert(result.message);
-    loadQuestions();
+        alert(result.message);
+        loadQuestions();
+    } catch (error) {
+        console.error(error);
+        alert(ADMIN_I18N.error);
+    }
 });
 
 // GENERADOR AUTOMÁTICO CON GEMINI EN MASA
@@ -231,8 +308,10 @@ document.getElementById("mass-generator-form").addEventListener("submit", async 
     const message = document.getElementById("mass-generator-message");
 
     const topic = document.getElementById("mass_topic").value.trim();
-    const quantity = document.getElementById("mass_quantity").value;
-    const difficulty = document.getElementById("mass_difficulty").value;
+    const quantity = parseInt(document.getElementById("mass_quantity").value, 10);
+    const difficulty_level = parseFloat(
+        document.getElementById("mass_difficulty_level").value || "1"
+    );
     const language = document.getElementById("mass_language").value;
 
     message.textContent = ADMIN_I18N.loading;
@@ -246,7 +325,7 @@ document.getElementById("mass-generator-form").addEventListener("submit", async 
             body: JSON.stringify({
                 topic,
                 quantity,
-                difficulty,
+                difficulty_level,
                 language
             })
         });

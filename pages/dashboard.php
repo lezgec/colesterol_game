@@ -1,94 +1,102 @@
 <?php
-session_start();
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../lang/translate.php';
+
+require_login();
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
-
-if (!isset($_SESSION["user_id"])) {
-    header("Location: /colesterol_game/pages/login.php");
-    exit;
-}
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard de desempeño</title>
+    <title><?php echo t("dashboard"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
 </head>
 <body>
 
 <div class="game-container">
-    <div style="text-align:right; margin-bottom:10px;">
-        <a href="?lang=es">ES</a> |
-        <a href="?lang=en">EN</a>
-    </div>
+
     <div class="top-actions">
-        <h1>📈 Dashboard de desempeño</h1>
+        <div class="language-pill">
+            <a href="?lang=es">ES</a>
+            <span>|</span>
+            <a href="?lang=en">EN</a>
+        </div>
+
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">Volver al juego</a>
-            <a href="/colesterol_game/logout.php" class="logout-btn">Cerrar sesión</a>
+            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
+                <?php echo t("back_to_game"); ?>
+            </a>
+
+            <a href="/colesterol_game/logout.php" class="logout-btn">
+                <?php echo t("logout"); ?>
+            </a>
         </div>
     </div>
 
-    <p>Resumen general del rendimiento del usuario en el serious game.</p>
+    <h1>📈 <?php echo t("dashboard"); ?></h1>
+    <p><?php echo t("dashboard_description"); ?></p>
 
     <div id="dashboard-cards" class="dashboard-grid">
         <div class="dashboard-card">
-            <h3>Total de partidas</h3>
+            <h3><?php echo t("total_games"); ?></h3>
             <p id="total-games">...</p>
         </div>
 
         <div class="dashboard-card">
-            <h3>Promedio de puntaje</h3>
+            <h3><?php echo t("average_score"); ?></h3>
             <p id="avg-score">...</p>
         </div>
 
         <div class="dashboard-card">
-            <h3>Mejor puntaje</h3>
+            <h3><?php echo t("best_score"); ?></h3>
             <p id="best-score">...</p>
         </div>
 
         <div class="dashboard-card">
-            <h3>Porcentaje de aciertos</h3>
+            <h3><?php echo t("precision"); ?></h3>
             <p id="accuracy">...</p>
         </div>
 
         <div class="dashboard-card">
-            <h3>Dificultad más jugada</h3>
-            <p id="favorite-difficulty">...</p>
+            <h3><?php echo t("average_difficulty"); ?></h3>
+            <p id="avg-difficulty">...</p>
         </div>
     </div>
 
     <div class="recent-games-section">
-        <h2>Últimas partidas</h2>
-        <table id="recentGamesTable" width="100%" border="1">
+        <h2><?php echo t("recent_games"); ?></h2>
+
+        <table id="recentGamesTable" class="admin-table" width="100%">
             <thead>
                 <tr>
-                    <th>Fecha</th>
-                    <th>Puntaje</th>
-                    <th>Dificultad</th>
+                    <th><?php echo t("date"); ?></th>
+                    <th><?php echo t("score"); ?></th>
+                    <th><?php echo t("correct_answers"); ?></th>
+                    <th><?php echo t("final_difficulty"); ?></th>
                 </tr>
             </thead>
+
             <tbody></tbody>
         </table>
     </div>
 </div>
 
 <script>
-function formatDifficulty(value) {
-    if (value === "easy") return "Fácil";
-    if (value === "medium") return "Medio";
-    if (value === "hard") return "Difícil";
-    return value;
-}
+const DASHBOARD_I18N = {
+    loadError: "<?php echo current_lang() === 'en' ? 'Could not load dashboard.' : 'No se pudo cargar el dashboard.'; ?>",
+    noGames: "<?php echo current_lang() === 'en' ? 'No games registered' : 'No hay partidas registradas'; ?>",
+    error: "<?php echo t('error'); ?>"
+};
 
-fetch("/colesterol_game/backend/get_dashboard.php")
+fetch("/colesterol_game/backend/dashboard/get_dashboard.php")
     .then(res => res.json())
     .then(data => {
         if (!data.success) {
-            document.getElementById("dashboard-cards").innerHTML = "<p>No se pudo cargar el dashboard.</p>";
+            document.getElementById("dashboard-cards").innerHTML = `<p>${DASHBOARD_I18N.loadError}</p>`;
             return;
         }
 
@@ -96,28 +104,33 @@ fetch("/colesterol_game/backend/get_dashboard.php")
         document.getElementById("avg-score").textContent = data.avg_score;
         document.getElementById("best-score").textContent = data.best_score;
         document.getElementById("accuracy").textContent = data.accuracy + "%";
-        document.getElementById("favorite-difficulty").textContent = formatDifficulty(data.favorite_difficulty);
+        document.getElementById("avg-difficulty").textContent = data.average_difficulty + " / 5";
 
         const tbody = document.querySelector("#recentGamesTable tbody");
 
         if (!Array.isArray(data.recent_games) || data.recent_games.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='3'>No hay partidas registradas</td></tr>";
+            tbody.innerHTML = `<tr><td colspan="4">${DASHBOARD_I18N.noGames}</td></tr>`;
             return;
         }
 
+        tbody.innerHTML = "";
+
         data.recent_games.forEach(game => {
             const row = document.createElement("tr");
+
             row.innerHTML = `
                 <td>${game.played_at}</td>
                 <td>${game.score}</td>
-                <td>${formatDifficulty(game.difficulty)}</td>
+                <td>${game.correct_answers} / ${game.total_questions}</td>
+                <td>${game.final_difficulty} / 5</td>
             `;
+
             tbody.appendChild(row);
         });
     })
     .catch(error => {
         console.error(error);
-        document.getElementById("dashboard-cards").innerHTML = "<p>Error al cargar la información del dashboard.</p>";
+        document.getElementById("dashboard-cards").innerHTML = `<p>${DASHBOARD_I18N.error}</p>`;
     });
 </script>
 

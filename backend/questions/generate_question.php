@@ -1,14 +1,13 @@
 <?php
-session_start();
-
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
-if (!isset($_SESSION["user_id"])) {
+if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
         "success" => false,
-        "message" => "Usuario no autenticado"
+        "message" => "No autorizado"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -16,7 +15,7 @@ if (!isset($_SESSION["user_id"])) {
 $data = json_decode(file_get_contents("php://input"), true);
 
 $topic = trim($data["topic"] ?? "");
-$difficulty = trim($data["difficulty"] ?? "easy");
+$difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
 $language = trim($data["language"] ?? "es");
 
 if ($topic === "") {
@@ -27,9 +26,15 @@ if ($topic === "") {
     exit;
 }
 
-if (!in_array($difficulty, ["easy", "medium", "hard"], true)) {
-    $difficulty = "easy";
+if ($difficulty_level < 1.0) {
+    $difficulty_level = 1.0;
 }
+
+if ($difficulty_level > 5.0) {
+    $difficulty_level = 5.0;
+}
+
+$difficulty_level = round($difficulty_level, 1);
 
 if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
@@ -40,19 +45,30 @@ $langInstruction = $language === "en"
     : "Genera la pregunta en español.";
 
 $prompt = "
-You are an educational content generator for a serious game about high cholesterol.
+You are an educational content generator for a serious game about high cholesterol and cardiovascular prevention.
+
 Create ONE multiple-choice question about this topic: {$topic}.
-Difficulty: {$difficulty}.
+
+Difficulty level: {$difficulty_level} out of 5.
 Language: {$language}. {$langInstruction}
+
+Difficulty guide:
+- 1.0 to 1.9 = basic concepts and simple prevention.
+- 2.0 to 2.9 = intermediate understanding.
+- 3.0 to 3.9 = applied reasoning.
+- 4.0 to 5.0 = advanced clinical/public health reasoning.
 
 Rules:
 - The question must be educational and medically safe.
 - It must be suitable for university students.
+- It must avoid personalized medical advice or diagnosis.
 - It must have exactly four options.
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
 - explanation must briefly explain why the correct answer is correct.
 - category must be short.
+- difficulty_level must be a number between 1.0 and 5.0.
+- language must be es or en.
 - Return only valid JSON.
 ";
 
@@ -83,10 +99,7 @@ $payload = [
                 ],
                 "explanation" => ["type" => "string"],
                 "category" => ["type" => "string"],
-                "difficulty" => [
-                    "type" => "string",
-                    "enum" => ["easy", "medium", "hard"]
-                ],
+                "difficulty_level" => ["type" => "number"],
                 "language" => [
                     "type" => "string",
                     "enum" => ["es", "en"]
@@ -101,7 +114,7 @@ $payload = [
                 "correct_option",
                 "explanation",
                 "category",
-                "difficulty",
+                "difficulty_level",
                 "language"
             ]
         ]
@@ -158,6 +171,24 @@ if (!$generated) {
     exit;
 }
 
+$generatedDifficulty = (float)($generated["difficulty_level"] ?? $difficulty_level);
+
+if ($generatedDifficulty < 1.0) {
+    $generatedDifficulty = 1.0;
+}
+
+if ($generatedDifficulty > 5.0) {
+    $generatedDifficulty = 5.0;
+}
+
+$generated["difficulty_level"] = round($generatedDifficulty, 1);
+$generated["language"] = in_array(($generated["language"] ?? $language), ["es", "en"], true)
+    ? $generated["language"]
+    : $language;
+
+$generated["status"] = "pending";
+$generated["origin"] = "ai";
+$generated["is_active"] = 0;
 $generated["success"] = true;
 
 echo json_encode($generated, JSON_UNESCAPED_UNICODE);

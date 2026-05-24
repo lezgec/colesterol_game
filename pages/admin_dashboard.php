@@ -5,7 +5,7 @@ ini_set('display_startup_errors', 1);
 
 error_reporting(E_ALL);
 require_once __DIR__ . '/../lang/translate.php';
-require_once __DIR__ . '/../assets/includes/auth.php';
+require_once __DIR__ . '/../includes/auth.php';
 require_role(["teacher", "super_admin"]);
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -24,8 +24,9 @@ header("Pragma: no-cache");
 <div class="game-container admin-container">
 
     <div class="top-actions">
-        <div class="language-switch">
-            <a href="?lang=es">ES</a> |
+        <div class="language-pill">
+            <a href="?lang=es">ES</a>
+            <span>|</span>
             <a href="?lang=en">EN</a>
         </div>
 
@@ -71,6 +72,18 @@ header("Pragma: no-cache");
                 <div class="dashboard-card">
                     <h3><?php echo t("average_score"); ?></h3>
                     <p id="avg-score">...</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3><?php echo t("verified_questions"); ?></h3>
+                    <p id="verified-questions">...</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3><?php echo t("pending_questions"); ?></h3>
+                    <p id="pending-questions">...</p>
+                </div>
+                <div class="dashboard-card">
+                    <h3><?php echo t("average_difficulty"); ?></h3>
+                    <p id="avg-difficulty">...</p>
                 </div>
             </div>
         </section>
@@ -197,6 +210,9 @@ fetch("/colesterol_game/backend/dashboard/get_admin_dashboard.php")
         document.getElementById("total-rooms").textContent = data.total_rooms;
         document.getElementById("active-rooms").textContent = data.active_rooms;
         document.getElementById("avg-score").textContent = data.avg_score;
+        document.getElementById("verified-questions").textContent = data.verified_questions;
+        document.getElementById("pending-questions").textContent = data.pending_questions;
+        document.getElementById("avg-difficulty").textContent = data.avg_difficulty + " / 5";
     })
     .catch(error => {
         console.error(error);

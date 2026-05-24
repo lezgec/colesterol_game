@@ -1,16 +1,11 @@
 <?php
-session_start();
-
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/gemini.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
-if (
-    !isset($_SESSION["user_id"]) ||
-    !isset($_SESSION["user_role"]) ||
-    $_SESSION["user_role"] !== "admin"
-) {
+if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
         "success" => false,
         "message" => "No autorizado"
@@ -22,7 +17,7 @@ $data = json_decode(file_get_contents("php://input"), true);
 
 $topic = trim($data["topic"] ?? "");
 $quantity = (int)($data["quantity"] ?? 5);
-$difficulty = trim($data["difficulty"] ?? "easy");
+$difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
 $language = trim($data["language"] ?? "es");
 
 if ($topic === "") {
@@ -36,9 +31,15 @@ if ($topic === "") {
 if ($quantity < 1) $quantity = 1;
 if ($quantity > 20) $quantity = 20;
 
-if (!in_array($difficulty, ["easy", "medium", "hard"], true)) {
-    $difficulty = "easy";
+if ($difficulty_level < 1.0) {
+    $difficulty_level = 1.0;
 }
+
+if ($difficulty_level > 5.0) {
+    $difficulty_level = 5.0;
+}
+
+$difficulty_level = round($difficulty_level, 1);
 
 if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
@@ -49,21 +50,29 @@ $langInstruction = $language === "en"
     : "Genera todas las preguntas en español.";
 
 $prompt = "
-You are an educational content generator for a serious game about high cholesterol.
+You are an educational content generator for a serious game about high cholesterol and cardiovascular prevention.
 
 Create exactly {$quantity} multiple-choice questions about: {$topic}.
-Difficulty: {$difficulty}.
+
+Difficulty level: {$difficulty_level} out of 5.
 Language: {$language}. {$langInstruction}
+
+Difficulty guide:
+- 1.0 to 1.9 = basic concepts and simple prevention.
+- 2.0 to 2.9 = intermediate understanding.
+- 3.0 to 3.9 = applied reasoning.
+- 4.0 to 5.0 = advanced clinical/public health reasoning.
 
 Rules:
 - Each question must be educational and medically safe.
 - Suitable for university students.
+- Avoid personalized medical advice or diagnosis.
 - Each question must have exactly four options.
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
 - explanation must briefly explain why the correct answer is correct.
 - category must be short.
-- difficulty must be {$difficulty}.
+- difficulty_level must be a number between 1.0 and 5.0.
 - language must be {$language}.
 - Return only valid JSON.
 ";
@@ -100,10 +109,7 @@ $payload = [
                             ],
                             "explanation" => ["type" => "string"],
                             "category" => ["type" => "string"],
-                            "difficulty" => [
-                                "type" => "string",
-                                "enum" => ["easy", "medium", "hard"]
-                            ],
+                            "difficulty_level" => ["type" => "number"],
                             "language" => [
                                 "type" => "string",
                                 "enum" => ["es", "en"]
@@ -118,7 +124,7 @@ $payload = [
                             "correct_option",
                             "explanation",
                             "category",
-                            "difficulty",
+                            "difficulty_level",
                             "language"
                         ]
                     ]
@@ -179,8 +185,22 @@ if (!$generated || !isset($generated["questions"]) || !is_array($generated["ques
 }
 
 $sql = "INSERT INTO questions 
-(question, option_a, option_b, option_c, option_d, correct_option, explanation, category, difficulty, language)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        (
+            question, 
+            option_a, 
+            option_b, 
+            option_c, 
+            option_d, 
+            correct_option, 
+            explanation, 
+            category, 
+            difficulty_level, 
+            language,
+            status,
+            origin,
+            is_active
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'ai', 0)";
 
 $stmt = $conn->prepare($sql);
 
@@ -205,7 +225,7 @@ foreach ($generated["questions"] as $q) {
     $correct_option = strtoupper(trim($q["correct_option"] ?? ""));
     $explanation = trim($q["explanation"] ?? "");
     $category = trim($q["category"] ?? $topic);
-    $qDifficulty = trim($q["difficulty"] ?? $difficulty);
+    $qDifficultyLevel = (float)($q["difficulty_level"] ?? $difficulty_level);
     $qLanguage = trim($q["language"] ?? $language);
 
     if (
@@ -221,16 +241,22 @@ foreach ($generated["questions"] as $q) {
         continue;
     }
 
-    if (!in_array($qDifficulty, ["easy", "medium", "hard"], true)) {
-        $qDifficulty = $difficulty;
+    if ($qDifficultyLevel < 1.0) {
+        $qDifficultyLevel = 1.0;
     }
+
+    if ($qDifficultyLevel > 5.0) {
+        $qDifficultyLevel = 5.0;
+    }
+
+    $qDifficultyLevel = round($qDifficultyLevel, 1);
 
     if (!in_array($qLanguage, ["es", "en"], true)) {
         $qLanguage = $language;
     }
 
     $stmt->bind_param(
-        "ssssssssss",
+        "sssssssdss",
         $question,
         $option_a,
         $option_b,
@@ -239,7 +265,7 @@ foreach ($generated["questions"] as $q) {
         $correct_option,
         $explanation,
         $category,
-        $qDifficulty,
+        $qDifficultyLevel,
         $qLanguage
     );
 
