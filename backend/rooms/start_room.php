@@ -24,7 +24,7 @@ if ($room_code === "") {
 }
 
 $stmtRoom = $conn->prepare("
-    SELECT id, question_count
+    SELECT id, question_count, status
     FROM game_rooms
     WHERE room_code = ?
 ");
@@ -44,13 +44,26 @@ if ($roomResult->num_rows === 0) {
 
 $room = $roomResult->fetch_assoc();
 $room_id = (int)$room["id"];
+$requiredQuestions = (int)$room["question_count"];
+$roomStatus = $room["status"];
 
 $stmtRoom->close();
+
+if ($roomStatus !== "waiting") {
+    echo json_encode([
+        "success" => false,
+        "message" => "La sala no está disponible para iniciar"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $stmtQuestions = $conn->prepare("
     SELECT COUNT(*) AS total
     FROM room_questions
-    WHERE room_id = ?
+    INNER JOIN questions q ON room_questions.question_id = q.id
+    WHERE room_questions.room_id = ?
+      AND q.status = 'verified'
+      AND q.is_active = 1
 ");
 
 $stmtQuestions->bind_param("i", $room_id);
@@ -69,6 +82,17 @@ if ($availableQuestions <= 0) {
     exit;
 }
 
+if ($requiredQuestions <= 0 || $availableQuestions < $requiredQuestions) {
+    echo json_encode([
+        "success" => false,
+        "message" => "La sala aún no tiene el número completo de preguntas",
+        "required_questions" => $requiredQuestions,
+        "available_questions" => $availableQuestions,
+        "missing_questions" => max(0, $requiredQuestions - $availableQuestions)
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $stmt = $conn->prepare("
     UPDATE game_rooms
     SET
@@ -77,18 +101,17 @@ $stmt = $conn->prepare("
         question_started_at = NOW(),
         paused_at = NULL,
         finished_at = NULL,
-        current_question_index = 0,
-        question_count = ?
+        current_question_index = 0
     WHERE id = ?
 ");
 
-$stmt->bind_param("ii", $availableQuestions, $room_id);
+$stmt->bind_param("i", $room_id);
 
 if ($stmt->execute()) {
     echo json_encode([
         "success" => true,
         "message" => "Partida iniciada",
-        "question_count" => $availableQuestions
+        "question_count" => $requiredQuestions
     ], JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode([

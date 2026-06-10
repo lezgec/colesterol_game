@@ -90,7 +90,7 @@ $sql = "SELECT
             rq.room_id = ?
             AND q.status = 'verified'
             AND q.is_active = 1
-        ORDER BY q.difficulty_level ASC, rq.id ASC";
+        ORDER BY rq.id ASC";
 
 $stmt = $conn->prepare($sql);
 

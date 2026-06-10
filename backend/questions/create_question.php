@@ -2,6 +2,7 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
 if (!has_role(["teacher", "super_admin"])) {
@@ -69,6 +70,8 @@ if (!in_array($language, ["es", "en"], true)) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+$category = normalize_question_category($category, $language);
 
 if (!in_array($status, ["pending", "verified", "rejected"], true)) {
     $status = "pending";

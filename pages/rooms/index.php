@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../lang/translate.php';
-require_once __DIR__ . '/../../assets/includes/auth.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 $isLogged = isset($_SESSION["user_id"]);
 $role = $_SESSION["user_role"] ?? null;
@@ -32,7 +32,7 @@ $role = $_SESSION["user_role"] ?? null;
         </div>
 
         <?php if ($isLogged): ?>
-            <a href="/colesterol_game/logout.php" class="logout-btn">
+            <a href="/colesterol_game/pages/logout.php" class="logout-btn">
                 <?php echo t("logout"); ?>
             </a>
         <?php endif; ?>
@@ -73,18 +73,14 @@ $role = $_SESSION["user_role"] ?? null;
 
         <a href="/colesterol_game/pages/admin_dashboard.php"
            class="secondary-link">
-            <?php
-            echo current_lang() === "en"
-                ? "Back to dashboard"
-                : "Volver al panel";
-            ?>
+            <?php echo t("back_dashboard"); ?>
         </a>
 
     <?php else: ?>
 
         <a href="/colesterol_game/index.php"
            class="secondary-link">
-            <?php echo t("back"); ?>
+            <?php echo t("back_to_home"); ?>
         </a>
 
     <?php endif; ?>

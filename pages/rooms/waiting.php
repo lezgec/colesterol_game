@@ -13,6 +13,7 @@ if ($roomCode === "" || $playerName === "") {
 <html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>
         <?php echo current_lang() === "en"
@@ -36,13 +37,14 @@ if ($roomCode === "" || $playerName === "") {
 
     <div class="top-actions">
         <div class="language-pill">
-            <a href="?code=<?php echo urlencode($roomCode); ?>&name=<?php echo urlencode($playerName); ?>&lang=es">ES</a> |
+            <a href="?code=<?php echo urlencode($roomCode); ?>&name=<?php echo urlencode($playerName); ?>&lang=es">ES</a>
+            <span>|</span>
             <a href="?code=<?php echo urlencode($roomCode); ?>&name=<?php echo urlencode($playerName); ?>&lang=en">EN</a>
         </div>
 
         <a href="/colesterol_game/pages/rooms/index.php"
            class="logout-btn secondary-btn">
-            <?php echo t("back"); ?>
+            <?php echo t("back_to_rooms"); ?>
         </a>
     </div>
 
@@ -71,19 +73,20 @@ if ($roomCode === "" || $playerName === "") {
         <ul id="players-list"></ul>
     </div>
 
-    <p id="waiting-message">
+    <p id="waiting-message" class="room-status-message is-info">
         <?php echo current_lang() === "en"
             ? "The teacher will start the match soon."
             : "El docente iniciará la partida pronto."; ?>
     </p>
 
-    <div class="loader-text">⏳</div>
+    <div class="loader-text room-loader">⏳</div>
 
 </div>
 
 <script>
 const ROOM_CODE = "<?php echo htmlspecialchars($roomCode); ?>";
 const PLAYER_NAME = "<?php echo htmlspecialchars($playerName); ?>";
+let playersSignature = "";
 
 async function loadPlayers() {
     try {
@@ -94,12 +97,20 @@ async function loadPlayers() {
         const players = await res.json();
 
         const list = document.getElementById("players-list");
+        const nextSignature = Array.isArray(players)
+            ? players.map(player => player.player_name).join("|")
+            : "";
 
+        if (nextSignature === playersSignature) {
+            return;
+        }
+
+        playersSignature = nextSignature;
         list.innerHTML = "";
 
         if (!Array.isArray(players) || players.length === 0) {
             list.innerHTML = `
-                <li>
+                <li class="player-pill is-empty">
                     <?php echo current_lang() === "en"
                         ? "No players connected yet"
                         : "No hay jugadores conectados"; ?>
@@ -108,9 +119,22 @@ async function loadPlayers() {
             return;
         }
 
-        players.forEach(player => {
+        players.forEach((player, index) => {
             const li = document.createElement("li");
-            li.textContent = player.player_name;
+            li.classList.add("player-pill");
+            li.style.animationDelay = `${Math.min(index * 60, 360)}ms`;
+            const name = player.player_name || "Player";
+            const initial = name.trim().charAt(0).toUpperCase() || "?";
+
+            if (name === PLAYER_NAME) {
+                li.classList.add("is-current");
+            }
+
+            li.innerHTML = `
+                <span class="player-pill-avatar">${initial}</span>
+                <span class="player-pill-name">${name}</span>
+            `;
+
             list.appendChild(li);
         });
 

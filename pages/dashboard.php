@@ -27,11 +27,11 @@ header("Pragma: no-cache");
         </div>
 
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_game"); ?>
+            <a href="/colesterol_game/pages/player_dashboard.php" class="logout-btn secondary-btn">
+                <?php echo t("back_to_player_dashboard"); ?>
             </a>
 
-            <a href="/colesterol_game/logout.php" class="logout-btn">
+            <a href="/colesterol_game/pages/logout.php" class="logout-btn">
                 <?php echo t("logout"); ?>
             </a>
         </div>
@@ -87,8 +87,8 @@ header("Pragma: no-cache");
 
 <script>
 const DASHBOARD_I18N = {
-    loadError: "<?php echo current_lang() === 'en' ? 'Could not load dashboard.' : 'No se pudo cargar el dashboard.'; ?>",
-    noGames: "<?php echo current_lang() === 'en' ? 'No games registered' : 'No hay partidas registradas'; ?>",
+    loadError: "<?php echo t('loading_error'); ?>",
+    noGames: "<?php echo t('no_games_registered'); ?>",
     error: "<?php echo t('error'); ?>"
 };
 

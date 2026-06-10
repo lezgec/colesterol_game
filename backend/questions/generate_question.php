@@ -2,6 +2,8 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/gemini.php';
+require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
 if (!has_role(["teacher", "super_admin"])) {
@@ -15,16 +17,9 @@ if (!has_role(["teacher", "super_admin"])) {
 $data = json_decode(file_get_contents("php://input"), true);
 
 $topic = trim($data["topic"] ?? "");
+$category = trim($data["category"] ?? "");
 $difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
 $language = trim($data["language"] ?? "es");
-
-if ($topic === "") {
-    echo json_encode([
-        "success" => false,
-        "message" => "El tema es obligatorio"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 if ($difficulty_level < 1.0) {
     $difficulty_level = 1.0;
@@ -40,6 +35,14 @@ if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
 }
 
+$category = normalize_question_category($category, $language);
+$topicFocus = $topic !== "" ? $topic : $category;
+$allowedCategoryList = array_values(array_unique(array_merge(
+    question_categories($language),
+    [$category]
+)));
+$allowedCategories = implode(", ", $allowedCategoryList);
+
 $langInstruction = $language === "en"
     ? "Generate the question in English."
     : "Genera la pregunta en español.";
@@ -47,7 +50,9 @@ $langInstruction = $language === "en"
 $prompt = "
 You are an educational content generator for a serious game about high cholesterol and cardiovascular prevention.
 
-Create ONE multiple-choice question about this topic: {$topic}.
+Create ONE multiple-choice question.
+Content focus: {$topicFocus}.
+Use this category exactly: {$category}.
 
 Difficulty level: {$difficulty_level} out of 5.
 Language: {$language}. {$langInstruction}
@@ -66,7 +71,7 @@ Rules:
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
 - explanation must briefly explain why the correct answer is correct.
-- category must be short.
+- category must be exactly one of: {$allowedCategories}.
 - difficulty_level must be a number between 1.0 and 5.0.
 - language must be es or en.
 - Return only valid JSON.
@@ -185,6 +190,7 @@ $generated["difficulty_level"] = round($generatedDifficulty, 1);
 $generated["language"] = in_array(($generated["language"] ?? $language), ["es", "en"], true)
     ? $generated["language"]
     : $language;
+$generated["category"] = $category;
 
 $generated["status"] = "pending";
 $generated["origin"] = "ai";

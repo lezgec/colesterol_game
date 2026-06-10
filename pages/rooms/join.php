@@ -10,6 +10,7 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
 <html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("join_room"); ?></title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,11 +29,13 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
 
     <div class="top-actions">
         <div class="language-pill">
-            <a href="?code=<?php echo urlencode($initialCode); ?>&lang=es">ES</a> |
+            <a href="?code=<?php echo urlencode($initialCode); ?>&lang=es">ES</a>
+            <span>|</span>
             <a href="?code=<?php echo urlencode($initialCode); ?>&lang=en">EN</a>
         </div>
 
         <?php
+            $isLogged = isset($_SESSION["user_id"]);
             $role = $_SESSION["user_role"] ?? null;
             $isAdmin = in_array($role, ["teacher", "super_admin"], true);
             ?>
@@ -40,13 +43,19 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
             <?php if ($isAdmin): ?>
 
                 <a href="/colesterol_game/pages/rooms/index.php" class="logout-btn secondary-btn">
-                    <?php echo t("back"); ?>
+                    <?php echo t("back_to_rooms"); ?>
+                </a>
+
+            <?php elseif ($isLogged): ?>
+
+                <a href="/colesterol_game/pages/player_dashboard.php" class="logout-btn secondary-btn">
+                    <?php echo t("back_to_player_dashboard"); ?>
                 </a>
 
             <?php else: ?>
 
-                <a href="/colesterol_game/index.php" class="logout-btn secondary-btn">
-                    <?php echo t("back"); ?>
+                <a href="/colesterol_game/pages/rooms/index.php" class="logout-btn secondary-btn">
+                    <?php echo t("back_to_rooms"); ?>
                 </a>
 
         <?php endif; ?>
@@ -74,7 +83,7 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
             <?php echo t("join_room"); ?>
         </button>
 
-        <p id="join-message"></p>
+        <p id="join-message" class="room-status-message" aria-live="polite"></p>
     </form>
 
 </div>
@@ -87,7 +96,16 @@ document.getElementById("join-room-form").addEventListener("submit", async (e) =
     const name = document.getElementById("player_name").value.trim();
     const message = document.getElementById("join-message");
 
-    message.textContent = "<?php echo t('loading'); ?>";
+    function setJoinMessage(text, type = "") {
+        message.textContent = text;
+        message.classList.remove("is-info", "is-success", "is-error", "is-warning");
+
+        if (type) {
+            message.classList.add(`is-${type}`);
+        }
+    }
+
+    setJoinMessage("<?php echo t('loading'); ?>", "info");
 
     try {
         const res = await fetch("/colesterol_game/backend/rooms/join_room_player.php", {
@@ -102,14 +120,15 @@ document.getElementById("join-room-form").addEventListener("submit", async (e) =
         const result = await res.json();
 
         if (result.success) {
+            setJoinMessage("<?php echo current_lang() === 'en' ? 'Joining room...' : 'Entrando a la sala...'; ?>", "success");
             window.location.href =
                 `/colesterol_game/pages/rooms/waiting.php?code=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
         } else {
-            message.textContent = result.message || "<?php echo t('error'); ?>";
+            setJoinMessage(result.message || "<?php echo t('error'); ?>", "error");
         }
     } catch (error) {
         console.error(error);
-        message.textContent = "<?php echo t('error'); ?>";
+        setJoinMessage("<?php echo t('error'); ?>", "error");
     }
 });
 </script>

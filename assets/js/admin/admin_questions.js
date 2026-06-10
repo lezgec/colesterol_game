@@ -7,6 +7,181 @@ const saveBtn = document.getElementById("save-question-btn");
 const cancelBtn = document.getElementById("cancel-edit-btn");
 
 const TABLE_COLS = 10;
+const CUSTOM_CATEGORY_VALUE = "__custom__";
+
+function getAdminSections() {
+    return Array.from(document.querySelectorAll("[data-collapsible-section]"));
+}
+
+function setAdminSection(section, isOpen, options = {}) {
+    if (!section) return;
+
+    const body = section.querySelector(".admin-section-body");
+    const toggle = section.querySelector(".admin-section-heading");
+
+    if (!body || !toggle) return;
+
+    if (options.closeOthers && isOpen) {
+        getAdminSections().forEach(otherSection => {
+            if (otherSection !== section) {
+                setAdminSection(otherSection, false);
+            }
+        });
+    }
+
+    section.classList.toggle("is-open", isOpen);
+    section.classList.toggle("is-collapsed", !isOpen);
+    body.hidden = !isOpen;
+    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+
+    if (isOpen && options.scroll) {
+        section.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
+}
+
+function openAdminSectionById(sectionId, options = {}) {
+    const section = document.getElementById(sectionId);
+    setAdminSection(section, true, {
+        closeOthers: true,
+        scroll: false,
+        ...options
+    });
+}
+
+function setupAdminAccordions() {
+    getAdminSections().forEach(section => {
+        const toggle = section.querySelector(".admin-section-heading");
+
+        setAdminSection(section, false);
+
+        if (!toggle) return;
+
+        toggle.addEventListener("click", () => {
+            const shouldOpen = !section.classList.contains("is-open");
+            setAdminSection(section, shouldOpen, { closeOthers: true });
+        });
+    });
+
+    document.querySelectorAll(".admin-question-nav a[href^='#']").forEach(link => {
+        link.addEventListener("click", event => {
+            const sectionId = link.getAttribute("href").replace("#", "");
+            const section = document.getElementById(sectionId);
+
+            if (!section) return;
+
+            event.preventDefault();
+            openAdminSectionById(sectionId, { scroll: true });
+            history.replaceState(null, "", `#${sectionId}`);
+        });
+    });
+
+    if (window.location.hash) {
+        openAdminSectionById(window.location.hash.replace("#", ""), { scroll: true });
+    }
+}
+
+function getCategoriesForLanguage(language) {
+    return (
+        typeof QUESTION_CATEGORIES !== "undefined" &&
+        QUESTION_CATEGORIES[language]
+    )
+        ? QUESTION_CATEGORIES[language]
+        : QUESTION_CATEGORIES.es;
+}
+
+function populateCategorySelect(select, language, selectedValue = "") {
+    const categories = getCategoriesForLanguage(language);
+    const customInput = getCustomCategoryInput(select);
+    const normalizedSelectedValue = (selectedValue || "").trim();
+    const matchingCategory = categories.find(
+        category => category.toLowerCase() === normalizedSelectedValue.toLowerCase()
+    );
+    const isCustomValue = normalizedSelectedValue && !matchingCategory;
+
+    select.innerHTML = "";
+
+    categories.forEach(category => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category;
+        select.appendChild(option);
+    });
+
+    const customOption = document.createElement("option");
+    customOption.value = CUSTOM_CATEGORY_VALUE;
+    customOption.textContent = ADMIN_I18N.otherCategory || "Otra categoría";
+    select.appendChild(customOption);
+
+    select.value = isCustomValue
+        ? CUSTOM_CATEGORY_VALUE
+        : (matchingCategory || categories[0]);
+
+    if (customInput) {
+        customInput.value = isCustomValue ? normalizedSelectedValue : "";
+        updateCustomCategoryInput(select);
+    }
+}
+
+function getCustomCategoryInput(select) {
+    const inputId = select.dataset.customInput;
+    return inputId ? document.getElementById(inputId) : null;
+}
+
+function updateCustomCategoryInput(select) {
+    const customInput = getCustomCategoryInput(select);
+
+    if (!customInput) return;
+
+    const isCustom = select.value === CUSTOM_CATEGORY_VALUE;
+    customInput.style.display = isCustom ? "block" : "none";
+    customInput.required = isCustom;
+
+    if (!isCustom) {
+        customInput.value = "";
+    }
+}
+
+function getCategoryValue(selectId) {
+    const select = document.getElementById(selectId);
+    const customInput = getCustomCategoryInput(select);
+
+    if (select.value === CUSTOM_CATEGORY_VALUE) {
+        return (customInput?.value || "").trim();
+    }
+
+    return select.value.trim();
+}
+
+function bindCategorySelect(selectId) {
+    const select = document.getElementById(selectId);
+
+    select.addEventListener("change", () => {
+        updateCustomCategoryInput(select);
+    });
+}
+
+function syncCategoryDropdowns() {
+    populateCategorySelect(
+        document.getElementById("category"),
+        document.getElementById("language").value,
+        getCategoryValue("category")
+    );
+
+    populateCategorySelect(
+        document.getElementById("generator_category"),
+        document.getElementById("generator_language").value,
+        getCategoryValue("generator_category")
+    );
+
+    populateCategorySelect(
+        document.getElementById("mass_category"),
+        document.getElementById("mass_language").value,
+        getCategoryValue("mass_category")
+    );
+}
 
 function getStatusLabel(status) {
     if (status === "verified") return ADMIN_I18N.verified || "Verified";
@@ -38,7 +213,7 @@ async function loadQuestions() {
         tableBody.innerHTML = "";
 
         if (data.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">No hay preguntas registradas</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">${ADMIN_I18N.noQuestionsRegistered}</td></tr>`;
             return;
         }
 
@@ -88,7 +263,7 @@ form.addEventListener("submit", async (e) => {
         option_d: document.getElementById("option_d").value.trim(),
         correct_option: document.getElementById("correct_option").value,
         explanation: document.getElementById("explanation").value.trim(),
-        category: document.getElementById("category").value.trim(),
+        category: getCategoryValue("category"),
         difficulty_level: parseFloat(document.getElementById("difficulty_level").value || "1"),
         language: document.getElementById("language").value,
         status: document.getElementById("status").value,
@@ -125,6 +300,7 @@ form.addEventListener("submit", async (e) => {
             document.getElementById("status").value = "verified";
             document.getElementById("origin").value = "manual";
             document.getElementById("is_active").value = "1";
+            syncCategoryDropdowns();
 
             editIdInput.value = "";
             saveBtn.textContent = ADMIN_I18N.saveQuestion;
@@ -159,9 +335,13 @@ async function editQuestion(id) {
         document.getElementById("option_d").value = q.option_d || "";
         document.getElementById("correct_option").value = q.correct_option || "A";
         document.getElementById("explanation").value = q.explanation || "";
-        document.getElementById("category").value = q.category || "";
         document.getElementById("difficulty_level").value = q.difficulty_level || "1.0";
         document.getElementById("language").value = q.language || "es";
+        populateCategorySelect(
+            document.getElementById("category"),
+            document.getElementById("language").value,
+            q.category || ""
+        );
         document.getElementById("status").value = q.status || "verified";
         document.getElementById("origin").value = q.origin || "manual";
         document.getElementById("is_active").value = parseInt(q.is_active, 10) === 1 ? "1" : "0";
@@ -170,6 +350,8 @@ async function editQuestion(id) {
 
         saveBtn.textContent = ADMIN_I18N.updateQuestion;
         cancelBtn.style.display = "block";
+
+        openAdminSectionById("manual-question-section");
 
         form.scrollIntoView({
             behavior: "smooth",
@@ -188,6 +370,7 @@ cancelBtn.addEventListener("click", () => {
     document.getElementById("status").value = "verified";
     document.getElementById("origin").value = "manual";
     document.getElementById("is_active").value = "1";
+    syncCategoryDropdowns();
 
     editIdInput.value = "";
     saveBtn.textContent = ADMIN_I18N.saveQuestion;
@@ -213,6 +396,7 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
     const generatorMessage = document.getElementById("generator-message");
 
     const topic = document.getElementById("generator_topic").value.trim();
+    const category = getCategoryValue("generator_category");
     const difficulty_level = parseFloat(
         document.getElementById("generator_difficulty_level").value || "1"
     );
@@ -228,6 +412,7 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
             },
             body: JSON.stringify({
                 topic,
+                category,
                 difficulty_level,
                 language
             })
@@ -249,9 +434,13 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
         document.getElementById("option_d").value = result.option_d || "";
         document.getElementById("correct_option").value = result.correct_option || "A";
         document.getElementById("explanation").value = result.explanation || "";
-        document.getElementById("category").value = result.category || topic;
         document.getElementById("difficulty_level").value = result.difficulty_level || difficulty_level;
         document.getElementById("language").value = result.language || language;
+        populateCategorySelect(
+            document.getElementById("category"),
+            document.getElementById("language").value,
+            result.category || category
+        );
 
         // IA genera pendiente por seguridad
         document.getElementById("status").value = "pending";
@@ -264,6 +453,8 @@ document.getElementById("generator-form").addEventListener("submit", async (e) =
 
         generatorMessage.textContent =
             ADMIN_I18N.generatedReady || "Pregunta generada. Revísala antes de guardar.";
+
+        openAdminSectionById("manual-question-section");
 
         document.getElementById("manual-question-form").scrollIntoView({
             behavior: "smooth",
@@ -308,6 +499,7 @@ document.getElementById("mass-generator-form").addEventListener("submit", async 
     const message = document.getElementById("mass-generator-message");
 
     const topic = document.getElementById("mass_topic").value.trim();
+    const category = getCategoryValue("mass_category");
     const quantity = parseInt(document.getElementById("mass_quantity").value, 10);
     const difficulty_level = parseFloat(
         document.getElementById("mass_difficulty_level").value || "1"
@@ -324,6 +516,7 @@ document.getElementById("mass-generator-form").addEventListener("submit", async 
             },
             body: JSON.stringify({
                 topic,
+                category,
                 quantity,
                 difficulty_level,
                 language
@@ -333,8 +526,10 @@ document.getElementById("mass-generator-form").addEventListener("submit", async 
         const result = await res.json();
 
         if (result.success) {
-            message.textContent = `${ADMIN_I18N.massGeneratedSuccess}: ${result.inserted}`;
-            loadQuestions();
+            message.textContent =
+                `${ADMIN_I18N.massGeneratedSuccess}: ${result.inserted}. ${ADMIN_I18N.generatedQuestionsNeedReview}`;
+            await loadQuestions();
+            openAdminSectionById("question-bank-section", { scroll: true });
         } else {
             message.textContent = result.message || ADMIN_I18N.error;
             console.error(result);
@@ -346,4 +541,62 @@ document.getElementById("mass-generator-form").addEventListener("submit", async 
 });
 
 // INIT
+bindCategorySelect("category");
+bindCategorySelect("generator_category");
+bindCategorySelect("mass_category");
+setupAdminAccordions();
+
+document.getElementById("language").addEventListener("change", () => {
+    populateCategorySelect(
+        document.getElementById("category"),
+        document.getElementById("language").value
+    );
+});
+
+document.getElementById("generator_language").addEventListener("change", () => {
+    populateCategorySelect(
+        document.getElementById("generator_category"),
+        document.getElementById("generator_language").value
+    );
+});
+
+document.getElementById("mass_language").addEventListener("change", () => {
+    populateCategorySelect(
+        document.getElementById("mass_category"),
+        document.getElementById("mass_language").value
+    );
+});
+
+syncCategoryDropdowns();
+
+function applyMassGeneratorParams() {
+    const params = new URLSearchParams(window.location.search);
+
+    if (!params.has("category") && !params.has("difficulty") && !params.has("quantity")) {
+        return;
+    }
+
+    const language = params.get("language") || "es";
+    const category = params.get("category") || "";
+    const difficulty = params.get("difficulty") || "1";
+    const quantity = params.get("quantity") || "5";
+    const topic = params.get("topic") || "";
+
+    document.getElementById("mass_language").value =
+        ["es", "en"].includes(language) ? language : "es";
+
+    populateCategorySelect(
+        document.getElementById("mass_category"),
+        document.getElementById("mass_language").value,
+        category
+    );
+
+    document.getElementById("mass_topic").value = topic;
+    document.getElementById("mass_quantity").value = quantity;
+    document.getElementById("mass_difficulty_level").value = difficulty;
+
+    openAdminSectionById("mass-generator", { scroll: true });
+}
+
+applyMassGeneratorParams();
 loadQuestions();

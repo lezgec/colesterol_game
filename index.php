@@ -76,6 +76,13 @@ $role = current_user_role();
                 🔐 <?php echo t("admin_dashboard"); ?>
             </a>
 
+        <?php elseif ($isLogged): ?>
+
+            <a href="/colesterol_game/pages/player_dashboard.php"
+               class="admin-login-link">
+                🎮 <?php echo t("player_dashboard"); ?>
+            </a>
+
         <?php else: ?>
 
             <a href="/colesterol_game/pages/login.php"

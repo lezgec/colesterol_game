@@ -36,7 +36,7 @@ header("Pragma: no-cache");
     </div>
 
     <h1><?php echo t("admin_dashboard"); ?></h1>
-    <p><?php echo t("admin_dashboard_description"); ?></p>
+    <p class="page-intro"><?php echo t("admin_dashboard_description"); ?></p>
 
     <div class="admin-dashboard-layout">
 
@@ -95,32 +95,37 @@ header("Pragma: no-cache");
 
                 <a href="/colesterol_game/pages/admin_questions.php"
                    class="dashboard-card dashboard-link tool-card">
-                    <h3><?php echo t("admin_questions"); ?></h3>
-                    <p><?php echo t("admin_questions_description"); ?></p>
+                    <h3>🧠 <?php echo t("admin_questions"); ?></h3>
                 </a>
 
                 <a href="/colesterol_game/pages/rooms/create.php"
                    class="dashboard-card dashboard-link tool-card">
-                    <h3><?php echo t("create_room"); ?></h3>
-                    <p><?php echo t("create_room_description"); ?></p>
+                    <h3>👥 <?php echo t("create_room"); ?></h3>
                 </a>
 
                 <a href="/colesterol_game/pages/ranking.php"
                    class="dashboard-card dashboard-link tool-card">
-                    <h3><?php echo t("ranking"); ?></h3>
-                    <p><?php echo t("ranking_description"); ?></p>
+                    <h3>🏆 <?php echo t("ranking"); ?></h3>
                 </a>
 
                 <a href="/colesterol_game/pages/dashboard.php"
                    class="dashboard-card dashboard-link tool-card">
-                    <h3><?php echo t("dashboard"); ?></h3>
-                    <p><?php echo t("dashboard_description"); ?></p>
+                    <h3>📋 <?php echo t("dashboard"); ?></h3>
                 </a>
 
                 <a href="/colesterol_game/index.php"
                    class="dashboard-card dashboard-link tool-card">
-                    <h3><?php echo t("public_view"); ?></h3>
-                    <p><?php echo t("public_view_description"); ?></p>
+                    <h3>🏠 <?php echo t("public_view"); ?></h3>
+                </a>
+
+                <a href="/colesterol_game/pages/admin_reports.php"
+                   class="dashboard-card dashboard-link tool-card">
+                    <h3>📊 <?php echo t("reports_center"); ?></h3>
+                </a>
+
+                <a href="/colesterol_game/pages/users_management.php"
+                   class="dashboard-card dashboard-link tool-card">
+                    <h3>👥 <?php echo t("users_management"); ?></h3>
                 </a>
 
             </div>
@@ -238,7 +243,7 @@ fetch("/colesterol_game/backend/dashboard/get_admin_analytics.php")
         difficultyBody.innerHTML = "";
 
         if (!Array.isArray(data.difficulty_stats) || data.difficulty_stats.length === 0) {
-            difficultyBody.innerHTML = `<tr><td colspan="2">-</td></tr>`;
+            difficultyBody.innerHTML = `<tr><td colspan="2">${data.no_data_message || "<?php echo t('no_data_available'); ?>"}</td></tr>`;
         } else {
             data.difficulty_stats.forEach(item => {
                 const row = document.createElement("tr");
@@ -256,7 +261,7 @@ fetch("/colesterol_game/backend/dashboard/get_admin_analytics.php")
         playersBody.innerHTML = "";
 
         if (!Array.isArray(data.top_players) || data.top_players.length === 0) {
-            playersBody.innerHTML = `<tr><td colspan="3">-</td></tr>`;
+            playersBody.innerHTML = `<tr><td colspan="3">${data.no_data_message || "<?php echo t('no_data_available'); ?>"}</td></tr>`;
         } else {
             data.top_players.forEach((player, index) => {
                 const row = document.createElement("tr");

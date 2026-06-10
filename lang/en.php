@@ -14,10 +14,40 @@ return [
     "join_room" => "Join room",
     "create_room" => "Create room",
     "back" => "Back",
+    "back_to_home" => "Back to home",
+    "back_to_player_dashboard" => "Back to player dashboard",
+    "back_to_reports_center" => "Back to reports center",
+    "back_to_rooms" => "Back to rooms",
     "game" => "Game",
 
     "loading" => "Loading...",
     "error" => "Error",
+    "yes" => "Yes",
+    "no" => "No",
+    "no_data_available" => "No data available yet",
+    "no_reports_available" => "No reports available yet",
+    "no_results_yet" => "No results yet",
+    "no_questions_available" => "No questions available",
+    "loading_error" => "Error loading data",
+    "no_games_registered" => "No games registered",
+    "no_ranking_data" => "No ranking data available",
+    "actions" => "Actions",
+    "all" => "All",
+    "save" => "Save",
+    "saved_successfully" => "Saved successfully",
+    "updated_successfully" => "Updated successfully",
+    "search" => "Search",
+    "date" => "Date",
+    "created_at" => "Created at",
+    "mode" => "Mode",
+    "room" => "Room",
+    "solo" => "Solo",
+    "of" => "of",
+    "export_csv" => "Export CSV",
+    "export_pdf" => "Export PDF",
+    "enter_new_password" => "Enter new password:",
+    "confirm_toggle_status" => "Change this user status?",
+    "confirm_finish_room" => "Are you sure you want to finish this room?",
 
     "spanish" => "Spanish",
     "english" => "English",
@@ -38,6 +68,7 @@ return [
     "email" => "Email",
     "password" => "Password",
 
+    "register" => "Register",
     "register_button" => "Sign Up",
     "login_button" => "Enter",
 
@@ -63,11 +94,21 @@ return [
     "loading_questions" => "Loading questions...",
 
     "question" => "Question",
+    "question_progress" => "Progress",
     "correct_answer" => "Correct answer",
     "correct_answers" => "Correct answers",
+    "selected_answer" => "Your answer",
+    "submit_answer" => "Submit answer",
+    "choose_answer" => "Choose an answer before submitting",
 
     "correct" => "Correct",
     "incorrect" => "Incorrect",
+    "feedback" => "Feedback",
+    "continue" => "Continue",
+    "continue_when_ready" => "Continue when you finish reading",
+    "next_question_in" => "Next question in",
+    "saving_answer" => "Saving answer...",
+    "play_again" => "Play again",
 
     "game_over" => "Game Over",
     "game_completed" => "Game completed",
@@ -129,9 +170,16 @@ return [
     */
 
     "admin_title" => "Question Manager",
-    "admin_description" => "Manage manual questions, automatically generated questions, and CSV imports.",
+    "admin_description" => "Manage the question bank by category, difficulty, and language.",
 
-    "admin_questions_description" => "Create, edit, import, and generate questions using AI.",
+    "admin_questions" => "Manage questions",
+    "admin_questions_description" => "Create, edit, import, and generate questions by category and difficulty.",
+    "all_questions" => "All questions",
+    "question_admin_manual_tab" => "Manual",
+    "question_admin_generator_tab" => "Single AI",
+    "question_admin_bulk_tab" => "Bulk AI",
+    "question_admin_import_tab" => "CSV",
+    "question_admin_bank_tab" => "Bank",
 
     "create_question" => "Create question manually",
     "save_question" => "Save question",
@@ -143,11 +191,15 @@ return [
     "question_saved" => "Question saved successfully",
     "question_updated" => "Question updated successfully",
     "question_deleted" => "Question deleted successfully",
+    "no_questions_registered" => "No questions registered",
 
     "confirm_delete_question" => "Delete this question?",
 
     "category" => "Category",
     "category_placeholder" => "E.g. Types of cholesterol",
+    "other_category" => "Other category",
+    "custom_category" => "Category name",
+    "custom_category_placeholder" => "Enter the category",
 
     "option_a" => "Option A",
     "option_b" => "Option B",
@@ -167,12 +219,14 @@ return [
 
     "generator" => "Automatic Generator",
 
-    "generator_description" => "Generate a draft question using artificial intelligence. Review and edit it before saving.",
+    "generator_description" => "Generate an editable draft with artificial intelligence.",
 
     "generated_ready" => "Question generated. Review it before saving.",
 
     "topic" => "Topic",
     "topic_placeholder" => "E.g. LDL and bad cholesterol",
+    "topic_optional" => "Optional topic",
+    "topic_optional_placeholder" => "Optional: subtopic or focus",
 
     "generate_question" => "Generate question",
 
@@ -184,13 +238,14 @@ return [
 
     "mass_generator" => "Mass AI Generator",
 
-    "mass_generator_description" => "Generate multiple questions automatically and insert them directly into the database.",
+    "mass_generator_description" => "Generate multiple questions by category and difficulty.",
 
     "quantity" => "Quantity",
 
     "generate_and_insert" => "Generate and insert",
 
     "mass_generated_success" => "Questions generated and inserted successfully",
+    "generated_questions_need_review" => "Questions were generated as pending and inactive. Review them before using them in the room.",
 
     /*
     |--------------------------------------------------------------------------
@@ -242,8 +297,10 @@ return [
     "room_code" => "Room code",
 
     "room_lobby" => "Room Lobby",
+    "back_to_room_lobby" => "Back to room lobby",
 
     "player_name" => "Player name",
+    "unnamed_player" => "Unnamed player",
 
     "room_share_link" => "Room share link",
 
@@ -259,6 +316,28 @@ return [
     "game_started" => "Game started",
 
     "room_ranking" => "Room ranking",
+    "room_report" => "Room report",
+    "room_reports" => "Room reports",
+    "room_information" => "Room information",
+    "room_status_waiting" => "Waiting",
+    "room_status_started" => "In progress",
+    "room_status_paused" => "Paused",
+    "room_status_finished" => "Finished",
+    "room_status_unknown" => "Unknown status",
+    "room_questions_management" => "Room questions",
+    "room_questions_ready" => "Ready questions",
+    "room_questions_missing" => "Missing questions",
+    "required_questions" => "Required questions",
+    "assigned_questions" => "Assigned questions",
+    "assign_available_questions" => "Assign available questions",
+    "review_questions_in_admin" => "Review questions in manager",
+    "generate_missing_for_block" => "Generate missing",
+    "ready_to_start" => "Room ready to start",
+    "incomplete_room_questions" => "Complete the required questions before starting the room.",
+    "no_assigned_questions" => "No questions assigned yet",
+    "remove_question_from_room" => "Remove from room",
+    "confirm_remove_room_question" => "Remove this question from the room?",
+    "room_questions_synced" => "Questions synced",
 
     "live_ranking" => "Live ranking",
 
@@ -273,6 +352,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | ROOM CONTROLS
+    |--------------------------------------------------------------------------
+    */
+
+    "room_control" => "Room control",
+    "pause_room" => "Pause",
+    "resume_room" => "Resume",
+    "next_question" => "Next question",
+    "finish_room" => "Finish room",
+    "current_question" => "Current question",
+    "time_left" => "Time left",
+    "initial_difficulty" => "Initial difficulty",
+    "room_paused_success" => "Room paused",
+    "room_resumed_success" => "Room resumed",
+    "room_advanced_success" => "Question advanced",
+    "room_finished_success" => "Room finished",
+
+    /*
+    |--------------------------------------------------------------------------
     | ROOM CREATION
     |--------------------------------------------------------------------------
     */
@@ -282,9 +380,33 @@ return [
     "question_count" => "Number of questions",
 
     "question_mode" => "Question mode",
+    "configured_questions" => "By category and difficulty",
 
     "random_questions" => "Random questions",
     "selected_questions" => "Selected questions",
+    "question_blocks" => "Question blocks",
+    "add_question_block" => "Add block",
+    "create_new_category" => "Create new category",
+    "new_category" => "New category",
+    "new_category_placeholder" => "E.g. Community nutrition",
+    "new_category_required" => "Enter the new category name",
+    "no_question_blocks" => "Add at least one category and difficulty block",
+    "not_enough_questions" => "There are not enough available questions for one or more blocks",
+    "generate_missing_questions" => "Generate missing questions",
+    "create_missing_questions_in_admin" => "Create missing questions",
+    "generating_missing_questions" => "Generating missing questions...",
+    "generated_missing_questions" => "Missing questions generated successfully",
+    "preparing_ai" => "Preparing artificial intelligence",
+    "preparing_engines" => "Preparing engines",
+    "assigning_categories" => "Assigning categories",
+    "calibrating_difficulty" => "Calibrating difficulty",
+    "creating_questions" => "Creating questions",
+    "reviewing_answers" => "Reviewing answers",
+    "saving_questions" => "Saving questions",
+    "available" => "Available",
+    "requested" => "Requested",
+    "total" => "Total",
+    "remove" => "Remove",
 
     "select_questions" => "Select questions",
 
@@ -307,12 +429,16 @@ return [
     "admin_dashboard_description" => "Manage educational content, game rooms, and system results.",
 
     "back_to_admin" => "Back to admin",
+    "back_dashboard" => "Back to dashboard",
 
     "back_to_game" => "Back to game",
 
     "public_view" => "Public view",
 
     "public_view_description" => "Return to the system landing page.",
+    "admin_tools" => "Admin tools",
+    "users_management" => "Users management",
+    "users_management_description" => "Create, edit, activate, or deactivate system users.",
 
      /*
     |--------------------------------------------------------------------------
@@ -320,19 +446,13 @@ return [
     |--------------------------------------------------------------------------
     */
     "player_dashboard" => "Player Dashboard",
-    "start_solo_game" => "Start game",
-    "start_solo_game_description" => "Play a solo match with adaptive difficulty.",
-    "join_room_description" => "Join a room using a code shared by the teacher.",
-    "history_description" => "Review your previous matches and results.",
-    "player_dashboard" => "Player Dashboard",
     "player_options" => "Player Options",
     "best_score" => "Best Score",
-
+    "player_profile" => "Player profile",
+    "player_profile_description" => "Review your progress, mistakes, badges, and learning recommendations.",
     "start_solo_game" => "Start Game",
     "start_solo_game_description" => "Play a solo match with adaptive difficulty.",
-
     "join_room_description" => "Join a room using a code shared by the teacher.",
-
     "history_description" => "Review your previous matches and results.",
 
     /*
@@ -358,10 +478,65 @@ return [
 
     "total_correct_answers" => "Correct answers",
     "total_answered_questions" => "Answered questions",
+    "total_players" => "Total players",
+    "total_points" => "Total points",
+    "average_response_time" => "Average response time",
+    "max_difficulty" => "Max difficulty",
+    "incorrect_answers" => "Incorrect answers",
+    "failure_rate" => "Failure rate",
+    "game_mode" => "Game mode",
 
     "performance_by_difficulty" => "Performance by difficulty",
+    "performance_by_category" => "Performance by category",
+    "performance_by_player" => "Performance by player",
 
     "top_players" => "Top players",
+    "recent_games" => "Recent games",
+    "reports_center" => "Reports center",
+    "reports_center_description" => "Review educational reports, global analytics, and room results.",
+    "global_analytics" => "Global analytics",
+    "global_analytics_description" => "View overall metrics for players, questions, categories, and rooms.",
+    "question_analytics" => "Question analytics",
+    "question_analytics_description" => "Find difficult, slow, failed, and high-precision questions.",
+    "adaptive_report" => "Adaptive report",
+    "adaptive_progression" => "Adaptive progression",
+    "adaptive_progression_chart" => "Adaptive progression chart",
+    "visual_analytics" => "Visual analytics",
+    "visual_charts" => "Visual charts",
+    "smart_insights" => "Smart insights",
+    "badges" => "Badges",
+    "your_mistakes" => "Your mistakes",
+    "most_failed_questions" => "Most failed questions",
+    "hardest_questions" => "Hardest questions",
+    "slowest_questions" => "Slowest questions",
+    "best_precision_questions" => "Best precision questions",
+    "difficulty_progression" => "Difficulty progression",
+    "category_precision" => "Category precision",
+    "mistakes_distribution" => "Mistakes distribution",
+    "response_time_analysis" => "Response time analysis",
+    "comparative_analytics" => "Comparative analytics",
+    "comparative_charts" => "Comparative charts",
+    "players_comparison" => "Players comparison",
+    "rooms_comparison" => "Rooms comparison",
+    "categories_comparison" => "Categories comparison",
+    "difficulty_comparison" => "Difficulty comparison",
+    "game_modes_comparison" => "Game modes comparison",
+    "view_report" => "View report",
+    "precision_percent" => "Precision %",
+    "failure_percent" => "Failure %",
+    "avg_difficulty_short" => "Avg difficulty",
+    "avg_response_time_short" => "Avg time",
+    "learning_report_for" => "Learning report for",
+    "no_mistakes_recorded" => "No mistakes recorded yet",
+    "no_insights_available" => "No insights available",
+    "no_badges_earned" => "No badges earned yet",
+    "top_10_description" => "Top 10 players based on their best registered score.",
+    "question_statistics" => "Question statistics",
+    "answer_distribution" => "Answer distribution",
+    "most_selected_option" => "Most selected option",
+    "most_selected_wrong_option" => "Most selected distractor",
+    "no_option_selected" => "No answer",
+    "answered_count" => "Answered",
 
     /*
     |--------------------------------------------------------------------------
@@ -369,6 +544,13 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    "registered_questions" => "Registered questions"
+    "registered_questions" => "Registered questions",
+    "registered_users" => "Registered users",
+    "create_user" => "Create user",
+    "role" => "Role",
+    "role_player" => "Player",
+    "role_teacher" => "Teacher",
+    "role_super_admin" => "Super admin",
+    "no_users_found" => "No users found"
 
 ];

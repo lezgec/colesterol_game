@@ -22,8 +22,8 @@ header("Pragma: no-cache");
         <h1>📊 <?php echo t("history"); ?></h1>
 
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_game"); ?>
+            <a href="/colesterol_game/pages/player_dashboard.php" class="logout-btn secondary-btn">
+                <?php echo t("back_to_player_dashboard"); ?>
             </a>
         </div>
     </div>
@@ -50,19 +50,13 @@ header("Pragma: no-cache");
 <script>
 
 const HISTORY_I18N = {
-    noGames: "<?php echo current_lang() === 'en'
-        ? 'No games registered'
-        : 'No hay partidas registradas'; ?>",
+    noGames: "<?php echo t('no_games_registered'); ?>",
 
     error: "<?php echo t('error'); ?>",
 
-    room: "<?php echo current_lang() === 'en'
-        ? 'Room'
-        : 'Sala'; ?>",
+    room: "<?php echo t('room'); ?>",
 
-    solo: "<?php echo current_lang() === 'en'
-        ? 'Solo'
-        : 'Solo'; ?>"
+    solo: "<?php echo t('solo'); ?>"
 };
 
 fetch("/colesterol_game/backend/game/get_user_results.php")

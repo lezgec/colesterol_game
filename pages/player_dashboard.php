@@ -22,7 +22,8 @@ $userName = $_SESSION["user_name"] ?? "Player";
 
     <div class="top-actions">
         <div class="language-pill">
-            <a href="?lang=es">ES</a> |
+            <a href="?lang=es">ES</a>
+            <span>|</span>
             <a href="?lang=en">EN</a>
         </div>
 
@@ -86,6 +87,10 @@ $userName = $_SESSION["user_name"] ?? "Player";
         <a href="/colesterol_game/index.php" class="dashboard-card dashboard-link">
             <h3>🏠 <?php echo t("public_view"); ?></h3>
             <p><?php echo t("public_view_description"); ?></p>
+        </a>
+        <a href="/colesterol_game/pages/player_profile.php" class="dashboard-card dashboard-link">
+            <h3>👤 <?php echo t("player_profile"); ?></h3>
+            <p><?php echo t("player_profile_description"); ?></p>
         </a>
 
     </section>

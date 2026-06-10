@@ -39,6 +39,7 @@ $conn->close();
 <html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("room_ranking"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
 </head>
@@ -48,22 +49,23 @@ $conn->close();
 
     <div class="top-actions">
         <div class="language-pill">
-            <a href="?code=<?php echo urlencode($roomCode); ?>&lang=es">ES</a> |
+            <a href="?code=<?php echo urlencode($roomCode); ?>&lang=es">ES</a>
+            <span>|</span>
             <a href="?code=<?php echo urlencode($roomCode); ?>&lang=en">EN</a>
         </div>
     </div>
 
     <h1><?php echo t("room_ranking"); ?></h1>
 
-    <p>
+    <p class="room-meta">
         <strong><?php echo t("room_name"); ?>:</strong>
         <?php echo htmlspecialchars($room["name"]); ?><br>
 
         <strong><?php echo t("room_code"); ?>:</strong>
         <?php echo htmlspecialchars($roomCode); ?><br>
 
-        <strong>Estado:</strong>
-        <span id="room-status"><?php echo htmlspecialchars($room["status"]); ?></span>
+        <strong><?php echo t("status"); ?>:</strong>
+        <span id="room-status"><?php echo htmlspecialchars(room_status_label($room["status"])); ?></span>
     </p>
 
     <section id="podium-section" class="podium-section" style="display:none;">
@@ -101,7 +103,12 @@ $conn->close();
         <a href="/colesterol_game/pages/rooms/index.php"
            class="primary-btn"
            style="display:block; text-align:center; text-decoration:none;">
-            <?php echo t("back"); ?>
+            <?php echo t("back_to_rooms"); ?>
+        </a>
+        <a href="/colesterol_game/pages/rooms/room_report.php?code=<?php echo urlencode($roomCode); ?>"
+        class="primary-btn"
+        style="display:block; text-align:center; text-decoration:none; margin-bottom:10px;">
+            <?php echo t("room_report"); ?>
         </a>
 
     <?php else: ?>
@@ -125,9 +132,20 @@ let rankingInterval = null;
 let stateInterval = null;
 
 const RANKING_I18N = {
-    noResults: "<?php echo current_lang() === 'en' ? 'No results yet' : 'No hay resultados todavía'; ?>",
-    error: "<?php echo t('error'); ?>"
+    noResults: "<?php echo t('no_results_yet'); ?>",
+    error: "<?php echo t('error'); ?>",
+    unknownStatus: "<?php echo t('room_status_unknown'); ?>",
+    statuses: {
+        waiting: "<?php echo t('room_status_waiting'); ?>",
+        started: "<?php echo t('room_status_started'); ?>",
+        paused: "<?php echo t('room_status_paused'); ?>",
+        finished: "<?php echo t('room_status_finished'); ?>"
+    }
 };
+
+function formatRoomStatus(status) {
+    return RANKING_I18N.statuses[status] || RANKING_I18N.unknownStatus;
+}
 
 function renderPodium(data) {
     const section = document.getElementById("podium-section");
@@ -239,7 +257,7 @@ async function checkRoomStatus() {
         }
 
         const statusEl = document.getElementById("room-status");
-        statusEl.textContent = state.status;
+        statusEl.textContent = formatRoomStatus(state.status);
 
         if (state.status === "finished") {
             clearInterval(stateInterval);

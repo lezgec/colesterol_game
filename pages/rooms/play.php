@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../lang/translate.php';
+require_once __DIR__ . '/../../config/db.php';
 
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 $playerName = trim($_GET["name"] ?? "");
@@ -8,11 +9,37 @@ if ($roomCode === "" || $playerName === "") {
     header("Location: /colesterol_game/pages/rooms/join.php");
     exit;
 }
+
+$roomId = 0;
+$stmtRoom = $conn->prepare("
+    SELECT id
+    FROM game_rooms
+    WHERE room_code = ?
+    LIMIT 1
+");
+
+if ($stmtRoom) {
+    $stmtRoom->bind_param("s", $roomCode);
+    $stmtRoom->execute();
+    $roomResult = $stmtRoom->get_result();
+
+    if ($roomResult->num_rows > 0) {
+        $roomId = (int)$roomResult->fetch_assoc()["id"];
+    }
+
+    $stmtRoom->close();
+}
+
+if ($roomId <= 0) {
+    header("Location: /colesterol_game/pages/rooms/join.php");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("game"); ?></title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,7 +54,7 @@ if ($roomCode === "" || $playerName === "") {
 </head>
 <body>
 
-<div class="game-container">
+<div class="game-container room-play-container">
 
     <div class="top-actions">
         <div>
@@ -40,7 +67,7 @@ if ($roomCode === "" || $playerName === "") {
         </div>
 
         <a href="/colesterol_game/pages/rooms/index.php" class="logout-btn">
-            <?php echo t("back"); ?>
+            <?php echo t("back_to_rooms"); ?>
         </a>
     </div>
 
@@ -67,19 +94,20 @@ if ($roomCode === "" || $playerName === "") {
             <p id="progress"></p>
         </div>
 
-        <div class="question-box">
-            <h2 id="question-text"><?php echo t("loading"); ?></h2>
+        <div class="room-play-layout">
+            <div class="question-box">
+                <p id="room-question-meta" class="question-meta"></p>
+                <h2 id="question-text"><?php echo t("loading"); ?></h2>
 
-            <div id="options-container"></div>
+                <div id="options-container"></div>
 
-            <p id="feedback"></p>
+                <p id="feedback"></p>
+            </div>
 
-            <div id="live-ranking-box"
-                 class="admin-section"
-                 style="display:none;">
+            <aside id="live-ranking-box" class="live-ranking-panel admin-section">
                 <h2><?php echo t("live_ranking"); ?></h2>
                 <div id="live-ranking-list"></div>
-            </div>
+            </aside>
         </div>
 
     </div>
@@ -89,6 +117,7 @@ if ($roomCode === "" || $playerName === "") {
 <script>
 const ROOM_CODE = "<?php echo htmlspecialchars($roomCode); ?>";
 const PLAYER_NAME = "<?php echo htmlspecialchars($playerName); ?>";
+const ROOM_ID = <?php echo $roomId; ?>;
 
 const ROOM_I18N = {
     loading: "<?php echo t('loading'); ?>",
@@ -97,18 +126,36 @@ const ROOM_I18N = {
     correctAnswers: "<?php echo t('correct_answers'); ?>",
     correct: "<?php echo t('correct'); ?>",
     incorrect: "<?php echo t('incorrect'); ?>",
-    question: "<?php echo current_lang() === 'en' ? 'Question' : 'Pregunta'; ?>",
-    of: "<?php echo current_lang() === 'en' ? 'of' : 'de'; ?>",
+    question: "<?php echo t('question'); ?>",
+    of: "<?php echo t('of'); ?>",
     gameCompleted: "<?php echo t('game_completed'); ?>",
-    gameFinished: "<?php echo current_lang() === 'en' ? 'Game finished' : 'Juego terminado'; ?>",
-    noQuestions: "<?php echo current_lang() === 'en' ? 'No questions available' : 'No hay preguntas disponibles'; ?>",
-    loadingError: "<?php echo current_lang() === 'en' ? 'Error loading questions' : 'Error cargando preguntas'; ?>",
+    gameFinished: "<?php echo t('game_finished'); ?>",
+    noQuestions: "<?php echo t('no_questions_available'); ?>",
+    loadingError: "<?php echo t('loading_error'); ?>",
     timeOut: "<?php echo t('time_out'); ?>",
     savingResult: "<?php echo t('saving_result'); ?>",
-    noResults: "<?php echo current_lang() === 'en' ? 'No results yet' : 'No hay resultados todavía'; ?>",
+    noResults: "<?php echo t('no_results_yet'); ?>",
+    difficulty: "<?php echo t('difficulty'); ?>",
     newDifficulty: "<?php echo t('new_difficulty'); ?>",
     finalDifficulty: "<?php echo t('final_difficulty'); ?>",
-    correctAnswer: "<?php echo t('correct_answer'); ?>"
+    correctAnswer: "<?php echo t('correct_answer'); ?>",
+    selectedAnswer: "<?php echo t('selected_answer'); ?>",
+    feedback: "<?php echo t('feedback'); ?>",
+    continue: "<?php echo t('continue'); ?>",
+    continueWhenReady: "<?php echo t('continue_when_ready'); ?>",
+    submitAnswer: "<?php echo t('submit_answer'); ?>",
+    chooseAnswer: "<?php echo t('choose_answer'); ?>",
+    nextQuestionIn: "<?php echo t('next_question_in'); ?>",
+    savingAnswer: "<?php echo t('saving_answer'); ?>",
+    waitingRoom: "<?php echo t('waiting_room'); ?>",
+    roomPaused: "<?php echo t('room_paused'); ?>",
+    unknownStatus: "<?php echo t('room_status_unknown'); ?>",
+    statuses: {
+        waiting: "<?php echo t('room_status_waiting'); ?>",
+        started: "<?php echo t('room_status_started'); ?>",
+        paused: "<?php echo t('room_status_paused'); ?>",
+        finished: "<?php echo t('room_status_finished'); ?>"
+    }
 };
 </script>
 

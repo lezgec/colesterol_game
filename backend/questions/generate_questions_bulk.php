@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/gemini.php';
+require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../../includes/auth.php';
 
 if (!has_role(["teacher", "super_admin"])) {
@@ -16,17 +17,10 @@ if (!has_role(["teacher", "super_admin"])) {
 $data = json_decode(file_get_contents("php://input"), true);
 
 $topic = trim($data["topic"] ?? "");
+$category = trim($data["category"] ?? "");
 $quantity = (int)($data["quantity"] ?? 5);
 $difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
 $language = trim($data["language"] ?? "es");
-
-if ($topic === "") {
-    echo json_encode([
-        "success" => false,
-        "message" => "El tema es obligatorio"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
 
 if ($quantity < 1) $quantity = 1;
 if ($quantity > 20) $quantity = 20;
@@ -45,6 +39,15 @@ if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
 }
 
+$category = normalize_question_category($category, $language);
+$topicFocus = $topic !== "" ? $topic : $category;
+$requestedCategory = $category;
+$allowedCategoryList = array_values(array_unique(array_merge(
+    question_categories($language),
+    [$category]
+)));
+$allowedCategories = implode(", ", $allowedCategoryList);
+
 $langInstruction = $language === "en"
     ? "Generate all questions in English."
     : "Genera todas las preguntas en español.";
@@ -52,7 +55,9 @@ $langInstruction = $language === "en"
 $prompt = "
 You are an educational content generator for a serious game about high cholesterol and cardiovascular prevention.
 
-Create exactly {$quantity} multiple-choice questions about: {$topic}.
+Create exactly {$quantity} multiple-choice questions.
+Content focus: {$topicFocus}.
+Use this category exactly for every question: {$category}.
 
 Difficulty level: {$difficulty_level} out of 5.
 Language: {$language}. {$langInstruction}
@@ -71,7 +76,7 @@ Rules:
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
 - explanation must briefly explain why the correct answer is correct.
-- category must be short.
+- category must be exactly one of: {$allowedCategories}.
 - difficulty_level must be a number between 1.0 and 5.0.
 - language must be {$language}.
 - Return only valid JSON.
@@ -224,7 +229,7 @@ foreach ($generated["questions"] as $q) {
     $option_d = trim($q["option_d"] ?? "");
     $correct_option = strtoupper(trim($q["correct_option"] ?? ""));
     $explanation = trim($q["explanation"] ?? "");
-    $category = trim($q["category"] ?? $topic);
+    $category = normalize_question_category(trim($q["category"] ?? $requestedCategory), $language);
     $qDifficultyLevel = (float)($q["difficulty_level"] ?? $difficulty_level);
     $qLanguage = trim($q["language"] ?? $language);
 

@@ -26,6 +26,17 @@ function t($key) {
     return $translations[$key] ?? $key;
 }
 
+function room_status_label($status) {
+    $statusMap = [
+        "waiting" => "room_status_waiting",
+        "started" => "room_status_started",
+        "paused" => "room_status_paused",
+        "finished" => "room_status_finished",
+    ];
+
+    return t($statusMap[$status] ?? "room_status_unknown");
+}
+
 function current_lang() {
     return $_SESSION["lang"] ?? "es";
 }

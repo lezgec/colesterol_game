@@ -23,16 +23,14 @@ header("Pragma: no-cache");
         <h1>🏆 <?php echo t("ranking"); ?></h1>
 
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_game"); ?>
+            <a href="/colesterol_game/pages/player_dashboard.php" class="logout-btn secondary-btn">
+                <?php echo t("back_to_player_dashboard"); ?>
             </a>
         </div>
     </div>
 
     <p>
-        <?php echo current_lang() === "en"
-            ? "Top 10 players based on their best registered score."
-            : "Se muestran los 10 mejores jugadores según su mejor puntaje registrado."; ?>
+        <?php echo t("top_10_description"); ?>
     </p>
 
     <table id="rankingTable" class="admin-table" width="100%">
@@ -53,7 +51,7 @@ header("Pragma: no-cache");
 
 <script>
 const RANKING_I18N = {
-    noData: "<?php echo current_lang() === 'en' ? 'No ranking data available' : 'No hay datos de ranking disponibles'; ?>",
+    noData: "<?php echo t('no_ranking_data'); ?>",
     error: "<?php echo t('error'); ?>"
 };
 

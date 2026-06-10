@@ -27,11 +27,11 @@ header("Pragma: no-cache");
 
 <body>
 
-<div class="game-container">
+<div class="game-container game-page-container">
 
     <div class="top-actions">
 
-        <div class="language-pill">
+        <div class="language-pill" id="language-selector">
             <a href="?lang=es">ES</a>
             <span>|</span>
             <a href="?lang=en">EN</a>
@@ -86,25 +86,44 @@ header("Pragma: no-cache");
 
         <div class="hud">
 
-            <p>
-                <strong><?php echo t("score"); ?>:</strong>
-                <span id="score">0</span>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("score"); ?></span>
+                <strong id="score">0</strong>
+            </div>
 
-            <p>
-                <strong><?php echo t("lives"); ?>:</strong>
-                <span id="lives">❤️❤️❤️</span>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("lives"); ?></span>
+                <strong id="lives">❤️❤️❤️</strong>
+            </div>
 
-            <p>
-                <strong><?php echo t("difficulty"); ?>:</strong>
-                <span id="selected-difficulty">1.0 / 5</span>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("difficulty"); ?></span>
+                <strong id="selected-difficulty">1.0 / 5</strong>
+            </div>
 
-            <p id="progress">
-                <?php echo t("loading_questions"); ?>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("time_limit"); ?></span>
+                <strong id="question-timer">20s</strong>
+            </div>
 
+        </div>
+
+        <div class="game-progress-panel">
+            <div class="progress-meta">
+                <span><?php echo t("question_progress"); ?></span>
+                <strong id="progress">
+                    <?php echo t("loading_questions"); ?>
+                </strong>
+            </div>
+
+            <div class="progress-track"
+                 role="progressbar"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="0">
+                <div id="game-progress-fill"
+                     class="progress-fill"></div>
+            </div>
         </div>
 
         <div class="question-box">
@@ -124,7 +143,10 @@ header("Pragma: no-cache");
 </div>
 
 <script>
+    
 const CURRENT_LANG = "<?php echo current_lang(); ?>";
+const USER_ID = <?php echo (int)$_SESSION["user_id"]; ?>;
+const PLAYER_NAME = "<?php echo htmlspecialchars($_SESSION["user_name"] ?? ""); ?>";
 
 const I18N = {
 
@@ -143,40 +165,28 @@ const I18N = {
     resultSaved: "<?php echo t('result_saved'); ?>",
     resultNotSaved: "<?php echo t('result_not_saved'); ?>",
 
-    noQuestions:
-        "<?php echo current_lang() === 'en'
-            ? 'No questions available'
-            : 'No hay preguntas disponibles'; ?>",
+    noQuestions: "<?php echo t('no_questions_available'); ?>",
 
-    gameFinished:
-        "<?php echo current_lang() === 'en'
-            ? 'Game finished'
-            : 'Juego terminado'; ?>",
+    gameFinished: "<?php echo t('game_finished'); ?>",
 
-    question:
-        "<?php echo current_lang() === 'en'
-            ? 'Question'
-            : 'Pregunta'; ?>",
+    question: "<?php echo t('question'); ?>",
 
-    of:
-        "<?php echo current_lang() === 'en'
-            ? 'of'
-            : 'de'; ?>",
+    of: "<?php echo t('of'); ?>",
 
-    newDifficulty:
-        "<?php echo current_lang() === 'en'
-            ? 'New difficulty'
-            : 'Nueva dificultad'; ?>",
+    newDifficulty: "<?php echo t('new_difficulty'); ?>",
 
-    finalDifficulty:
-        "<?php echo current_lang() === 'en'
-            ? 'Final difficulty'
-            : 'Dificultad final'; ?>",
+    finalDifficulty: "<?php echo t('final_difficulty'); ?>",
 
-    correctAnswer:
-        "<?php echo current_lang() === 'en'
-            ? 'Correct answer'
-            : 'Respuesta correcta'; ?>"
+    correctAnswer: "<?php echo t('correct_answer'); ?>",
+
+    selectedAnswer: "<?php echo t('selected_answer'); ?>",
+    feedback: "<?php echo t('feedback'); ?>",
+    continue: "<?php echo t('continue'); ?>",
+    submitAnswer: "<?php echo t('submit_answer'); ?>",
+    chooseAnswer: "<?php echo t('choose_answer'); ?>",
+    timeOut: "<?php echo t('time_out'); ?>",
+    nextQuestionIn: "<?php echo t('next_question_in'); ?>",
+    playAgain: "<?php echo t('play_again'); ?>"
 };
 </script>
 

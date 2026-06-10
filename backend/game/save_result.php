@@ -4,9 +4,9 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=utf-8");
-
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../badges/evaluate_badges.php';
 
 if (!is_logged_in()) {
     echo json_encode([
@@ -81,11 +81,21 @@ $stmt->bind_param(
 );
 
 if ($stmt->execute()) {
+
+    if (isset($_SESSION["user_id"])) {
+        $newBadges = [];
+
+        if (isset($_SESSION["user_id"])) {
+            $newBadges = evaluateBadges($conn, (int)$_SESSION["user_id"]);
+        }
+    }
     echo json_encode([
         "success" => true,
         "message" => "Resultado guardado correctamente",
-        "final_difficulty" => $final_difficulty
+        "final_difficulty" => $final_difficulty,
+        "new_badges" => $newBadges
     ], JSON_UNESCAPED_UNICODE);
+    
 } else {
     echo json_encode([
         "success" => false,
