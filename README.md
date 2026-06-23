@@ -7,8 +7,6 @@ Serious game educativo sobre colesterol con modo individual, salas docentes, ban
 - PHP 8.0 o superior.
 - MariaDB/MySQL.
 - Apache o servidor compatible con PHP.
-- Composer si se desea reinstalar dependencias.
-- Extensiones PHP comunes: mysqli, curl, mbstring, openssl, gd.
 
 ## Instalación rápida
 
