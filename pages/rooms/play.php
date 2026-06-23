@@ -34,6 +34,12 @@ if ($roomId <= 0) {
     header("Location: /colesterol_game/pages/rooms/join.php");
     exit;
 }
+
+$styleVersion = filemtime(__DIR__ . '/../../assets/css/style.css');
+$soundVersion = filemtime(__DIR__ . '/../../assets/js/sound_fx.js');
+$roomGameVersion = filemtime(__DIR__ . '/../../assets/js/rooms/room_game.js');
+$uiIconsJsVersion = filemtime(__DIR__ . '/../../assets/js/ui_icons.js');
+$themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -50,7 +56,9 @@ if ($roomId <= 0) {
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap"
           rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?m=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -88,7 +96,7 @@ if ($roomId <= 0) {
 
             <p>
                 <strong><?php echo t("adaptive_difficulty"); ?>:</strong>
-                <span id="adaptive-difficulty">1.0 / 5</span>
+                <span id="adaptive-difficulty">1 / 5</span>
             </p>
 
             <p id="progress"></p>
@@ -159,6 +167,9 @@ const ROOM_I18N = {
 };
 </script>
 
-<script src="/colesterol_game/assets/js/rooms/room_game.js"></script>
+<script src="/colesterol_game/assets/js/ui_icons.js?m=<?php echo $uiIconsJsVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/sound_fx.js?m=<?php echo $soundVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/rooms/room_game.js?m=<?php echo $roomGameVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/theme.js?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

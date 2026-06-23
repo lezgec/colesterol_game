@@ -4,8 +4,78 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+function destroy_local_session() {
+    $_SESSION = [];
+
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+
+        setcookie(
+            session_name(),
+            '',
+            time() - 42000,
+            $params["path"],
+            $params["domain"],
+            $params["secure"],
+            $params["httponly"]
+        );
+    }
+
+    session_destroy();
+}
+
 function is_logged_in() {
     return isset($_SESSION["user_id"]);
+}
+
+function current_session_is_active() {
+    static $isActive = null;
+    global $conn;
+
+    if (!is_logged_in()) {
+        return false;
+    }
+
+    if ($isActive !== null) {
+        return $isActive;
+    }
+
+    if (!isset($_SESSION["session_token"])) {
+        if (!isset($conn) || !($conn instanceof mysqli)) {
+            require __DIR__ . '/../config/db.php';
+        }
+
+        require_once __DIR__ . '/../backend/users/session_guard.php';
+
+        $userId = (int)$_SESSION["user_id"];
+        $sessionToken = create_user_session_token();
+
+        if (store_user_session_token($conn, $userId, $sessionToken)) {
+            $_SESSION["session_token"] = $sessionToken;
+            $isActive = true;
+            return true;
+        }
+
+        $isActive = false;
+        destroy_local_session();
+        return false;
+    }
+
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        require __DIR__ . '/../config/db.php';
+    }
+
+    require_once __DIR__ . '/../backend/users/session_guard.php';
+
+    $userId = (int)$_SESSION["user_id"];
+    $sessionToken = (string)$_SESSION["session_token"];
+    $isActive = active_session_matches($conn, $userId, $sessionToken);
+
+    if (!$isActive) {
+        destroy_local_session();
+    }
+
+    return $isActive;
 }
 
 function current_user_role() {
@@ -29,7 +99,7 @@ function has_role($roles) {
         $roles = [$roles];
     }
 
-    return is_logged_in() && in_array(current_user_role(), $roles, true);
+    return current_session_is_active() && in_array(current_user_role(), $roles, true);
 }
 
 function require_login() {
@@ -37,9 +107,19 @@ function require_login() {
         header("Location: /colesterol_game/pages/login.php");
         exit;
     }
+
+    $hadSessionToken = isset($_SESSION["session_token"]);
+
+    if (!current_session_is_active()) {
+        $reason = $hadSessionToken ? "replaced" : "expired";
+        header("Location: /colesterol_game/pages/login.php?session={$reason}");
+        exit;
+    }
 }
 
 function require_role($roles) {
+    require_login();
+
     if (!has_role($roles)) {
         header("Location: /colesterol_game/pages/login.php");
         exit;
@@ -77,4 +157,3 @@ function redirect_after_login_by_role($role) {
 
     return "/colesterol_game/index.php";
 }
-?>

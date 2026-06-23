@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ini_set('display_errors', 1);
 ini_set("precision", "10");
@@ -38,6 +40,7 @@ $stmtRoom = $conn->prepare("
         question_count,
         time_limit,
         initial_difficulty,
+        created_by,
         created_at,
         started_at,
         finished_at
@@ -69,6 +72,14 @@ if ($roomResult->num_rows === 0) {
 
 $room = $roomResult->fetch_assoc();
 $roomId = (int)$room["id"];
+
+if (!is_super_admin() && (int)$room["created_by"] !== (int)($_SESSION["user_id"] ?? 0)) {
+    echo json_encode([
+        "success" => false,
+        "message" => "No autorizado"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $stmtRoom->close();
 

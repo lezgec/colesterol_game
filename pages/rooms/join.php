@@ -5,6 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../../lang/translate.php';
 
 $initialCode = strtoupper(trim($_GET["code"] ?? ""));
+$styleVersion = filemtime(__DIR__ . '/../../assets/css/style.css');
+$themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -21,7 +23,9 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap"
           rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?v=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -38,27 +42,13 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
             $isLogged = isset($_SESSION["user_id"]);
             $role = $_SESSION["user_role"] ?? null;
             $isAdmin = in_array($role, ["teacher", "super_admin"], true);
-            ?>
-
-            <?php if ($isAdmin): ?>
-
-                <a href="/colesterol_game/pages/rooms/index.php" class="logout-btn secondary-btn">
-                    <?php echo t("back_to_rooms"); ?>
-                </a>
-
-            <?php elseif ($isLogged): ?>
-
-                <a href="/colesterol_game/pages/player_dashboard.php" class="logout-btn secondary-btn">
-                    <?php echo t("back_to_player_dashboard"); ?>
-                </a>
-
-            <?php else: ?>
-
-                <a href="/colesterol_game/pages/rooms/index.php" class="logout-btn secondary-btn">
-                    <?php echo t("back_to_rooms"); ?>
-                </a>
-
-        <?php endif; ?>
+            $backHref = $isLogged && !$isAdmin
+                ? "/colesterol_game/pages/player_dashboard.php"
+                : "/colesterol_game/pages/rooms/index.php";
+            $backLabel = $isLogged && !$isAdmin
+                ? t("back_to_player_dashboard")
+                : t("back_to_rooms");
+        ?>
     </div>
 
     <h1><?php echo t("join_room"); ?></h1>
@@ -85,6 +75,10 @@ $initialCode = strtoupper(trim($_GET["code"] ?? ""));
 
         <p id="join-message" class="room-status-message" aria-live="polite"></p>
     </form>
+
+    <a href="<?php echo htmlspecialchars($backHref); ?>" class="secondary-link room-back-link">
+        <?php echo htmlspecialchars($backLabel); ?>
+    </a>
 
 </div>
 
@@ -133,5 +127,6 @@ document.getElementById("join-room-form").addEventListener("submit", async (e) =
 });
 </script>
 
+<script src="/colesterol_game/assets/js/theme.js?v=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

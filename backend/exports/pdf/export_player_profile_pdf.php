@@ -2,17 +2,32 @@
 session_start();
 
 require_once __DIR__ . '/../../../config/db.php';
+require_once __DIR__ . '/../../../includes/auth.php';
+require_once __DIR__ . '/../export_helpers.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-if (!isset($_SESSION["user_id"])) {
+if (!is_logged_in()) {
     die("No autorizado");
 }
 
-$userId = (int)$_SESSION["user_id"];
+$requestedUserId = (int)($_GET["user_id"] ?? 0);
+$userId = is_super_admin() && $requestedUserId > 0
+    ? $requestedUserId
+    : (int)$_SESSION["user_id"];
 $userName = $_SESSION["user_name"] ?? "Player";
+
+$stmtUser = $conn->prepare("SELECT name FROM users WHERE id = ?");
+$stmtUser->bind_param("i", $userId);
+$stmtUser->execute();
+$userRow = $stmtUser->get_result()->fetch_assoc();
+$stmtUser->close();
+
+if ($userRow) {
+    $userName = $userRow["name"];
+}
 
 $summarySql = "
     SELECT
@@ -122,11 +137,11 @@ while ($row = $mistakesResult->fetch_assoc()) {
         $labels = [];
 
         if ($letter === $selectedOption) {
-            $labels[] = "selected";
+            $labels[] = export_label("selected");
         }
 
         if ($letter === $correctOption) {
-            $labels[] = "correct";
+            $labels[] = export_label("correct");
         }
 
         $labelText = count($labels) > 0
@@ -145,7 +160,7 @@ while ($row = $mistakesResult->fetch_assoc()) {
             <td>" . htmlspecialchars($selectedOption . " - " . $selectedAnswer) . "</td>
             <td>" . htmlspecialchars($correctOption . " - " . $correctAnswer) . "</td>
             <td>" . round((float)$row["response_time"], 2) . "s</td>
-            <td>" . round((float)$row["difficulty_level"], 1) . " / 5</td>
+            <td>" . (int)round((float)$row["difficulty_level"]) . " / 5</td>
         </tr>
     ";
 }
@@ -158,6 +173,8 @@ $options->set("isRemoteEnabled", true);
 $options->set("defaultFont", "Helvetica");
 
 $dompdf = new Dompdf($options);
+$reportTitle = export_label("player_report");
+$logoHtml = export_pdf_logo_html();
 
 $html = "
 <!DOCTYPE html>
@@ -171,7 +188,22 @@ $html = "
         font-size: 12px;
     }
 
+    .report-header {
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+    }
+
+    .report-logo {
+        width: 42px;
+        height: 42px;
+        vertical-align: middle;
+        margin-right: 10px;
+    }
+
     h1 {
+        display: inline-block;
+        vertical-align: middle;
         color: #1f2937;
         margin-bottom: 4px;
     }
@@ -239,36 +271,37 @@ $html = "
         color: #6b7280;
     }
 </style>
+
 </head>
 <body>
 
-<h1>Player Analytical Profile</h1>
+<div class='report-header'>{$logoHtml}<h1>" . htmlspecialchars($reportTitle) . "</h1></div>
 
 <div class='meta'>
-    Player: <strong>" . htmlspecialchars($userName) . "</strong><br>
-    Generated at: " . date("Y-m-d H:i:s") . "
+    " . export_label("player") . ": <strong>" . htmlspecialchars($userName) . "</strong><br>
+    " . export_label("generated_at") . ": " . date("Y-m-d H:i:s") . "
 </div>
 
 <div class='summary'>
-    <div class='card'>Answers<strong>{$totalAnswers}</strong></div>
-    <div class='card'>Correct<strong>{$correctAnswers}</strong></div>
-    <div class='card'>Precision<strong>{$precision}%</strong></div>
-    <div class='card'>Avg Time<strong>" . round((float)$summary["avg_response_time"], 2) . "s</strong></div>
-    <div class='card'>Avg Diff<strong>" . round((float)$summary["avg_difficulty"], 1) . "/5</strong></div>
-    <div class='card'>Points<strong>" . (int)$summary["total_points"] . "</strong></div>
+    <div class='card'>" . export_label("answers") . "<strong>{$totalAnswers}</strong></div>
+    <div class='card'>" . export_label("correct") . "<strong>{$correctAnswers}</strong></div>
+    <div class='card'>" . export_label("precision") . "<strong>{$precision}%</strong></div>
+    <div class='card'>" . export_label("average_response_time") . "<strong>" . round((float)$summary["avg_response_time"], 2) . "s</strong></div>
+    <div class='card'>" . export_label("average_difficulty") . "<strong>" . round((float)$summary["avg_difficulty"], 1) . "/5</strong></div>
+    <div class='card'>" . export_label("points") . "<strong>" . (int)$summary["total_points"] . "</strong></div>
 </div>
 
-<h2>Performance by Category</h2>
+<h2>" . export_label("performance_by_category") . "</h2>
 
 <table>
     <thead>
         <tr>
-            <th>Category</th>
-            <th>Total</th>
-            <th>Correct</th>
-            <th>Precision</th>
-            <th>Avg Time</th>
-            <th>Avg Difficulty</th>
+            <th>" . export_label("category") . "</th>
+            <th>" . export_label("total") . "</th>
+            <th>" . export_label("correct") . "</th>
+            <th>" . export_label("precision") . "</th>
+            <th>" . export_label("average_response_time") . "</th>
+            <th>" . export_label("average_difficulty") . "</th>
         </tr>
     </thead>
     <tbody>
@@ -276,19 +309,19 @@ $html = "
     </tbody>
 </table>
 
-<h2>Recent Mistakes</h2>
+<h2>" . export_label("recent_mistakes") . "</h2>
 
 <table>
     <thead>
         <tr>
-            <th>Date</th>
-            <th>Question</th>
-            <th>Category</th>
-            <th>Options</th>
-            <th>Selected</th>
-            <th>Correct</th>
-            <th>Time</th>
-            <th>Difficulty</th>
+            <th>" . export_label("date") . "</th>
+            <th>" . export_label("question") . "</th>
+            <th>" . export_label("category") . "</th>
+            <th>" . export_label("options") . "</th>
+            <th>" . export_label("selected") . "</th>
+            <th>" . export_label("correct") . "</th>
+            <th>" . export_label("time") . "</th>
+            <th>" . export_label("difficulty") . "</th>
         </tr>
     </thead>
     <tbody>
@@ -297,7 +330,7 @@ $html = "
 </table>
 
 <div class='footer'>
-    Report generated by Serious Game: Cholesterol.
+    " . export_label("report_footer") . "
 </div>
 
 </body>

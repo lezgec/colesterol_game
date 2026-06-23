@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_role(["teacher", "super_admin"]);
 
@@ -13,6 +14,8 @@ header("Pragma: no-cache");
     <meta charset="UTF-8">
     <title><?php echo t("question_analytics"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -32,7 +35,7 @@ header("Pragma: no-cache");
         </div>
     </div>
 
-    <h1>🧠 <?php echo t("question_analytics"); ?></h1>
+    <h1><?php echo ui_icon("brain"); ?> <?php echo t("question_analytics"); ?></h1>
 
     <section class="dashboard-grid">
         <div class="dashboard-card">
@@ -135,7 +138,7 @@ header("Pragma: no-cache");
     </section>
 
     <section class="admin-section">
-        <h2>📚 <?php echo t("all_questions"); ?></h2>
+        <h2><?php echo ui_icon("file"); ?> <?php echo t("all_questions"); ?></h2>
 
         <table class="admin-table">
             <thead>
@@ -324,5 +327,8 @@ function renderAllQuestions(items) {
 
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js"></script>
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

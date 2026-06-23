@@ -2,6 +2,9 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/adaptive_difficulty_schema.php';
+
+ensure_adaptive_difficulty_columns($conn);
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -10,14 +13,14 @@ $player_name = trim($data["player_name"] ?? "");
 $score = (int)($data["score"] ?? 0);
 $correct_answers = (int)($data["correct_answers"] ?? 0);
 $total_questions = (int)($data["total_questions"] ?? 0);
-$final_difficulty = (float)($data["final_difficulty"] ?? 1.0);
+$final_difficulty = round((float)($data["final_difficulty"] ?? 1), 1);
 
-if ($final_difficulty < 1.0) {
-    $final_difficulty = 1.0;
+if ($final_difficulty < 1) {
+    $final_difficulty = 1;
 }
 
-if ($final_difficulty > 5.0) {
-    $final_difficulty = 5.0;
+if ($final_difficulty > 5) {
+    $final_difficulty = 5;
 }
 
 if ($room_code === "" || $player_name === "") {

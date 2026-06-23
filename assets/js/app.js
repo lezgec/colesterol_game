@@ -1,4 +1,4 @@
-let questions = [];
+﻿let questions = [];
 let usedQuestionIds = [];
 
 let currentQuestion = null;
@@ -7,10 +7,9 @@ let score = 0;
 let lives = 3;
 let correctAnswers = 0;
 
-let currentDifficulty = 1.0;
+let currentDifficulty = 1;
 
 let questionStartTime = null;
-let feedbackTimeout = null;
 let feedbackCountdownInterval = null;
 let feedbackAdvanceLocked = false;
 let selectedOptionIndex = null;
@@ -54,6 +53,31 @@ const questionTimerText =
 const languageSelector =
     document.getElementById("language-selector");
 
+function normalizeAdaptiveDifficulty(value) {
+    const parsed = Number(value) || 1;
+    return Number(Math.min(5, Math.max(1, parsed)).toFixed(1));
+}
+
+function getTargetQuestionLevel(value = currentDifficulty) {
+    const adaptive = normalizeAdaptiveDifficulty(value);
+
+    if (adaptive < 1.5) return 1;
+    if (adaptive < 2.5) return 2;
+    if (adaptive < 3.5) return 3;
+    if (adaptive < 4.5) return 4;
+
+    return 5;
+}
+
+function formatDifficulty(value = currentDifficulty) {
+    return normalizeAdaptiveDifficulty(value).toFixed(1);
+}
+
+function normalizeQuestionDifficultyLevel(value) {
+    const parsed = Math.round(Number(value) || 1);
+    return Math.min(5, Math.max(1, parsed));
+}
+
 function setLanguageSwitchDisabled(isDisabled) {
 
     if (!languageSelector) {
@@ -76,12 +100,6 @@ function setLanguageSwitchDisabled(isDisabled) {
 }
 
 function clearFeedbackTimers() {
-
-    if (feedbackTimeout) {
-        clearTimeout(feedbackTimeout);
-        feedbackTimeout = null;
-    }
-
     if (feedbackCountdownInterval) {
         clearInterval(feedbackCountdownInterval);
         feedbackCountdownInterval = null;
@@ -104,12 +122,21 @@ function updateHUD() {
 
     scoreText.textContent = score;
 
-    livesText.textContent =
-        "❤️".repeat(lives) +
-        "🖤".repeat(3 - lives);
+    if (livesText) {
+        const fullLife = window.uiIcon
+            ? window.uiIcon("heart", "ui-icon life-icon is-full")
+            : "";
+        const emptyLife = window.uiIcon
+            ? window.uiIcon("heart", "ui-icon life-icon is-empty")
+            : "";
+
+        livesText.innerHTML =
+            fullLife.repeat(lives) +
+            emptyLife.repeat(3 - lives);
+    }
 
     selectedDifficultyText.textContent =
-        `${currentDifficulty.toFixed(1)} / 5`;
+        `${formatDifficulty()} / 5`;
 
     progressText.textContent =
         questions.length > 0
@@ -167,6 +194,8 @@ function startQuestionTimer() {
         if (questionTimerText) {
             questionTimerText.textContent = `${Math.max(questionTimeLeft, 0)}s`;
         }
+
+        window.GameSounds?.timerTick(questionTimeLeft, SOLO_TIME_LIMIT);
     }, 1000);
 
     questionTimeout = setTimeout(() => {
@@ -201,14 +230,14 @@ function selectQuestionByDifficulty() {
 
         const diffA =
             Math.abs(
-                parseFloat(a.difficulty_level || 1.0) -
-                currentDifficulty
+                normalizeQuestionDifficultyLevel(a.difficulty_level) -
+                getTargetQuestionLevel()
             );
 
         const diffB =
             Math.abs(
-                parseFloat(b.difficulty_level || 1.0) -
-                currentDifficulty
+                normalizeQuestionDifficultyLevel(b.difficulty_level) -
+                getTargetQuestionLevel()
             );
 
         return diffA - diffB;
@@ -227,14 +256,14 @@ function loadQuestion() {
 
     if (lives <= 0) {
 
-        endGame("💀 " + I18N.gameOver);
+        endGame(I18N.gameOver);
 
         return;
     }
 
     if (current >= questions.length) {
 
-        endGame("🎉 " + I18N.gameCompleted);
+        endGame(I18N.gameCompleted);
 
         return;
     }
@@ -244,7 +273,7 @@ function loadQuestion() {
 
     if (!currentQuestion) {
 
-        endGame("🎉 " + I18N.gameCompleted);
+        endGame(I18N.gameCompleted);
 
         return;
     }
@@ -299,6 +328,8 @@ function selectAnswer(index) {
         return;
     }
 
+    window.GameSounds?.play("select");
+
     selectedOptionIndex = index;
 
     document
@@ -325,9 +356,57 @@ function getOptionLabel(index) {
     return ["A", "B", "C", "D"][index] || "";
 }
 
+function getOriginalOptionLabel(index) {
+    return currentQuestion?.option_letters?.[index] || getOptionLabel(index);
+}
+
+function formatDisplayOption(index) {
+    if (index === null || index === undefined || index < 0) {
+        return "";
+    }
+
+    const label = getOptionLabel(index);
+    const text = currentQuestion?.options?.[index] || "";
+
+    return text ? `${label}. ${text}` : label;
+}
+
+function getCorrectOptionIndex() {
+    if (!currentQuestion) {
+        return -1;
+    }
+
+    if (Number.isInteger(currentQuestion.correct)) {
+        return currentQuestion.correct;
+    }
+
+    const displayLabel = currentQuestion.display_correct_option;
+
+    if (displayLabel) {
+        const displayIndex = ["A", "B", "C", "D"].indexOf(displayLabel);
+
+        if (displayIndex >= 0) {
+            return displayIndex;
+        }
+    }
+
+    const originalLabel = currentQuestion.correct_option;
+
+    if (Array.isArray(currentQuestion.option_letters)) {
+        const mappedIndex = currentQuestion.option_letters.indexOf(originalLabel);
+
+        if (mappedIndex >= 0) {
+            return mappedIndex;
+        }
+    }
+
+    return ["A", "B", "C", "D"].indexOf(originalLabel);
+}
+
 function renderFeedbackCard({
     isCorrect,
     selectedOption,
+    correctOption,
     earnedPoints,
     responseTime,
     isTimeout = false
@@ -341,7 +420,7 @@ function renderFeedbackCard({
             : I18N.incorrect;
 
     const statusIcon =
-        isTimeout ? "⏱️" : isCorrect ? "✅" : "❌";
+        isTimeout ? "clock" : isCorrect ? "check" : "x";
 
     const selectedText =
         selectedOption
@@ -350,13 +429,13 @@ function renderFeedbackCard({
 
     const correctText =
         !isCorrect
-            ? `<p><strong>${I18N.correctAnswer}:</strong> ${currentQuestion.correct_option}</p>`
+            ? `<p><strong>${I18N.correctAnswer}:</strong> ${correctOption}</p>`
             : "";
 
     optionsContainer.innerHTML = `
         <div class="feedback-card ${isCorrect ? "correct" : "incorrect"}">
             <div class="feedback-card-header">
-                <span class="feedback-status-icon">${statusIcon}</span>
+                <span class="feedback-status-icon">${window.uiIcon ? window.uiIcon(statusIcon, "ui-icon feedback-svg") : ""}</span>
                 <div>
                     <span class="feedback-eyebrow">${I18N.feedback}</span>
                     <h3>${statusText}</h3>
@@ -366,18 +445,18 @@ function renderFeedbackCard({
             ${selectedText}
             ${correctText}
 
-            <p><strong>⏱️</strong> ${responseTime}s</p>
+            <p><strong>${window.uiIcon ? window.uiIcon("clock", "ui-icon feedback-inline-icon") : ""}</strong> ${responseTime}s</p>
 
             <p>${currentQuestion.explanation}</p>
 
             <p>
                 <strong>${I18N.newDifficulty}:</strong>
-                ${currentDifficulty.toFixed(1)} / 5
+                ${formatDifficulty()} / 5
             </p>
 
             <div class="feedback-actions">
-                <span id="feedback-countdown">
-                    ${I18N.nextQuestionIn} 12s
+                <span id="feedback-countdown" class="feedback-reading-note">
+                    ${I18N.continue}
                 </span>
 
                 <button
@@ -402,36 +481,6 @@ function renderFeedbackCard({
             advanceAfterFeedback
         );
     }
-
-    startFeedbackCountdown(12);
-}
-
-function startFeedbackCountdown(seconds) {
-
-    let secondsLeft = seconds;
-
-    const countdown =
-        document.getElementById("feedback-countdown");
-
-    feedbackCountdownInterval = setInterval(() => {
-
-        secondsLeft--;
-
-        if (countdown) {
-            countdown.textContent =
-                `${I18N.nextQuestionIn} ${Math.max(secondsLeft, 0)}s`;
-        }
-
-        if (secondsLeft <= 0) {
-            advanceAfterFeedback();
-        }
-
-    }, 1000);
-
-    feedbackTimeout = setTimeout(
-        advanceAfterFeedback,
-        seconds * 1000
-    );
 }
 
 function advanceAfterFeedback() {
@@ -442,6 +491,7 @@ function advanceAfterFeedback() {
 
     feedbackAdvanceLocked = true;
     clearFeedbackTimers();
+    window.GameSounds?.play("continue");
 
     current++;
     loadQuestion();
@@ -465,37 +515,21 @@ function calculatePoints(isCorrect, responseTime) {
 }
 
 function updateDifficulty(isCorrect, responseTime) {
+    let delta = 0;
 
     if (isCorrect) {
-
-        if (responseTime <= 3) {
-
-            currentDifficulty += 0.50;
-
-        } else if (responseTime <= 6) {
-
-            currentDifficulty += 0.25;
-
+        if (responseTime <= 4) {
+            delta = 0.3;
+        } else if (responseTime <= 8) {
+            delta = 0.2;
         } else {
-
-            currentDifficulty += 0.10;
+            delta = 0.1;
         }
-
     } else {
-
-        currentDifficulty -= 0.25;
+        delta = responseTime >= SOLO_TIME_LIMIT ? -0.4 : -0.3;
     }
 
-    if (currentDifficulty < 1.0) {
-        currentDifficulty = 1.0;
-    }
-
-    if (currentDifficulty > 5.0) {
-        currentDifficulty = 5.0;
-    }
-
-    currentDifficulty =
-        Math.round(currentDifficulty * 10) / 10;
+    currentDifficulty = normalizeAdaptiveDifficulty(currentDifficulty + delta);
 }
 
 function disableOptions() {
@@ -522,6 +556,7 @@ function submitSelectedAnswer(index, isTimeout = false) {
 
     if (index === null && !isTimeout) {
         feedback.textContent = I18N.chooseAnswer;
+        window.GameSounds?.play("incorrect");
         return;
     }
 
@@ -535,8 +570,18 @@ function submitSelectedAnswer(index, isTimeout = false) {
     const isCorrect =
         !isTimeout && index === currentQuestion.correct;
 
+    window.GameSounds?.play(
+        isTimeout ? "timeout" : (isCorrect ? "correct" : "incorrect")
+    );
+
     const selectedOption =
-        isTimeout ? null : getOptionLabel(index);
+        isTimeout ? null : formatDisplayOption(index);
+
+    const correctOption =
+        formatDisplayOption(getCorrectOptionIndex());
+
+    const selectedOriginalOption =
+        isTimeout ? "" : getOriginalOptionLabel(index);
 
     const earnedPoints =
         calculatePoints(
@@ -569,6 +614,7 @@ function submitSelectedAnswer(index, isTimeout = false) {
     renderFeedbackCard({
         isCorrect,
         selectedOption,
+        correctOption,
         earnedPoints,
         responseTime,
         isTimeout
@@ -578,7 +624,7 @@ function submitSelectedAnswer(index, isTimeout = false) {
         question_id: currentQuestion.id,
 
         selected_option:
-            selectedOption || "",
+            selectedOriginalOption,
 
         correct_option:
             currentQuestion.correct_option,
@@ -606,6 +652,13 @@ async function endGame(message) {
     clearQuestionTimers();
     feedbackAdvanceLocked = false;
     setLanguageSwitchDisabled(false);
+
+    if (message.includes(I18N.gameCompleted)) {
+        window.GameSounds?.play("finish");
+        window.GameSounds?.confetti({ count: 120, mode: "side" });
+    } else {
+        window.GameSounds?.play("gameOver");
+    }
 
     questionText.innerHTML = `
         <span class="game-over-title">
@@ -645,7 +698,7 @@ async function endGame(message) {
 
                 <div class="game-over-stat">
                     <span>${I18N.finalDifficulty}</span>
-                    <strong>${currentDifficulty.toFixed(1)} / 5</strong>
+                    <strong>${formatDifficulty()} / 5</strong>
                 </div>
             </div>
 
@@ -673,7 +726,7 @@ async function endGame(message) {
 
     if (playAgainButton) {
         playAgainButton.addEventListener("click", () => {
-            fetchQuestions(1.0);
+            fetchQuestions(1);
         });
     }
 
@@ -724,7 +777,7 @@ async function endGame(message) {
                 "save-status-pill is-saved";
 
             saveStatus.textContent =
-                "✅ " + I18N.resultSaved;
+                I18N.resultSaved;
 
         } else {
 
@@ -732,7 +785,7 @@ async function endGame(message) {
                 "save-status-pill is-error";
 
             saveStatus.textContent =
-                "❌ " + I18N.resultNotSaved;
+                I18N.resultNotSaved;
 
             console.error(result);
         }
@@ -750,7 +803,7 @@ async function endGame(message) {
                 "save-status-pill is-error";
 
             saveStatus.textContent =
-                "❌ " + I18N.resultNotSaved;
+                I18N.resultNotSaved;
         }
 
         console.error(
@@ -805,7 +858,7 @@ async function saveAnswer(answerData) {
 }
 
 async function fetchQuestions(
-    difficultyLevel = 1.0
+    difficultyLevel = 1
 ) {
 
     try {
@@ -814,10 +867,7 @@ async function fetchQuestions(
         feedbackAdvanceLocked = false;
         setLanguageSwitchDisabled(true);
 
-        currentDifficulty =
-            parseFloat(
-                difficultyLevel || 1.0
-            );
+        currentDifficulty = normalizeAdaptiveDifficulty(difficultyLevel);
 
         questionText.textContent =
             I18N.loadingQuestions;
@@ -827,7 +877,7 @@ async function fetchQuestions(
         optionsContainer.innerHTML = "";
 
         const response = await fetch(
-            `/colesterol_game/backend/questions/get_questions.php?difficulty_level=${currentDifficulty}&lang=${CURRENT_LANG}&limit=${SOLO_QUESTION_LIMIT}`
+            `/colesterol_game/backend/questions/get_questions.php?difficulty_level=${getTargetQuestionLevel()}&lang=${CURRENT_LANG}&limit=${SOLO_QUESTION_LIMIT}`
         );
 
         const data =
@@ -891,13 +941,14 @@ async function fetchQuestions(
     }
 }
 function showBadgePopup(badges) {
+    window.GameSounds?.play("badge");
     const popup = document.createElement("div");
 
     popup.classList.add("badge-popup");
 
     popup.innerHTML = `
         <div class="badge-popup-content">
-            <h2>🏆 Nuevo logro desbloqueado</h2>
+            <h2>${window.uiIcon ? window.uiIcon("trophy", "ui-icon badge-popup-icon") : ""} ${I18N.newBadgeUnlocked || "Nuevo logro desbloqueado"}</h2>
 
             ${badges.map(badge => `
                 <div class="badge-popup-item">
@@ -907,7 +958,7 @@ function showBadgePopup(badges) {
             `).join("")}
 
             <button class="primary-btn" id="close-badge-popup">
-                OK
+                ${I18N.close || "OK"}
             </button>
         </div>
     `;
@@ -921,4 +972,5 @@ function showBadgePopup(badges) {
         });
 }
 
-fetchQuestions(1.0);
+fetchQuestions(1);
+

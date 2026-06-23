@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 header("Content-Type: application/json; charset=utf-8");
 ini_set("precision", "10");
@@ -14,6 +16,18 @@ if (!has_role(["teacher", "super_admin"])) {
         "message" => "No autorizado"
     ], JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+$isSuperAdmin = is_super_admin();
+$userId = (int)($_SESSION["user_id"] ?? 0);
+$where = "";
+$types = "";
+$params = [];
+
+if (!$isSuperAdmin) {
+    $where = "WHERE gr.created_by = ?";
+    $types = "i";
+    $params[] = $userId;
 }
 
 $sql = "
@@ -56,12 +70,13 @@ $sql = "
         WHERE room_id IS NOT NULL
         GROUP BY room_id
     ) result_stats ON result_stats.room_id = gr.id
+    {$where}
     ORDER BY gr.created_at DESC
 ";
 
-$result = $conn->query($sql);
+$stmt = $conn->prepare($sql);
 
-if (!$result) {
+if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al obtener reportes de salas",
@@ -69,6 +84,13 @@ if (!$result) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+if ($types !== "") {
+    $stmt->bind_param($types, ...$params);
+}
+
+$stmt->execute();
+$result = $stmt->get_result();
 
 $rooms = [];
 
@@ -100,5 +122,6 @@ echo json_encode([
     "rooms" => $rooms
 ], JSON_UNESCAPED_UNICODE);
 
+$stmt->close();
 $conn->close();
 ?>

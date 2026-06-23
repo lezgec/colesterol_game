@@ -1,4 +1,4 @@
-let questions = [];
+﻿let questions = [];
 let usedQuestionIds = [];
 let currentQuestion = null;
 let currentQuestionNumber = -1;
@@ -7,7 +7,7 @@ let correctAnswers = 0;
 let alreadySaved = false;
 let timeLimit = 20;
 let timeLeft = 20;
-let currentDifficulty = 1.0;
+let currentDifficulty = 1;
 let answeredCurrentQuestion = false;
 let syncInterval = null;
 let rankingInterval = null;
@@ -17,6 +17,31 @@ let selectedOptionIndex = null;
 let currentAnswerSavePromise = null;
 let continueInProgress = false;
 let localQuestionTimer = null;
+
+function normalizeAdaptiveDifficulty(value) {
+    const parsed = Number(value) || 1;
+    return Number(Math.min(5, Math.max(1, parsed)).toFixed(1));
+}
+
+function getTargetQuestionLevel(value = currentDifficulty) {
+    const adaptive = normalizeAdaptiveDifficulty(value);
+
+    if (adaptive < 1.5) return 1;
+    if (adaptive < 2.5) return 2;
+    if (adaptive < 3.5) return 3;
+    if (adaptive < 4.5) return 4;
+
+    return 5;
+}
+
+function formatDifficulty(value = currentDifficulty) {
+    return normalizeAdaptiveDifficulty(value).toFixed(1);
+}
+
+function normalizeQuestionDifficultyLevel(value) {
+    const parsed = Math.round(Number(value) || 1);
+    return Math.min(5, Math.max(1, parsed));
+}
 
 function clearLocalQuestionTimer() {
     if (localQuestionTimer) {
@@ -47,7 +72,7 @@ async function fetchQuestions() {
         }
         questions = data.questions;
         timeLimit = parseInt(data.room.time_limit || 20, 10);
-        currentDifficulty = parseFloat(data.room.initial_difficulty || 1.0);
+        currentDifficulty = normalizeAdaptiveDifficulty(data.room.initial_difficulty);
         startSync();
     } catch (e) {
         console.error(e);
@@ -55,6 +80,35 @@ async function fetchQuestions() {
             ROOM_I18N.loadingError;
     }
 }
+
+async function refreshRoomQuestionsIfNeeded(expectedCount = 0) {
+    if (!expectedCount || expectedCount <= questions.length) {
+        return;
+    }
+
+    try {
+        const res = await fetch(
+            `/colesterol_game/backend/rooms/get_questions_by_room.php?code=${encodeURIComponent(ROOM_CODE)}`
+        );
+        const data = await res.json();
+
+        if (!data.success || !Array.isArray(data.questions)) {
+            return;
+        }
+
+        const knownIds = new Set(questions.map(question => Number(question.id)));
+        const newQuestions = data.questions.filter(question => !knownIds.has(Number(question.id)));
+
+        if (newQuestions.length > 0) {
+            questions = questions.concat(newQuestions);
+        }
+
+        timeLimit = parseInt(data.room?.time_limit || timeLimit || 20, 10);
+    } catch (error) {
+        console.error("Question refresh error:", error);
+    }
+}
+
 function startSync() {
     syncRoomState();
     showInterQuestionLeaderboard();
@@ -75,6 +129,7 @@ function startQuestionTimer() {
 
         timeLeft = Math.max(0, timeLeft - 1);
         updateTimerUI();
+        window.GameSounds?.timerTick(timeLeft, timeLimit);
 
         if (timeLeft <= 0) {
             handleRoomTimeout();
@@ -104,6 +159,8 @@ async function syncRoomState() {
             timeLeft = parseInt(state.time_left || timeLimit, 10);
         }
 
+        await refreshRoomQuestionsIfNeeded(Number(state.question_count || 0));
+
         if (state.status === "waiting") {
             showRoomStatus(ROOM_I18N.waitingRoom);
             updateTimerUI();
@@ -111,7 +168,7 @@ async function syncRoomState() {
         }
         if (state.status === "paused") {
             document.getElementById("feedback").innerHTML =
-                `⏸️ ${ROOM_I18N.roomPaused}`;
+                `${window.uiIcon ? window.uiIcon("pause", "ui-icon room-status-icon") : ""} ${ROOM_I18N.roomPaused}`;
             updateTimerUI();
             return;
         }
@@ -148,6 +205,7 @@ function handleRoomTimeout() {
     clearLocalQuestionTimer();
     answeredCurrentQuestion = true;
     disableOptions();
+    window.GameSounds?.play("timeout");
 
     const responseTime = timeLimit;
     updateDifficulty(false, responseTime);
@@ -155,6 +213,7 @@ function handleRoomTimeout() {
     renderRoomFeedbackCard({
         isCorrect: false,
         selectedOption: null,
+        correctOption: formatRoomDisplayOption(getRoomCorrectOptionIndex()),
         earnedPoints: 0,
         responseTime,
         isTimeout: true
@@ -198,10 +257,10 @@ function selectQuestionByDifficulty() {
     }
     availableQuestions.sort((a, b) => {
         const diffA = Math.abs(
-            parseFloat(a.difficulty_level || 1.0) - currentDifficulty
+            normalizeQuestionDifficultyLevel(a.difficulty_level) - getTargetQuestionLevel()
         );
         const diffB = Math.abs(
-            parseFloat(b.difficulty_level || 1.0) - currentDifficulty
+            normalizeQuestionDifficultyLevel(b.difficulty_level) - getTargetQuestionLevel()
         );
         return diffA - diffB;
     });
@@ -220,9 +279,9 @@ function renderAdaptiveQuestion() {
     continueInProgress = false;
     const meta = document.getElementById("room-question-meta");
     if (meta) {
-        const difficulty = parseFloat(currentQuestion.difficulty_level || 1.0);
+        const difficulty = normalizeQuestionDifficultyLevel(currentQuestion.difficulty_level);
         meta.textContent =
-            `${currentQuestion.category} - ${ROOM_I18N.difficulty || "Dificultad"} ${difficulty.toFixed(1)} / 5`;
+            `${currentQuestion.category} - ${ROOM_I18N.difficulty || "Dificultad"} ${difficulty} / 5`;
     }
 
     document.getElementById("question-text").textContent =
@@ -259,6 +318,8 @@ function renderAdaptiveQuestion() {
 
 function selectAnswer(index) {
     if (answeredCurrentQuestion || !currentQuestion) return;
+
+    window.GameSounds?.play("select");
 
     selectedOptionIndex = index;
 
@@ -298,9 +359,57 @@ function updateTimerUI() {
         timerEl.textContent = `${timeLeft}s`;
     }
 }
+function getRoomOptionLabel(index) {
+    return ["A", "B", "C", "D"][index] || "";
+}
+
+function formatRoomDisplayOption(index) {
+    if (index === null || index === undefined || index < 0) {
+        return "";
+    }
+
+    const label = getRoomOptionLabel(index);
+    const text = currentQuestion?.options?.[index] || "";
+
+    return text ? `${label}. ${text}` : label;
+}
+
+function getRoomCorrectOptionIndex() {
+    if (!currentQuestion) {
+        return -1;
+    }
+
+    if (Number.isInteger(currentQuestion.correct)) {
+        return currentQuestion.correct;
+    }
+
+    const displayLabel = currentQuestion.display_correct_option;
+
+    if (displayLabel) {
+        const displayIndex = ["A", "B", "C", "D"].indexOf(displayLabel);
+
+        if (displayIndex >= 0) {
+            return displayIndex;
+        }
+    }
+
+    const originalLabel = currentQuestion.correct_option;
+
+    if (Array.isArray(currentQuestion.option_letters)) {
+        const mappedIndex = currentQuestion.option_letters.indexOf(originalLabel);
+
+        if (mappedIndex >= 0) {
+            return mappedIndex;
+        }
+    }
+
+    return ["A", "B", "C", "D"].indexOf(originalLabel);
+}
+
 function renderRoomFeedbackCard({
     isCorrect,
     selectedOption,
+    correctOption,
     earnedPoints,
     responseTime,
     isTimeout = false
@@ -312,23 +421,23 @@ function renderRoomFeedbackCard({
             : ROOM_I18N.incorrect;
 
     const statusIcon = isTimeout
-        ? "⏱️"
+        ? "clock"
         : isCorrect
-            ? "✅"
-            : "❌";
+            ? "check"
+            : "x";
 
     const selectedText = selectedOption
         ? `<p><strong>${ROOM_I18N.selectedAnswer || "Tu respuesta"}:</strong> ${selectedOption}</p>`
         : "";
 
     const correctText = !isCorrect && currentQuestion
-        ? `<p><strong>${ROOM_I18N.correctAnswer || "Respuesta correcta"}:</strong> ${currentQuestion.correct_option}</p>`
+        ? `<p><strong>${ROOM_I18N.correctAnswer || "Respuesta correcta"}:</strong> ${correctOption}</p>`
         : "";
 
     const continueAction = `
             <div class="feedback-actions">
                 <span id="room-continue-status">
-                    ${ROOM_I18N.continueWhenReady || "Continúa cuando termines de leer"}
+                    ${ROOM_I18N.continueWhenReady || "Continua cuando termines de leer"}
                 </span>
                 <button
                     type="button"
@@ -343,9 +452,9 @@ function renderRoomFeedbackCard({
     document.getElementById("options-container").innerHTML = `
         <div class="feedback-card ${isCorrect ? "correct" : "incorrect"}">
             <div class="feedback-card-header">
-                <span class="feedback-status-icon">${statusIcon}</span>
+                <span class="feedback-status-icon">${window.uiIcon ? window.uiIcon(statusIcon, "ui-icon feedback-svg") : ""}</span>
                 <div>
-                    <span class="feedback-eyebrow">${ROOM_I18N.feedback || "Retroalimentación"}</span>
+                    <span class="feedback-eyebrow">${ROOM_I18N.feedback || "Retroalimentacion"}</span>
                     <h3>${statusText}</h3>
                 </div>
             </div>
@@ -353,7 +462,7 @@ function renderRoomFeedbackCard({
             ${selectedText}
             ${correctText}
 
-            <p><strong>⏱️</strong> ${responseTime}s</p>
+            <p><strong>${window.uiIcon ? window.uiIcon("clock", "ui-icon feedback-inline-icon") : ""}</strong> ${responseTime}s</p>
 
             ${currentQuestion && currentQuestion.explanation
                 ? `<p>${currentQuestion.explanation}</p>`
@@ -361,7 +470,7 @@ function renderRoomFeedbackCard({
 
             <p>
                 <strong>${ROOM_I18N.newDifficulty || "Nueva dificultad"}:</strong>
-                ${currentDifficulty.toFixed(1)} / 5
+                ${formatDifficulty()} / 5
             </p>
 
             ${continueAction}
@@ -383,20 +492,21 @@ function calculateAdaptivePoints(isCorrect, responseTime) {
     return 10;
 }
 function updateDifficulty(isCorrect, responseTime) {
+    let delta = 0;
+
     if (isCorrect) {
-        if (responseTime <= 3) {
-            currentDifficulty += 0.50;
-        } else if (responseTime <= 6) {
-            currentDifficulty += 0.25;
+        if (responseTime <= 4) {
+            delta = 0.3;
+        } else if (responseTime <= 8) {
+            delta = 0.2;
         } else {
-            currentDifficulty += 0.10;
+            delta = 0.1;
         }
     } else {
-        currentDifficulty -= 0.25;
+        delta = responseTime >= timeLimit ? -0.4 : -0.3;
     }
-    if (currentDifficulty < 1.0) currentDifficulty = 1.0;
-    if (currentDifficulty > 5.0) currentDifficulty = 5.0;
-    currentDifficulty = Math.round(currentDifficulty * 10) / 10;
+
+    currentDifficulty = normalizeAdaptiveDifficulty(currentDifficulty + delta);
 }
 async function submitRoomAnswer(index) {
     if (answeredCurrentQuestion || !currentQuestion) return;
@@ -404,6 +514,7 @@ async function submitRoomAnswer(index) {
     if (index === null || typeof index === "undefined") {
         document.getElementById("feedback").textContent =
             ROOM_I18N.chooseAnswer || "Selecciona una respuesta antes de enviar";
+        window.GameSounds?.play("incorrect");
         return;
     }
 
@@ -412,7 +523,10 @@ async function submitRoomAnswer(index) {
     disableOptions();
     const responseTime = getResponseTime();
     const isCorrect = index === currentQuestion.correct;
+    window.GameSounds?.play(isCorrect ? "correct" : "incorrect");
     const earnedPoints = calculateAdaptivePoints(isCorrect, responseTime);
+    const selectedOriginalOption =
+        currentQuestion.option_letters?.[index] || ["A", "B", "C", "D"][index];
     if (isCorrect) {
         score += earnedPoints;
         correctAnswers++;
@@ -422,13 +536,14 @@ async function submitRoomAnswer(index) {
     }
     renderRoomFeedbackCard({
         isCorrect,
-        selectedOption: ["A", "B", "C", "D"][index],
+        selectedOption: formatRoomDisplayOption(index),
+        correctOption: formatRoomDisplayOption(getRoomCorrectOptionIndex()),
         earnedPoints,
         responseTime
     });
     currentAnswerSavePromise = saveAnswer({
         question_id: currentQuestion.id,
-        selected_option: ["A", "B", "C", "D"][index],
+        selected_option: selectedOriginalOption,
         correct_option: currentQuestion.correct_option,
         is_correct: isCorrect ? 1 : 0,
         response_time: responseTime,
@@ -448,6 +563,7 @@ async function handleRoomContinue() {
     const continueStatus = document.getElementById("room-continue-status");
 
     continueInProgress = true;
+    window.GameSounds?.play("continue");
 
     if (continueButton) {
         continueButton.disabled = true;
@@ -464,7 +580,7 @@ async function handleRoomContinue() {
         }
 
         await saveProgress();
-        goToNextLocalQuestion();
+        await goToNextLocalQuestion();
     } catch (error) {
         console.error("Continue room error:", error);
 
@@ -481,10 +597,22 @@ async function handleRoomContinue() {
     }
 }
 
-function goToNextLocalQuestion() {
+async function goToNextLocalQuestion() {
     clearLocalQuestionTimer();
 
     const nextIndex = currentQuestionNumber + 1;
+
+    if (nextIndex >= questions.length) {
+        try {
+            const res = await fetch(
+                `/colesterol_game/backend/rooms/get_room_game_state.php?code=${encodeURIComponent(ROOM_CODE)}`
+            );
+            const state = await res.json();
+            await refreshRoomQuestionsIfNeeded(Number(state.question_count || 0));
+        } catch (error) {
+            console.error("Late question refresh error:", error);
+        }
+    }
 
     if (nextIndex >= questions.length) {
         endGame(ROOM_I18N.gameCompleted);
@@ -503,7 +631,7 @@ function updateHUD() {
         `${ROOM_I18N.question} ${safeCurrent} ${ROOM_I18N.of} ${questions.length}`;
     const difficultyEl = document.getElementById("adaptive-difficulty");
     if (difficultyEl) {
-        difficultyEl.textContent = `${currentDifficulty.toFixed(1)} / 5`;
+        difficultyEl.textContent = `${formatDifficulty()} / 5`;
     }
 }
 async function saveProgress() {
@@ -586,6 +714,8 @@ function hideLiveRanking() {
 async function endGame(message) {
     if (alreadySaved) return;
     alreadySaved = true;
+    window.GameSounds?.play("finish");
+    window.GameSounds?.confetti({ count: 120, mode: "side" });
     clearLocalQuestionTimer();
     document.getElementById("question-text").textContent = message;
     document.getElementById("options-container").innerHTML = "";
@@ -593,7 +723,7 @@ async function endGame(message) {
     document.getElementById("feedback").innerHTML = `
         ${ROOM_I18N.finalScore}: ${score}<br>
         ${ROOM_I18N.correctAnswers}: ${correctAnswers} ${ROOM_I18N.of} ${questions.length}<br>
-        ${ROOM_I18N.finalDifficulty || "Dificultad final"}: ${currentDifficulty.toFixed(1)} / 5<br>
+        ${ROOM_I18N.finalDifficulty || "Dificultad final"}: ${formatDifficulty()} / 5<br>
         ${ROOM_I18N.savingResult}
     `;
     await saveProgress();
@@ -603,3 +733,4 @@ async function endGame(message) {
     }, 1500);
 }
 fetchQuestions();
+

@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_role(["teacher", "super_admin"]);
 
@@ -14,6 +15,8 @@ header("Pragma: no-cache");
     <title><?php echo t("comparative_analytics"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -31,7 +34,7 @@ header("Pragma: no-cache");
         </a>
     </div>
 
-    <h1>📊 <?php echo t("comparative_analytics"); ?></h1>
+    <h1><?php echo ui_icon("analytics"); ?> <?php echo t("comparative_analytics"); ?></h1>
 
     <section class="admin-section">
         <h2><?php echo t("comparative_charts"); ?></h2>
@@ -384,5 +387,8 @@ function emptyRow(colspan) {
 }
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js"></script>
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

@@ -1,11 +1,15 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../game/streak_helpers.php';
 
-if (!isset($_SESSION["user_id"])) {
+if (!is_logged_in()) {
     echo json_encode([
         "success" => false,
         "message" => "Usuario no autenticado"
@@ -13,11 +17,15 @@ if (!isset($_SESSION["user_id"])) {
     exit;
 }
 
-$userId = (int)$_SESSION["user_id"];
+$requestedUserId = (int)($_GET["user_id"] ?? 0);
+$userId = is_super_admin() && $requestedUserId > 0
+    ? $requestedUserId
+    : (int)$_SESSION["user_id"];
 
 $summarySql = "
     SELECT
         COUNT(DISTINCT DATE(answered_at)) AS active_days,
+        COUNT(DISTINCT CASE WHEN room_id IS NOT NULL THEN room_id END) AS rooms_played,
         COUNT(*) AS total_answers,
         COALESCE(SUM(is_correct), 0) AS correct_answers,
         COALESCE(AVG(response_time), 0) AS avg_response_time,
@@ -40,6 +48,8 @@ $correctAnswers = (int)$summary["correct_answers"];
 $precision = $totalAnswers > 0
     ? round(($correctAnswers / $totalAnswers) * 100, 2)
     : 0;
+
+$streaks = get_player_streak_summary($conn, $userId);
 
 $categorySql = "
     SELECT 
@@ -196,13 +206,19 @@ echo json_encode([
     "success" => true,
     "summary" => [
         "active_days" => (int)$summary["active_days"],
+        "rooms_played" => (int)$summary["rooms_played"],
         "total_answers" => $totalAnswers,
         "correct_answers" => $correctAnswers,
         "precision" => $precision,
         "avg_response_time" => round((float)$summary["avg_response_time"], 2),
         "avg_difficulty" => round((float)$summary["avg_difficulty"], 1),
         "max_difficulty" => round((float)$summary["max_difficulty"], 1),
-        "total_points" => (int)$summary["total_points"]
+        "total_points" => (int)$summary["total_points"],
+        "current_correct_streak" => $streaks["current_correct_streak"],
+        "best_correct_streak" => $streaks["best_correct_streak"],
+        "current_daily_streak" => $streaks["current_daily_streak"],
+        "best_daily_streak" => $streaks["best_daily_streak"],
+        "last_played_date" => $streaks["last_played_date"]
     ],
     "categories" => $categories,
     "answers" => $answers,

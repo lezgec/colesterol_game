@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ini_set('display_errors', 1);
 ini_set("precision", "10");
@@ -18,6 +20,17 @@ if (!has_role(["teacher", "super_admin"])) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+$isSuperAdmin = is_super_admin();
+$userId = (int)($_SESSION["user_id"] ?? 0);
+$answerJoin = $isSuperAdmin
+    ? "LEFT JOIN game_answers ga ON ga.question_id = q.id"
+    : "INNER JOIN game_answers ga ON ga.question_id = q.id INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id";
+$answerWhere = $isSuperAdmin
+    ? ""
+    : "WHERE ga.game_mode = 'room' AND gr_scope.created_by = {$userId}";
+$summaryJoin = $isSuperAdmin ? "" : "INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id";
+$summaryWhere = $isSuperAdmin ? "" : "WHERE ga.game_mode = 'room' AND gr_scope.created_by = {$userId}";
 
 $sql = "
     SELECT
@@ -52,8 +65,9 @@ $sql = "
 
     FROM questions q
 
-    LEFT JOIN game_answers ga
-        ON ga.question_id = q.id
+    {$answerJoin}
+
+    {$answerWhere}
 
     GROUP BY
         q.id,
@@ -184,6 +198,9 @@ $summarySql = "
         COALESCE(AVG(response_time), 0) AS avg_response_time,
         COALESCE(AVG(difficulty_level), 0) AS avg_difficulty
     FROM game_answers
+    ga
+    {$summaryJoin}
+    {$summaryWhere}
 ";
 
 $summaryResult = $conn->query($summarySql);

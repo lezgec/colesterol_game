@@ -4,6 +4,10 @@ require_once __DIR__ . '/../lang/translate.php';
 
 require_role(["teacher", "super_admin"]);
 
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$responsiveTablesVersion = filemtime(__DIR__ . '/../assets/js/responsive_tables.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
+
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 ?>
@@ -16,7 +20,9 @@ header("Pragma: no-cache");
         <?php echo t("reports_center"); ?>
     </title>
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?m=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -41,17 +47,17 @@ header("Pragma: no-cache");
     </div>
 
     <h1>
-        📊 <?php echo t("reports_center"); ?>
+        <?php echo t("reports_center"); ?>
     </h1>
     <section class="dashboard-grid">
 
         <a href="/colesterol_game/pages/global_analytics.php" class="dashboard-card dashboard-link">
-            <h3>📈 <?php echo t("global_analytics"); ?></h3>
+            <h3><?php echo t("global_analytics"); ?></h3>
             <p><?php echo t("global_analytics_description"); ?></p>
         </a>
 
         <a href="/colesterol_game/pages/question_analytics.php" class="dashboard-card dashboard-link">
-            <h3>🧠 <?php echo t("question_analytics"); ?></h3>
+            <h3><?php echo t("question_analytics"); ?></h3>
             <p><?php echo t("question_analytics_description"); ?></p>
         </a>
 
@@ -60,7 +66,7 @@ header("Pragma: no-cache");
     <section class="admin-section">
 
         <h2>
-            🏫 <?php echo t("room_reports"); ?>
+            <?php echo t("room_reports"); ?>
         </h2>
 
         <table class="admin-table">
@@ -98,6 +104,7 @@ header("Pragma: no-cache");
 
 const REPORTS_I18N = {
     noData: "<?php echo t('no_reports_available'); ?>",
+    viewReport: "<?php echo t('view_report'); ?>",
     unknownStatus: "<?php echo t('room_status_unknown'); ?>",
     statuses: {
         waiting: "<?php echo t('room_status_waiting'); ?>",
@@ -172,15 +179,14 @@ fetch("/colesterol_game/backend/reports/list_room_reports.php")
                 <td>${formatNumber(room.avg_difficulty, 1)} / 5</td>
 
                 <td>
-
-                    <a
-                        href="/colesterol_game/pages/rooms/room_report.php?code=${encodeURIComponent(room.room_code)}"
-                        class="report-view-btn"
-                    >
-                        <span class="report-view-icon">📋</span>
-                        <span><?php echo t("view_report"); ?></span>
-                    </a>
-
+                    <div class="report-row-actions">
+                        <a
+                            href="/colesterol_game/pages/rooms/room_report.php?code=${encodeURIComponent(room.room_code)}"
+                            class="table-btn edit-btn"
+                        >
+                            ${REPORTS_I18N.viewReport}
+                        </a>
+                    </div>
                 </td>
             `;
 
@@ -194,5 +200,8 @@ fetch("/colesterol_game/backend/reports/list_room_reports.php")
 
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js?m=<?php echo $responsiveTablesVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/theme.js?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

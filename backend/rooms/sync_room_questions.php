@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/room_question_requirements.php';
+require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
@@ -26,9 +27,11 @@ if ($roomCode === "") {
 
 try {
     ensure_room_question_requirements_table($conn);
+    ensure_question_workflow_columns($conn);
+    $accessSql = playable_question_access_sql("q");
 
     $stmtRoom = $conn->prepare("
-        SELECT id, status, language
+        SELECT id, status, language, question_count, initial_difficulty
         FROM game_rooms
         WHERE room_code = ?
     ");
@@ -53,12 +56,14 @@ try {
     $roomId = (int)$room["id"];
     $language = $room["language"] ?: "es";
     $status = $room["status"];
+    $questionCount = (int)$room["question_count"];
+    $initialDifficulty = (float)($room["initial_difficulty"] ?? 1);
     $stmtRoom->close();
 
-    if ($status !== "waiting") {
+    if ($status === "finished") {
         echo json_encode([
             "success" => false,
-            "message" => "Solo se pueden modificar preguntas antes de iniciar la sala"
+            "message" => "La sala ya finalizo y no se pueden agregar preguntas"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -88,6 +93,7 @@ try {
           AND q.difficulty_level < ?
           AND q.status = 'verified'
           AND q.is_active = 1
+          AND {$accessSql}
     ");
 
     $stmtCandidates = $conn->prepare("
@@ -99,6 +105,7 @@ try {
           AND q.difficulty_level < ?
           AND q.status = 'verified'
           AND q.is_active = 1
+          AND {$accessSql}
           AND NOT EXISTS (
               SELECT 1
               FROM room_questions rq
@@ -122,10 +129,12 @@ try {
 
     $inserted = 0;
     $blocks = 0;
+    $hasRequirements = false;
 
     $conn->begin_transaction();
 
     while ($requirement = $requirementsResult->fetch_assoc()) {
+        $hasRequirements = true;
         $category = $requirement["category"];
         $difficulty = (int)$requirement["difficulty_level"];
         $quantity = (int)$requirement["quantity"];
@@ -173,6 +182,70 @@ try {
 
         $blocks++;
     }
+
+    $stmtReady = $conn->prepare("
+        SELECT COUNT(DISTINCT q.id) AS total
+        FROM room_questions rq
+        INNER JOIN questions q ON rq.question_id = q.id
+        WHERE rq.room_id = ?
+          AND q.status = 'verified'
+          AND q.is_active = 1
+          AND {$accessSql}
+    ");
+
+    $stmtRandomCandidates = $conn->prepare("
+        SELECT q.id
+        FROM questions q
+        WHERE q.language = ?
+          AND q.status = 'verified'
+          AND q.is_active = 1
+          AND {$accessSql}
+          AND NOT EXISTS (
+              SELECT 1
+              FROM room_questions rq
+              WHERE rq.room_id = ?
+                AND rq.question_id = q.id
+          )
+        ORDER BY ABS(q.difficulty_level - ?) ASC, RAND()
+        LIMIT ?
+    ");
+
+    if (!$stmtReady || !$stmtRandomCandidates) {
+        throw new Exception($conn->error);
+    }
+
+    $stmtReady->bind_param("i", $roomId);
+    $stmtReady->execute();
+    $readyData = $stmtReady->get_result()->fetch_assoc();
+    $assignedReady = (int)($readyData["total"] ?? 0);
+    $missing = max(0, $questionCount - $assignedReady);
+
+    if ($missing > 0) {
+        $stmtRandomCandidates->bind_param(
+            "sidi",
+            $language,
+            $roomId,
+            $initialDifficulty,
+            $missing
+        );
+        $stmtRandomCandidates->execute();
+        $candidateResult = $stmtRandomCandidates->get_result();
+
+        while ($candidate = $candidateResult->fetch_assoc()) {
+            $questionId = (int)$candidate["id"];
+
+            $stmtInsert->bind_param("ii", $roomId, $questionId);
+
+            if (!$stmtInsert->execute()) {
+                throw new Exception($stmtInsert->error);
+            }
+
+            $inserted++;
+        }
+    }
+
+    $stmtReady->close();
+    $stmtRandomCandidates->close();
 
     $conn->commit();
 

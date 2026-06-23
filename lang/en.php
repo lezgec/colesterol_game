@@ -1,5 +1,8 @@
 <?php
 return [
+    "view_profile" => "View profile",
+    "reset_password" => "Reset password",
+    "change_status" => "Change status",
 
     /*
     |--------------------------------------------------------------------------
@@ -14,6 +17,7 @@ return [
     "join_room" => "Join room",
     "create_room" => "Create room",
     "back" => "Back",
+    "cancel" => "Cancel",
     "back_to_home" => "Back to home",
     "back_to_player_dashboard" => "Back to player dashboard",
     "back_to_reports_center" => "Back to reports center",
@@ -33,7 +37,17 @@ return [
     "no_ranking_data" => "No ranking data available",
     "actions" => "Actions",
     "all" => "All",
+    "all_categories" => "All categories",
+    "all_difficulties" => "All difficulties",
+    "all_languages" => "All languages",
+    "all_statuses" => "All statuses",
+    "all_origins" => "All origins",
     "save" => "Save",
+    "save_changes" => "Save changes",
+    "close" => "Close",
+    "confirm" => "Confirm",
+    "confirm_action" => "Confirm action",
+    "clear_filters" => "Clear filters",
     "saved_successfully" => "Saved successfully",
     "updated_successfully" => "Updated successfully",
     "search" => "Search",
@@ -63,6 +77,32 @@ return [
     "register_description" => "Sign up to start the educational game about cholesterol.",
 
     "login_title" => "Log In",
+    "session_closed_successfully" => "Session closed successfully",
+    "session_replaced_message" => "Your session was closed because your account was opened on another device.",
+    "session_expired_message" => "Your session expired. Please sign in again.",
+    "forgot_password" => "Forgot your password?",
+    "first_name" => "First name",
+    "last_name" => "Last name",
+    "choose_avatar" => "Choose your avatar",
+    "country" => "Country",
+    "select_country" => "Select country",
+    "city" => "City",
+    "university_or_workplace" => "University or workplace",
+    "occupation" => "Occupation",
+    "age" => "Age",
+    "career" => "Career",
+    "education_level" => "Level",
+    "confirm_password" => "Confirm password",
+    "login_loading" => "Signing in...",
+    "login_success" => "Login successful",
+    "login_failed" => "Could not sign in",
+    "connection_error" => "Connection error",
+    "register_missing_name" => "Enter first and last name.",
+    "register_password_policy_error" => "Password must be at least 10 characters and include uppercase, lowercase, number, and symbol.",
+    "register_password_mismatch" => "Passwords do not match.",
+    "register_loading" => "Registering user...",
+    "register_success" => "Registration successful",
+    "register_failed" => "Could not register user",
 
     "name" => "Name",
     "email" => "Email",
@@ -162,6 +202,8 @@ return [
     "easy" => "Easy",
     "medium" => "Medium",
     "hard" => "Hard",
+    "difficulty_basic" => "Basic",
+    "difficulty_advanced" => "Advanced",
 
     /*
     |--------------------------------------------------------------------------
@@ -184,14 +226,19 @@ return [
     "create_question" => "Create question manually",
     "save_question" => "Save question",
     "update_question" => "Update question",
+    "edit_question" => "Edit question",
 
     "edit" => "Edit",
     "delete" => "Delete",
 
     "question_saved" => "Question saved successfully",
     "question_updated" => "Question updated successfully",
+    "question_must_be_verified_to_be_available" => "Only a verified question can be available for play.",
     "question_deleted" => "Question deleted successfully",
     "no_questions_registered" => "No questions registered",
+    "no_filter_results" => "No questions match the selected filters",
+    "question_filters" => "Question filters",
+    "search_question_placeholder" => "Search by question, ID, category, or answer",
 
     "confirm_delete_question" => "Delete this question?",
 
@@ -229,6 +276,20 @@ return [
     "topic_optional_placeholder" => "Optional: subtopic or focus",
 
     "generate_question" => "Generate question",
+    "generate_with_ai" => "Generate with AI",
+    "ai_short" => "AI",
+    "generator_unified_description" => "Create an editable draft or generate a reviewed batch from the same controls.",
+    "generator_mode_draft" => "Editable draft",
+    "generator_mode_bulk" => "Batch to question bank",
+    "generate" => "Generate",
+    "download_csv_template" => "Download CSV template",
+    "answer_options" => "Answer options",
+    "select_correct_option" => "Select the correct option.",
+    "question_scope" => "Question use",
+    "question_scope_private" => "Private for my rooms",
+    "question_scope_global" => "Global bank",
+    "question_scope_global_request" => "Send to global bank",
+    "question_sent_to_global_review" => "Question sent for global bank review.",
 
     /*
     |--------------------------------------------------------------------------
@@ -246,6 +307,12 @@ return [
 
     "mass_generated_success" => "Questions generated and inserted successfully",
     "generated_questions_need_review" => "Questions were generated as pending and inactive. Review them before using them in the room.",
+    "ai_progress_prepare" => "Warming up the engine",
+    "ai_progress_generate" => "Generating questions",
+    "ai_progress_save" => "Saving to the bank",
+    "ai_progress_ready" => "Questions ready",
+    "review_generated_questions" => "Review generated questions",
+    "generated_filter_active" => "Showing generated questions",
 
     /*
     |--------------------------------------------------------------------------
@@ -255,7 +322,7 @@ return [
 
     "import_csv" => "Import CSV",
 
-    "csv_description" => "CSV columns: question, option_a, option_b, option_c, option_d, correct_option, explanation, category, difficulty, language",
+    "csv_description" => "CSV columns: question, option_a, option_b, option_c, option_d, correct_option, explanation, category, difficulty_level, language. Optional: status, origin, is_active.",
 
     "csv_file" => "CSV file",
 
@@ -265,7 +332,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    "status" => "Status",
+    "status" => "Review",
     "origin" => "Origin",
 
     "manual" => "Manual",
@@ -274,7 +341,7 @@ return [
     "active" => "Active",
     "inactive" => "Inactive",
 
-    "active_status" => "Active status",
+    "active_status" => "Available",
 
     "verified" => "Verified",
     "pending" => "Pending",
@@ -300,6 +367,7 @@ return [
     "back_to_room_lobby" => "Back to room lobby",
 
     "player_name" => "Player name",
+    "duplicate_room_player_name" => "There is already a player with that name in this room. Try entering your full name or adding a differentiator.",
     "unnamed_player" => "Unnamed player",
 
     "room_share_link" => "Room share link",
@@ -378,6 +446,26 @@ return [
     "create_room_description" => "Create a game room so students can join using a code.",
 
     "question_count" => "Number of questions",
+    "hint" => "Hint",
+    "room_settings_saved" => "Room settings saved",
+    "waiting_only_settings" => "You can edit this while the room is not finished.",
+    "finished_room_settings" => "This room is finished and can no longer be edited.",
+    "remove_block" => "Remove block",
+    "duplicate_block_updated" => "Block updated",
+    "custom_blocks_help" => "Add blocks to choose category, difficulty, and question quantity.",
+    "room_question_blocks_hint_title" => "How blocks work",
+    "room_question_blocks_hint" => "Add block does not add one specific question. It defines a room rule: category, difficulty, and quantity. Example: Nutrition, difficulty 2, quantity 5. Then Assign available questions searches the bank for verified questions matching those rules and adds them automatically. If you want to choose questions one by one, use the room question bank and mark the checkboxes.",
+    "room_question_bank" => "Question bank for this room",
+    "room_question_bank_hint_short" => "Select verified questions and add them manually to this room.",
+    "room_question_bank_hint" => "This bank is for choosing specific questions. Mark one or more questions with the checkbox and click Add selected. Questions already added appear as Already added and cannot be duplicated.",
+    "add_selected_questions" => "Add selected",
+    "remove_selected_questions" => "Remove selected",
+    "selected_questions_count" => "{count} selected",
+    "question_already_assigned" => "Already added",
+    "room_questions_added" => "Questions added",
+    "room_questions_removed" => "Questions removed",
+    "confirm_remove_selected_room_questions" => "Remove the selected questions from this room?",
+    "select_all_questions" => "Select all questions",
 
     "question_mode" => "Question mode",
     "configured_questions" => "By category and difficulty",
@@ -439,6 +527,26 @@ return [
     "admin_tools" => "Admin tools",
     "users_management" => "Users management",
     "users_management_description" => "Create, edit, activate, or deactivate system users.",
+    "notifications" => "Notifications",
+    "notifications_description" => "Review internal notices for teachers and administrators.",
+    "no_notifications" => "No notifications yet.",
+    "review" => "Review",
+    "email_logs" => "Sent emails",
+    "email_logs_description" => "Review emails sent by the system and failed delivery attempts.",
+    "email_logs_search_placeholder" => "Search by recipient, name, or subject",
+    "email_type" => "Email type",
+    "email_type_welcome" => "Welcome",
+    "email_type_password_reset" => "Password reset",
+    "email_type_role_changed" => "Role changed",
+    "email_type_question_global_request" => "Global question request",
+    "email_type_general" => "General",
+    "email_status_sent" => "Sent",
+    "email_status_failed" => "Failed",
+    "recipient" => "Recipient",
+    "subject" => "Subject",
+    "sent_at" => "Sent at",
+    "error_detail" => "Error detail",
+    "no_email_logs" => "No emails have been logged yet",
 
      /*
     |--------------------------------------------------------------------------
@@ -531,6 +639,8 @@ return [
     "no_insights_available" => "No insights available",
     "no_badges_earned" => "No badges earned yet",
     "top_10_description" => "Top 10 players based on their best registered score.",
+    "global_ranking" => "Global ranking",
+    "top_10_global_description" => "Global ranking of the top players based on their best registered score.",
     "question_statistics" => "Question statistics",
     "answer_distribution" => "Answer distribution",
     "most_selected_option" => "Most selected option",

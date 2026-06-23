@@ -2,6 +2,7 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../questions/question_option_helpers.php';
 
 $code = strtoupper(trim($_GET["code"] ?? ""));
 
@@ -49,16 +50,16 @@ if ($resRoom->num_rows === 0) {
 $room = $resRoom->fetch_assoc();
 
 $roomId = (int)$room["id"];
-$initialDifficulty = (float)$room["initial_difficulty"];
+$initialDifficulty = (int)round((float)$room["initial_difficulty"]);
 $questionCount = (int)$room["question_count"];
 $timeLimit = (int)$room["time_limit"];
 
-if ($initialDifficulty < 1.0) {
-    $initialDifficulty = 1.0;
+if ($initialDifficulty < 1) {
+    $initialDifficulty = 1;
 }
 
-if ($initialDifficulty > 5.0) {
-    $initialDifficulty = 5.0;
+if ($initialDifficulty > 5) {
+    $initialDifficulty = 5;
 }
 
 if ($questionCount <= 0) {
@@ -111,35 +112,26 @@ $result = $stmt->get_result();
 $questions = [];
 
 while ($row = $result->fetch_assoc()) {
-    $letters = ["A", "B", "C", "D"];
-    $correctOption = strtoupper(trim($row["correct_option"]));
-    $correctIndex = array_search($correctOption, $letters, true);
+    $optionPayload = build_shuffled_question_payload($row);
 
-    if ($correctIndex === false) {
-        $correctIndex = 0;
+    $difficultyLevel = (int)round((float)$row["difficulty_level"]);
+
+    if ($difficultyLevel < 1) {
+        $difficultyLevel = 1;
     }
 
-    $difficultyLevel = (float)$row["difficulty_level"];
-
-    if ($difficultyLevel < 1.0) {
-        $difficultyLevel = 1.0;
-    }
-
-    if ($difficultyLevel > 5.0) {
-        $difficultyLevel = 5.0;
+    if ($difficultyLevel > 5) {
+        $difficultyLevel = 5;
     }
 
     $questions[] = [
         "id" => (int)$row["id"],
         "question" => $row["question"],
-        "options" => [
-            $row["option_a"],
-            $row["option_b"],
-            $row["option_c"],
-            $row["option_d"]
-        ],
-        "correct" => $correctIndex,
-        "correct_option" => $correctOption,
+        "options" => $optionPayload["options"],
+        "option_letters" => $optionPayload["option_letters"],
+        "correct" => $optionPayload["correct"],
+        "correct_option" => $optionPayload["correct_option"],
+        "display_correct_option" => $optionPayload["display_correct_option"],
         "explanation" => $row["explanation"],
         "category" => $row["category"],
         "language" => $row["language"],

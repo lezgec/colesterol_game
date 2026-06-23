@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_login();
 
@@ -14,6 +15,8 @@ header("Pragma: no-cache");
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("dashboard"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -37,7 +40,7 @@ header("Pragma: no-cache");
         </div>
     </div>
 
-    <h1>📈 <?php echo t("dashboard"); ?></h1>
+    <h1><?php echo ui_icon("analytics"); ?> <?php echo t("dashboard"); ?></h1>
     <p><?php echo t("dashboard_description"); ?></p>
 
     <div id="dashboard-cards" class="dashboard-grid">
@@ -87,12 +90,13 @@ header("Pragma: no-cache");
 
 <script>
 const DASHBOARD_I18N = {
+    lang: "<?php echo current_lang(); ?>",
     loadError: "<?php echo t('loading_error'); ?>",
     noGames: "<?php echo t('no_games_registered'); ?>",
     error: "<?php echo t('error'); ?>"
 };
 
-fetch("/colesterol_game/backend/dashboard/get_dashboard.php")
+fetch(`/colesterol_game/backend/dashboard/get_dashboard.php?lang=${encodeURIComponent(DASHBOARD_I18N.lang)}`)
     .then(res => res.json())
     .then(data => {
         if (!data.success) {
@@ -134,5 +138,8 @@ fetch("/colesterol_game/backend/dashboard/get_dashboard.php")
     });
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js"></script>
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

@@ -7,8 +7,9 @@ error_reporting(E_ALL);
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
-if (!isset($_SESSION["user_id"])) {
+if (!is_logged_in()) {
     http_response_code(401);
 
     echo json_encode([
@@ -19,7 +20,10 @@ if (!isset($_SESSION["user_id"])) {
     exit;
 }
 
-$userId = (int)$_SESSION["user_id"];
+$requestedUserId = (int)($_GET["user_id"] ?? 0);
+$userId = is_super_admin() && $requestedUserId > 0
+    ? $requestedUserId
+    : (int)$_SESSION["user_id"];
 
 $insights = [];
 

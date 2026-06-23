@@ -1,124 +1,240 @@
 <?php
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/password_policy.php';
+require_once __DIR__ . '/session_guard.php';
+require_once __DIR__ . '/profile_helpers.php';
+require_once __DIR__ . '/../../includes/mail_helpers.php';
 
-$input = file_get_contents("php://input");
-$data = json_decode($input, true);
-
-if (!$data) {
-    echo json_encode([
-        "success" => false,
-        "message" => "No se recibieron datos válidos"
-    ], JSON_UNESCAPED_UNICODE);
+function register_json_response(array $payload): void {
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$name = trim($data["name"] ?? "");
+ensure_user_profile_columns($conn);
+
+$isMultipart = str_starts_with((string)($_SERVER["CONTENT_TYPE"] ?? ""), "multipart/form-data");
+$input = $isMultipart ? "" : file_get_contents("php://input");
+$data = $isMultipart ? $_POST : json_decode($input, true);
+
+if (!$data) {
+    register_json_response([
+        "success" => false,
+        "message" => "No se recibieron datos validos"
+    ]);
+}
+
+$firstName = sanitize_profile_text($data["first_name"] ?? "", 80);
+$lastName = sanitize_profile_text($data["last_name"] ?? "", 80);
+$name = sanitize_profile_text($data["name"] ?? trim($firstName . " " . $lastName), 170);
 $email = trim($data["email"] ?? "");
 $password = $data["password"] ?? "";
+$passwordConfirmation = $data["password_confirmation"] ?? "";
+$avatarKey = normalize_avatar_key($data["avatar_key"] ?? "");
+$country = normalize_country_code($data["country"] ?? "");
+$city = sanitize_profile_text($data["city"] ?? "", 80);
+$institution = sanitize_profile_text($data["institution"] ?? "", 140);
+$occupation = sanitize_profile_text($data["occupation"] ?? "", 120);
+$age = sanitize_profile_age($data["age"] ?? null);
+$career = sanitize_profile_text($data["career"] ?? "", 140);
+$educationLevel = sanitize_profile_text($data["education_level"] ?? "", 80);
+$bio = sanitize_profile_text($data["bio"] ?? "", 500);
 $role = "player";
+$customAvatarPath = "";
+$uploadedAvatarPath = "";
 
-if ($name === "" || $email === "" || $password === "") {
-    echo json_encode([
+if ($firstName === "" || $lastName === "" || $name === "" || $email === "" || $password === "") {
+    register_json_response([
         "success" => false,
-        "message" => "Todos los campos son obligatorios"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+        "message" => "Nombre, apellido, correo y contrasena son obligatorios"
+    ]);
+}
+
+if (!hash_equals((string)$password, (string)$passwordConfirmation)) {
+    register_json_response([
+        "success" => false,
+        "message" => "Las contrasenas no coinciden"
+    ]);
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode([
+    register_json_response([
         "success" => false,
-        "message" => "Correo electrónico no válido"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+        "message" => "Correo electronico no valido"
+    ]);
 }
 
-if (strlen($password) < 6) {
-    echo json_encode([
+$passwordErrors = validate_password_policy($password);
+
+if (!empty($passwordErrors)) {
+    register_json_response([
         "success" => false,
-        "message" => "La contraseña debe tener al menos 6 caracteres"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+        "message" => password_policy_message()
+    ]);
 }
 
-$checkSql = "SELECT id FROM users WHERE email = ?";
-$checkStmt = $conn->prepare($checkSql);
+if ($isMultipart && isset($_FILES["avatar_file"]) && $_FILES["avatar_file"]["error"] !== UPLOAD_ERR_NO_FILE) {
+    if ($_FILES["avatar_file"]["error"] !== UPLOAD_ERR_OK) {
+        register_json_response([
+            "success" => false,
+            "message" => "No se pudo subir el avatar"
+        ]);
+    }
+
+    if ((int)$_FILES["avatar_file"]["size"] > 2 * 1024 * 1024) {
+        register_json_response([
+            "success" => false,
+            "message" => "El avatar no debe superar 2 MB"
+        ]);
+    }
+
+    $tmpPath = $_FILES["avatar_file"]["tmp_name"];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $mime = $finfo->file($tmpPath);
+    $extensions = [
+        "image/jpeg" => "jpg",
+        "image/png" => "png",
+        "image/webp" => "webp",
+        "image/gif" => "gif"
+    ];
+
+    if (!isset($extensions[$mime])) {
+        register_json_response([
+            "success" => false,
+            "message" => "Formato de avatar no permitido"
+        ]);
+    }
+
+    $uploadDir = __DIR__ . '/../../assets/uploads/avatars';
+
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0775, true)) {
+        register_json_response([
+            "success" => false,
+            "message" => "No se pudo preparar la carpeta de avatares"
+        ]);
+    }
+
+    $filename = "avatar_" . bin2hex(random_bytes(16)) . "." . $extensions[$mime];
+    $uploadedAvatarPath = $uploadDir . "/" . $filename;
+    $customAvatarPath = "/colesterol_game/assets/uploads/avatars/" . $filename;
+    $avatarKey = "custom";
+} elseif ($avatarKey === "custom") {
+    $avatarKey = "pulse";
+}
+
+$checkStmt = $conn->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
 
 if (!$checkStmt) {
-    echo json_encode([
+    register_json_response([
         "success" => false,
-        "message" => "Error al preparar validación",
+        "message" => "Error al preparar validacion",
         "error" => $conn->error
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]);
 }
 
 $checkStmt->bind_param("s", $email);
 $checkStmt->execute();
-
 $checkResult = $checkStmt->get_result();
 
 if ($checkResult->num_rows > 0) {
-    echo json_encode([
+    $checkStmt->close();
+    register_json_response([
         "success" => false,
-        "message" => "Ese correo ya está registrado"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+        "message" => "Ese correo ya esta registrado"
+    ]);
 }
 
 $checkStmt->close();
 
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-$sql = "INSERT INTO users 
-        (name, email, password, role) 
-        VALUES (?, ?, ?, ?)";
-
-$stmt = $conn->prepare($sql);
+$stmt = $conn->prepare("
+    INSERT INTO users
+        (name, email, password, role, avatar_key, custom_avatar_path, country, city, institution, occupation, age, career, education_level, bio)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+");
 
 if (!$stmt) {
-    echo json_encode([
+    register_json_response([
         "success" => false,
         "message" => "Error al preparar registro",
         "error" => $conn->error
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+    ]);
 }
 
 $stmt->bind_param(
-    "ssss",
+    "ssssssssssisss",
     $name,
     $email,
     $hashedPassword,
-    $role
+    $role,
+    $avatarKey,
+    $customAvatarPath,
+    $country,
+    $city,
+    $institution,
+    $occupation,
+    $age,
+    $career,
+    $educationLevel,
+    $bio
 );
 
-if ($stmt->execute()) {
-    $_SESSION["user_id"] = (int)$stmt->insert_id;
-    $_SESSION["user_name"] = $name;
-    $_SESSION["user_email"] = $email;
-    $_SESSION["user_role"] = $role;
+$conn->begin_transaction();
 
-    echo json_encode([
-        "success" => true,
-        "message" => "Usuario registrado correctamente",
-        "role" => $role,
-        "redirect" => redirect_after_login_by_role($role)
-    ], JSON_UNESCAPED_UNICODE);
-} else {
-    echo json_encode([
+try {
+    if ($uploadedAvatarPath !== "" && !move_uploaded_file($_FILES["avatar_file"]["tmp_name"], $uploadedAvatarPath)) {
+        throw new RuntimeException("No se pudo guardar el avatar");
+    }
+
+    if (!$stmt->execute()) {
+        throw new RuntimeException($stmt->error ?: "No se pudo registrar el usuario");
+    }
+
+    $newUserId = (int)$stmt->insert_id;
+    $sessionToken = create_user_session_token();
+
+    if (!store_user_session_token($conn, $newUserId, $sessionToken)) {
+        throw new RuntimeException("No se pudo iniciar la sesion segura");
+    }
+
+    send_welcome_email($email, $name, $role, $_SESSION["lang"] ?? "es");
+
+    $conn->commit();
+} catch (Throwable $exception) {
+    $conn->rollback();
+    if ($uploadedAvatarPath !== "" && is_file($uploadedAvatarPath)) {
+        @unlink($uploadedAvatarPath);
+    }
+    $stmt->close();
+    $conn->close();
+
+    register_json_response([
         "success" => false,
         "message" => "No se pudo registrar el usuario",
-        "error" => $stmt->error
-    ], JSON_UNESCAPED_UNICODE);
+        "error" => $exception->getMessage()
+    ]);
 }
 
 $stmt->close();
+
+session_regenerate_id(true);
+
+$_SESSION["user_id"] = $newUserId;
+$_SESSION["user_name"] = $name;
+$_SESSION["user_email"] = $email;
+$_SESSION["user_role"] = $role;
+$_SESSION["session_token"] = $sessionToken;
+
 $conn->close();
-?>
+
+register_json_response([
+    "success" => true,
+    "message" => "Usuario registrado correctamente",
+    "role" => $role,
+    "redirect" => redirect_after_login_by_role($role)
+]);

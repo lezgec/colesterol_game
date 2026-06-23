@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/lang/translate.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/ui_icons.php';
 
-$isLogged = is_logged_in();
-$role = current_user_role();
+$isLogged = current_session_is_active();
+$role = $isLogged ? current_user_role() : "guest";
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -21,6 +22,8 @@ $role = current_user_role();
           rel="stylesheet">
 
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 
 <body>
@@ -61,33 +64,38 @@ $role = current_user_role();
 
         <a href="/colesterol_game/pages/game.php"
            class="primary-btn landing-btn">
-            🎮 <?php echo t("play_solo"); ?>
+            <?php echo ui_icon("gamepad", "ui-icon landing-btn-icon"); ?>
+            <?php echo t("play_solo"); ?>
         </a>
 
         <a href="/colesterol_game/pages/rooms/join.php"
            class="primary-btn landing-btn secondary-landing">
-            👥 <?php echo t("join_room"); ?>
+            <?php echo ui_icon("users", "ui-icon landing-btn-icon"); ?>
+            <?php echo t("join_room"); ?>
         </a>
 
         <?php if ($isLogged && in_array($role, ["teacher", "super_admin"], true)): ?>
 
             <a href="/colesterol_game/pages/admin_dashboard.php"
                class="admin-login-link">
-                🔐 <?php echo t("admin_dashboard"); ?>
+                <?php echo ui_icon("school", "ui-icon landing-btn-icon"); ?>
+                <?php echo t("admin_dashboard"); ?>
             </a>
 
         <?php elseif ($isLogged): ?>
 
             <a href="/colesterol_game/pages/player_dashboard.php"
                class="admin-login-link">
-                🎮 <?php echo t("player_dashboard"); ?>
+                <?php echo ui_icon("gamepad", "ui-icon landing-btn-icon"); ?>
+                <?php echo t("player_dashboard"); ?>
             </a>
 
         <?php else: ?>
 
             <a href="/colesterol_game/pages/login.php"
                class="admin-login-link">
-                🔐 <?php echo t("login_title"); ?>
+                <?php echo ui_icon("users", "ui-icon landing-btn-icon"); ?>
+                <?php echo t("login_title"); ?>
             </a>
 
         <?php endif; ?>
@@ -96,5 +104,6 @@ $role = current_user_role();
 
 </div>
 
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

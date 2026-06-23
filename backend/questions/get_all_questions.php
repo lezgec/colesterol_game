@@ -6,6 +6,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/question_workflow_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
@@ -14,6 +15,9 @@ if (!has_role(["teacher", "super_admin"])) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+$accessSql = question_access_sql("");
+ensure_question_workflow_columns($conn);
 
 $sql = "SELECT 
             id, 
@@ -29,8 +33,15 @@ $sql = "SELECT
             language,
             status,
             origin,
-            is_active
+            is_active,
+            created_by_user_id,
+            visibility,
+            global_request_status,
+            global_requested_at,
+            global_reviewed_by,
+            global_reviewed_at
         FROM questions
+        WHERE {$accessSql}
         ORDER BY id DESC";
 
 $result = $conn->query($sql);
@@ -48,7 +59,7 @@ $data = [];
 
 while ($row = $result->fetch_assoc()) {
     $row["id"] = (int)$row["id"];
-    $row["difficulty_level"] = (float)$row["difficulty_level"];
+    $row["difficulty_level"] = (int)round((float)$row["difficulty_level"]);
     $row["is_active"] = (int)$row["is_active"];
 
     $data[] = $row;

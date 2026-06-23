@@ -14,9 +14,19 @@ if (!has_role(["teacher", "super_admin"])) {
 
 $data = json_decode(file_get_contents("php://input"), true);
 $roomCode = strtoupper(trim($data["room_code"] ?? ""));
-$questionId = (int)($data["question_id"] ?? 0);
+$questionIds = $data["question_ids"] ?? [];
 
-if ($roomCode === "" || $questionId <= 0) {
+if (!is_array($questionIds)) {
+    $questionIds = [];
+}
+
+if (isset($data["question_id"])) {
+    $questionIds[] = (int)$data["question_id"];
+}
+
+$questionIds = array_values(array_unique(array_filter(array_map("intval", $questionIds), fn($id) => $id > 0)));
+
+if ($roomCode === "" || count($questionIds) === 0) {
     echo json_encode([
         "success" => false,
         "message" => "Datos incompletos"
@@ -56,19 +66,28 @@ $roomId = (int)$room["id"];
 $status = $room["status"];
 $stmtRoom->close();
 
-if ($status !== "waiting") {
+if ($status === "finished") {
     echo json_encode([
         "success" => false,
-        "message" => "Solo se pueden quitar preguntas antes de iniciar la sala"
+        "message" => "La sala ya finalizo y no se pueden quitar preguntas"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+$placeholders = implode(",", array_fill(0, count($questionIds), "?"));
+$types = str_repeat("i", count($questionIds));
+
 $stmtDelete = $conn->prepare("
-    DELETE FROM room_questions
-    WHERE room_id = ?
-      AND question_id = ?
-    LIMIT 1
+    DELETE rq
+    FROM room_questions rq
+    WHERE rq.room_id = ?
+      AND rq.question_id IN ({$placeholders})
+      AND NOT EXISTS (
+          SELECT 1
+          FROM game_answers ga
+          WHERE ga.room_id = rq.room_id
+            AND ga.question_id = rq.question_id
+      )
 ");
 
 if (!$stmtDelete) {
@@ -80,12 +99,13 @@ if (!$stmtDelete) {
     exit;
 }
 
-$stmtDelete->bind_param("ii", $roomId, $questionId);
+$stmtDelete->bind_param("i" . $types, $roomId, ...$questionIds);
 
 if ($stmtDelete->execute()) {
     echo json_encode([
         "success" => true,
-        "message" => "Pregunta quitada de la sala"
+        "message" => "Preguntas quitadas de la sala",
+        "removed" => $stmtDelete->affected_rows
     ], JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode([

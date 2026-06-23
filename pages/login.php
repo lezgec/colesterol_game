@@ -2,13 +2,16 @@
 require_once __DIR__ . '/../lang/translate.php';
 require_once __DIR__ . '/../includes/auth.php';
 
-if (is_logged_in()) {
+if (current_session_is_active()) {
     header("Location: " . redirect_after_login_by_role($_SESSION["user_role"] ?? "player"));
     exit;
 }
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$loginJsVersion = filemtime(__DIR__ . '/../assets/js/login.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -22,11 +25,13 @@ header("Pragma: no-cache");
 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?v=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
-<div class="game-container">
+<div class="game-container auth-container">
 
     <div class="top-actions">
 
@@ -36,14 +41,28 @@ header("Pragma: no-cache");
             <a href="?lang=en">EN</a>
         </div>
 
+        <a href="/colesterol_game/index.php" class="admin-login-link" style="margin:0;">
+            <?php echo t("back"); ?>
+        </a>
+
     </div>
 
     <h1><?php echo t("login_title"); ?></h1>
         <?php if (isset($_GET["logout"])): ?>
         <p style="color:#4caf50; text-align:center;">
-            <?php echo current_lang() === "en"
-                ? "Session closed successfully"
-                : "Sesión cerrada correctamente"; ?>
+            <?php echo t("session_closed_successfully"); ?>
+        </p>
+    <?php endif; ?>
+
+    <?php if (($_GET["session"] ?? "") === "replaced"): ?>
+        <p style="color:#ffc107; text-align:center;">
+            <?php echo t("session_replaced_message"); ?>
+        </p>
+    <?php endif; ?>
+
+    <?php if (($_GET["session"] ?? "") === "expired"): ?>
+        <p style="color:#ffc107; text-align:center;">
+            <?php echo t("session_expired_message"); ?>
         </p>
     <?php endif; ?>
 
@@ -67,23 +86,34 @@ header("Pragma: no-cache");
 
     <p id="login-message"></p>
 
+    <p style="margin-top:16px; text-align:center;">
+        <a href="/colesterol_game/pages/forgot_password.php">
+            <?php echo t("forgot_password"); ?>
+        </a>
+    </p>
+
     <p style="margin-top:20px; text-align:center;">
 
-        <?php echo current_lang() === "en"
-            ? "Don't have an account?"
-            : "¿No tienes cuenta?"; ?>
+        <?php echo t("no_account"); ?>
 
         <a href="/colesterol_game/pages/register.php">
-            <?php echo current_lang() === "en"
-                ? "Register"
-                : "Regístrate"; ?>
+            <?php echo t("register_link"); ?>
         </a>
 
     </p>
 
 </div>
 
-<script src="/colesterol_game/assets/js/login.js"></script>
+<script>
+const LOGIN_I18N = {
+    loading: "<?php echo t("login_loading"); ?>",
+    success: "<?php echo t("login_success"); ?>",
+    failed: "<?php echo t("login_failed"); ?>",
+    connectionError: "<?php echo t("connection_error"); ?>"
+};
+</script>
+<script src="/colesterol_game/assets/js/login.js?v=<?php echo $loginJsVersion; ?>"></script>
 
+<script src="/colesterol_game/assets/js/theme.js?v=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

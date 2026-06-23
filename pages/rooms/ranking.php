@@ -42,6 +42,8 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("room_ranking"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -76,7 +78,7 @@ $conn->close();
     <section class="admin-section">
         <h2><?php echo t("full_ranking"); ?></h2>
 
-        <table class="admin-table">
+        <table class="admin-table ranking-table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -123,6 +125,7 @@ $conn->close();
 
 </div>
 
+<script src="/colesterol_game/assets/js/ui_icons.js"></script>
 <script>
 const ROOM_CODE = "<?php echo htmlspecialchars($roomCode); ?>";
 const CURRENT_PLAYER = "<?php echo htmlspecialchars($_GET["name"] ?? ""); ?>";
@@ -160,7 +163,6 @@ function renderPodium(data) {
     container.innerHTML = "";
 
     const topThree = data.slice(0, 3);
-    const medals = ["🥇", "🥈", "🥉"];
     const classes = ["first-place", "second-place", "third-place"];
 
     topThree.forEach((player, index) => {
@@ -172,13 +174,13 @@ function renderPodium(data) {
         }
 
         card.innerHTML = `
-            <div class="podium-medal">${medals[index]}</div>
+            <div class="podium-medal">${window.uiIcon ? window.uiIcon("medal", `ui-icon podium-medal-svg podium-medal-${index + 1}`) : index + 1}</div>
             <h3>${player.player_name}</h3>
             <p>${player.best_score}</p>
             <small>
                 ${player.best_correct} / ${player.total_questions}
                 <br>
-                ${player.precision}% • ${player.final_difficulty}/5
+                ${player.precision}% - ${player.final_difficulty}/5
             </small>
         `;
 
@@ -200,8 +202,7 @@ function renderTable(data) {
         const row = document.createElement("tr");
 
         if (CURRENT_PLAYER && player.player_name === CURRENT_PLAYER) {
-            row.style.background = "#d4edda";
-            row.style.fontWeight = "bold";
+            row.classList.add("current-player-rank");
         }
 
         row.innerHTML = `
@@ -277,5 +278,8 @@ rankingInterval = setInterval(() => loadRoomRanking(false), 3000);
 stateInterval = setInterval(checkRoomStatus, 3000);
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js"></script>
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

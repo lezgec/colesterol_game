@@ -47,7 +47,7 @@ if ($quantity > 50) {
     $quantity = 50;
 }
 
-$difficultyLevel = (float)$difficulty;
+$difficultyLevel = $difficulty;
 $allowedCategoryList = array_values(array_unique(array_merge(
     question_categories($language),
     [$category]
@@ -82,6 +82,10 @@ Rules:
 - Each question must have exactly four options.
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
+- Avoid acronyms or abbreviations in the questions and answer options whenever possible.
+- Do not write standalone abbreviations such as LDL, HDL, VLDL, TG, IMC, BMI, ECV, or CVD.
+- If an abbreviation is truly necessary, write the full meaning first and the abbreviation in parentheses in the same sentence, using the selected language. Example in Spanish: lipoproteína de baja densidad (LDL). Example in English: low-density lipoprotein (LDL).
+- Do not use an abbreviation later by itself unless its full meaning appeared earlier in that same question or option.
 - explanation must briefly explain why the correct answer is correct.
 - category must be exactly one of: {$allowedCategories}.
 - difficulty_level must be {$difficultyLevel}.
@@ -121,7 +125,7 @@ $payload = [
                             ],
                             "explanation" => ["type" => "string"],
                             "category" => ["type" => "string"],
-                            "difficulty_level" => ["type" => "number"],
+            "difficulty_level" => ["type" => "integer"],
                             "language" => [
                                 "type" => "string",
                                 "enum" => ["es", "en"]
@@ -214,7 +218,7 @@ $stmt = $conn->prepare("
             is_active
         )
     VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', 'ai', 1)
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'ai', 0)
 ");
 
 if (!$stmt) {

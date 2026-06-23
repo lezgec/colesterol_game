@@ -4,6 +4,7 @@ session_start();
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../lang/translate.php';
+require_once __DIR__ . '/export_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
     die("No autorizado");
@@ -11,17 +12,12 @@ if (!has_role(["teacher", "super_admin"])) {
 
 $filename = "global_analytics_report_" . date("Y-m-d_H-i-s") . ".csv";
 
-header("Content-Type: text/csv; charset=utf-8");
-header("Content-Disposition: attachment; filename=\"$filename\"");
+$output = export_csv_open($filename);
 
-$output = fopen("php://output", "w");
-fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-
-fputcsv($output, ["GLOBAL ANALYTICS REPORT"]);
-fputcsv($output, ["Generated at", date("Y-m-d H:i:s")]);
+export_csv_title($output, export_label("analytics_report"));
 fputcsv($output, []);
 
-fputcsv($output, ["SUMMARY"]);
+export_csv_section($output, export_label("summary"));
 
 $summarySql = "
     SELECT
@@ -43,27 +39,26 @@ $totalAnswers = (int)$summary["total_answers"];
 $correctAnswers = (int)$summary["correct_answers"];
 $precision = $totalAnswers > 0 ? round(($correctAnswers / $totalAnswers) * 100, 2) : 0;
 
-fputcsv($output, ["Total users", (int)$summary["total_users"]]);
-fputcsv($output, ["Total games", (int)$summary["total_games"]]);
-fputcsv($output, ["Total rooms", (int)$summary["total_rooms"]]);
-fputcsv($output, ["Total questions", (int)$summary["total_questions"]]);
-fputcsv($output, ["Total answers", $totalAnswers]);
-fputcsv($output, ["Correct answers", $correctAnswers]);
-fputcsv($output, ["Global precision", $precision . "%"]);
-fputcsv($output, ["Average response time", round((float)$summary["avg_response_time"], 2) . "s"]);
-fputcsv($output, ["Average difficulty", round((float)$summary["avg_difficulty"], 1) . " / 5"]);
+fputcsv($output, [export_label("total_users"), (int)$summary["total_users"]]);
+fputcsv($output, [export_label("total_games"), (int)$summary["total_games"]]);
+fputcsv($output, [export_label("total_rooms"), (int)$summary["total_rooms"]]);
+fputcsv($output, [export_label("total_questions"), (int)$summary["total_questions"]]);
+fputcsv($output, [export_label("total_answers"), $totalAnswers]);
+fputcsv($output, [export_label("correct_answers"), $correctAnswers]);
+fputcsv($output, [export_label("global_precision"), $precision . "%"]);
+fputcsv($output, [export_label("average_response_time"), round((float)$summary["avg_response_time"], 2) . "s"]);
+fputcsv($output, [export_label("average_difficulty"), round((float)$summary["avg_difficulty"], 1) . " / 5"]);
 
-fputcsv($output, []);
-fputcsv($output, ["TOP PLAYERS"]);
+export_csv_section($output, export_label("top_players"));
 fputcsv($output, [
-    "Player",
-    "Total answers",
-    "Correct answers",
-    "Precision",
-    "Total score",
-    "Average response time",
-    "Average difficulty",
-    "Max difficulty"
+    export_label("player"),
+    export_label("total_answers"),
+    export_label("correct_answers"),
+    export_label("precision"),
+    export_label("score"),
+    export_label("average_response_time"),
+    export_label("average_difficulty"),
+    export_label("max_difficulty")
 ]);
 
 $playersSql = "
@@ -101,18 +96,17 @@ while ($row = $result->fetch_assoc()) {
     ]);
 }
 
-fputcsv($output, []);
-fputcsv($output, ["TOP ROOMS"]);
+export_csv_section($output, export_label("top_rooms"));
 fputcsv($output, [
-    "Room code",
-    "Room name",
-    "Status",
-    "Total players",
-    "Total answers",
-    "Correct answers",
-    "Precision",
-    "Average response time",
-    "Average difficulty"
+    export_label("room_code"),
+    export_label("room_name"),
+    export_label("status"),
+    export_label("total_players"),
+    export_label("total_answers"),
+    export_label("correct_answers"),
+    export_label("precision"),
+    export_label("average_response_time"),
+    export_label("average_difficulty")
 ]);
 
 $roomsSql = "
@@ -153,15 +147,14 @@ while ($row = $result->fetch_assoc()) {
     ]);
 }
 
-fputcsv($output, []);
-fputcsv($output, ["PERFORMANCE BY CATEGORY"]);
+export_csv_section($output, export_label("performance_by_category"));
 fputcsv($output, [
-    "Category",
-    "Total answers",
-    "Correct answers",
-    "Precision",
-    "Average response time",
-    "Average difficulty"
+    export_label("category"),
+    export_label("total_answers"),
+    export_label("correct_answers"),
+    export_label("precision"),
+    export_label("average_response_time"),
+    export_label("average_difficulty")
 ]);
 
 $categorySql = "
@@ -194,18 +187,17 @@ while ($row = $result->fetch_assoc()) {
     ]);
 }
 
-fputcsv($output, []);
-fputcsv($output, ["MOST FAILED QUESTIONS"]);
+export_csv_section($output, export_label("most_failed_questions"));
 fputcsv($output, [
-    "Question ID",
-    "Question",
-    "Category",
-    "Total answers",
-    "Correct answers",
-    "Incorrect answers",
-    "Failure rate",
-    "Average response time",
-    "Average difficulty"
+    export_label("question_id"),
+    export_label("question"),
+    export_label("category"),
+    export_label("total_answers"),
+    export_label("correct_answers"),
+    export_label("incorrect_answers"),
+    export_label("failure_rate"),
+    export_label("average_response_time"),
+    export_label("average_difficulty")
 ]);
 
 $failedSql = "

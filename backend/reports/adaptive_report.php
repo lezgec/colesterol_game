@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ini_set('display_errors', 1);
 ini_set("precision", "10");
@@ -19,6 +21,8 @@ if (!has_role(["teacher", "super_admin"])) {
     exit;
 }
 
+$isSuperAdmin = is_super_admin();
+$userId = (int)($_SESSION["user_id"] ?? 0);
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 
 $params = [];
@@ -28,7 +32,7 @@ $where = "1 = 1";
 
 if ($roomCode !== "") {
     $stmtRoom = $conn->prepare("
-        SELECT id, room_code, name
+        SELECT id, room_code, name, created_by
         FROM game_rooms
         WHERE room_code = ?
     ");
@@ -47,6 +51,15 @@ if ($roomCode !== "") {
     }
 
     $room = $roomResult->fetch_assoc();
+
+    if (!$isSuperAdmin && (int)$room["created_by"] !== $userId) {
+        echo json_encode([
+            "success" => false,
+            "message" => "No autorizado"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $roomId = (int)$room["id"];
 
     $where = "ga.room_id = ?";
@@ -56,6 +69,12 @@ if ($roomCode !== "") {
     $stmtRoom->close();
 } else {
     $room = null;
+
+    if (!$isSuperAdmin) {
+        $where = "ga.game_mode = 'room' AND gr_scope.created_by = ?";
+        $params[] = $userId;
+        $types .= "i";
+    }
 }
 
 $sql = "
@@ -75,6 +94,7 @@ $sql = "
         ga.answered_at
     FROM game_answers ga
     INNER JOIN questions q ON ga.question_id = q.id
+    " . (!$isSuperAdmin && $roomCode === "" ? "INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id" : "") . "
     WHERE $where
     ORDER BY ga.player_name ASC, ga.answered_at ASC, ga.id ASC
 ";

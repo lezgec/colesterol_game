@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ini_set('display_errors', 1);
 ini_set("precision", "10");
@@ -18,6 +20,12 @@ if (!has_role(["teacher", "super_admin"])) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+$isSuperAdmin = is_super_admin();
+$userId = (int)($_SESSION["user_id"] ?? 0);
+$answerJoin = $isSuperAdmin ? "" : "INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id";
+$answerWhere = $isSuperAdmin ? "" : "WHERE ga.game_mode = 'room' AND gr_scope.created_by = {$userId}";
+$roomWhere = $isSuperAdmin ? "" : "WHERE gr.created_by = {$userId}";
 
 function fetchAllRows(mysqli $conn, string $sql): array {
     $result = $conn->query($sql);
@@ -47,7 +55,9 @@ try {
             COALESCE(ROUND(AVG(ga.difficulty_level), 2), 0) AS avg_difficulty,
             COALESCE(MAX(ga.difficulty_level), 0) AS max_difficulty
         FROM game_answers ga
+        {$answerJoin}
         LEFT JOIN users u ON ga.user_id = u.id
+        {$answerWhere}
         GROUP BY COALESCE(u.name, ga.player_name, 'Guest')
         ORDER BY total_score DESC
         LIMIT 20
@@ -105,6 +115,7 @@ try {
             WHERE room_id IS NOT NULL
             GROUP BY room_id
         ) result_stats ON result_stats.room_id = gr.id
+        {$roomWhere}
         ORDER BY total_answers DESC
         LIMIT 20
     ";
@@ -138,7 +149,9 @@ try {
             COALESCE(ROUND(AVG(ga.response_time), 2), 0) AS avg_response_time,
             COALESCE(ROUND(AVG(ga.difficulty_level), 2), 0) AS avg_difficulty
         FROM game_answers ga
+        {$answerJoin}
         INNER JOIN questions q ON ga.question_id = q.id
+        {$answerWhere}
         GROUP BY q.category
         ORDER BY total_answers DESC
     ";
@@ -171,6 +184,9 @@ try {
             COALESCE(ROUND(AVG(response_time), 2), 0) AS avg_response_time,
             COALESCE(ROUND(AVG(difficulty_level), 2), 0) AS avg_difficulty
         FROM game_answers
+        ga
+        {$answerJoin}
+        {$answerWhere}
         GROUP BY game_mode
         ORDER BY total_answers DESC
     ";
@@ -207,7 +223,9 @@ try {
             COALESCE(SUM(is_correct), 0) AS correct_answers,
             COALESCE(ROUND(AVG(response_time), 2), 0) AS avg_response_time,
             COALESCE(SUM(score_earned), 0) AS total_score
-        FROM game_answers
+        FROM game_answers ga
+        {$answerJoin}
+        {$answerWhere}
         GROUP BY difficulty_range
         ORDER BY MIN(difficulty_level)
     ";

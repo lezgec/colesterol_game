@@ -4,6 +4,10 @@ require_once __DIR__ . '/../../lang/translate.php';
 
 require_role(["teacher", "super_admin"]);
 
+$styleVersion = filemtime(__DIR__ . '/../../assets/css/style.css');
+$responsiveTablesVersion = filemtime(__DIR__ . '/../../assets/js/responsive_tables.js');
+$themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
+
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 
@@ -20,8 +24,10 @@ if ($roomCode === "") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("room_report"); ?></title>
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?m=<?php echo $styleVersion; ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -45,17 +51,19 @@ if ($roomCode === "") {
         </div>
     </div>
 
-    <h1>📋 <?php echo t("room_report"); ?></h1>
-    <a href="/colesterol_game/backend/exports/export_room_report_csv.php?code=<?php echo urlencode($roomCode); ?>"
-    class="primary-btn"
-    style="display:block; text-align:center; text-decoration:none; margin-bottom:15px;">
-        📥 <?php echo t("export_csv"); ?>
-    </a>
-    <a href="/colesterol_game/backend/exports/pdf/export_room_report_pdf.php?code=<?php echo urlencode($roomCode); ?>"
-    class="primary-btn"
-    style="display:block; text-align:center; text-decoration:none; margin-bottom:15px;">
-        📄 <?php echo t("export_pdf"); ?>
-    </a>
+    <h1><?php echo t("room_report"); ?></h1>
+
+    <section class="report-export-actions" aria-label="<?php echo t("actions"); ?>">
+        <a href="/colesterol_game/backend/exports/export_room_report_csv.php?code=<?php echo urlencode($roomCode); ?>"
+           class="primary-btn">
+            <?php echo t("export_csv"); ?>
+        </a>
+        <a href="/colesterol_game/backend/exports/pdf/export_room_report_pdf.php?code=<?php echo urlencode($roomCode); ?>"
+           class="primary-btn">
+            <?php echo t("export_pdf"); ?>
+        </a>
+    </section>
+
     <p class="room-meta">
         <strong><?php echo t("room_code"); ?>:</strong>
         <?php echo htmlspecialchars($roomCode); ?>
@@ -94,7 +102,7 @@ if ($roomCode === "") {
     </section>
 
     <section class="admin-section">
-        <h2>📊 <?php echo t("visual_charts"); ?></h2>
+        <h2><?php echo t("visual_charts"); ?></h2>
 
         <div class="analytics-layout">
             <div class="chart-card">
@@ -529,5 +537,8 @@ function renderRoomFailedChart(items) {
 }
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js?m=<?php echo $responsiveTablesVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/theme.js?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

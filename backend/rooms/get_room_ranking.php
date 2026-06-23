@@ -79,7 +79,7 @@ while ($row = $result->fetch_assoc()) {
         "best_correct" => $bestCorrect,
         "total_questions" => $totalQuestions,
         "precision" => $precision,
-        "final_difficulty" => round((float)($row["final_difficulty"] ?? 1.0), 1)
+        "final_difficulty" => round((float)($row["final_difficulty"] ?? 1), 1)
     ];
 }
 

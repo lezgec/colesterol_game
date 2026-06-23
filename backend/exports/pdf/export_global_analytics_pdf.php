@@ -1,11 +1,9 @@
 <?php
 session_start();
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../includes/auth.php';
 require_once __DIR__ . '/../../../lang/translate.php';
+require_once __DIR__ . '/../export_helpers.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Dompdf\Dompdf;
@@ -210,6 +208,8 @@ $options->set("isRemoteEnabled", true);
 $options->set("defaultFont", "Helvetica");
 
 $dompdf = new Dompdf($options);
+$reportTitle = export_label("analytics_report");
+$logoHtml = export_pdf_logo_html();
 
 $html = "
 <!DOCTYPE html>
@@ -223,7 +223,22 @@ $html = "
         font-size: 11px;
     }
 
+    .report-header {
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+    }
+
+    .report-logo {
+        width: 42px;
+        height: 42px;
+        vertical-align: middle;
+        margin-right: 10px;
+    }
+
     h1 {
+        display: inline-block;
+        vertical-align: middle;
         color: #1f2937;
         margin-bottom: 4px;
     }
@@ -291,36 +306,37 @@ $html = "
         color: #6b7280;
     }
 </style>
+
 </head>
 <body>
 
-<h1>Global Analytics Report</h1>
+<div class='report-header'>{$logoHtml}<h1>" . htmlspecialchars($reportTitle) . "</h1></div>
 
 <div class='meta'>
-    Generated at: " . date("Y-m-d H:i:s") . "
+    " . export_label("generated_at") . ": " . date("Y-m-d H:i:s") . "
 </div>
 
 <div class='summary'>
-    <div class='card'>Users<strong>" . (int)$summary["total_users"] . "</strong></div>
-    <div class='card'>Games<strong>" . (int)$summary["total_games"] . "</strong></div>
-    <div class='card'>Rooms<strong>" . (int)$summary["total_rooms"] . "</strong></div>
-    <div class='card'>Questions<strong>" . (int)$summary["total_questions"] . "</strong></div>
-    <div class='card'>Answers<strong>{$totalAnswers}</strong></div>
-    <div class='card'>Precision<strong>{$precision}%</strong></div>
+    <div class='card'>" . export_label("users") . "<strong>" . (int)$summary["total_users"] . "</strong></div>
+    <div class='card'>" . export_label("total_games") . "<strong>" . (int)$summary["total_games"] . "</strong></div>
+    <div class='card'>" . export_label("rooms") . "<strong>" . (int)$summary["total_rooms"] . "</strong></div>
+    <div class='card'>" . export_label("questions") . "<strong>" . (int)$summary["total_questions"] . "</strong></div>
+    <div class='card'>" . export_label("answers") . "<strong>{$totalAnswers}</strong></div>
+    <div class='card'>" . export_label("precision") . "<strong>{$precision}%</strong></div>
 </div>
 
-<h2>Top Players</h2>
+<h2>" . export_label("top_players") . "</h2>
 
 <table>
     <thead>
         <tr>
             <th>#</th>
-            <th>Player</th>
-            <th>Score</th>
-            <th>Correct</th>
-            <th>Precision</th>
-            <th>Avg Time</th>
-            <th>Avg Difficulty</th>
+            <th>" . export_label("player") . "</th>
+            <th>" . export_label("score") . "</th>
+            <th>" . export_label("correct") . "</th>
+            <th>" . export_label("precision") . "</th>
+            <th>" . export_label("average_response_time") . "</th>
+            <th>" . export_label("average_difficulty") . "</th>
         </tr>
     </thead>
     <tbody>
@@ -328,17 +344,17 @@ $html = "
     </tbody>
 </table>
 
-<h2>Top Rooms</h2>
+<h2>" . export_label("top_rooms") . "</h2>
 
 <table>
     <thead>
         <tr>
-            <th>Code</th>
-            <th>Room</th>
-            <th>Status</th>
-            <th>Players</th>
-            <th>Precision</th>
-            <th>Avg Time</th>
+            <th>" . export_label("code") . "</th>
+            <th>" . export_label("room") . "</th>
+            <th>" . export_label("status") . "</th>
+            <th>" . export_label("players") . "</th>
+            <th>" . export_label("precision") . "</th>
+            <th>" . export_label("average_response_time") . "</th>
         </tr>
     </thead>
     <tbody>
@@ -346,17 +362,17 @@ $html = "
     </tbody>
 </table>
 
-<h2>Performance by Category</h2>
+<h2>" . export_label("performance_by_category") . "</h2>
 
 <table>
     <thead>
         <tr>
-            <th>Category</th>
-            <th>Total</th>
-            <th>Correct</th>
-            <th>Precision</th>
-            <th>Avg Time</th>
-            <th>Avg Difficulty</th>
+            <th>" . export_label("category") . "</th>
+            <th>" . export_label("total") . "</th>
+            <th>" . export_label("correct") . "</th>
+            <th>" . export_label("precision") . "</th>
+            <th>" . export_label("average_response_time") . "</th>
+            <th>" . export_label("average_difficulty") . "</th>
         </tr>
     </thead>
     <tbody>
@@ -364,17 +380,17 @@ $html = "
     </tbody>
 </table>
 
-<h2>Most Failed Questions</h2>
+<h2>" . export_label("most_failed_questions") . "</h2>
 
 <table>
     <thead>
         <tr>
             <th>ID</th>
-            <th>Question</th>
-            <th>Category</th>
-            <th>Incorrect</th>
-            <th>Failure Rate</th>
-            <th>Avg Time</th>
+            <th>" . export_label("question") . "</th>
+            <th>" . export_label("category") . "</th>
+            <th>" . export_label("incorrect") . "</th>
+            <th>" . export_label("failure_rate") . "</th>
+            <th>" . export_label("average_response_time") . "</th>
         </tr>
     </thead>
     <tbody>
@@ -383,7 +399,7 @@ $html = "
 </table>
 
 <div class='footer'>
-    Report generated by Serious Game: Cholesterol.
+    " . export_label("report_footer") . "
 </div>
 
 </body>

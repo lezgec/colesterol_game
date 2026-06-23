@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_role(["teacher", "super_admin"]);
 
@@ -16,6 +17,8 @@ $roomCode = strtoupper(trim($_GET["code"] ?? ""));
     <title><?php echo t("adaptive_report"); ?></title>
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -35,7 +38,7 @@ $roomCode = strtoupper(trim($_GET["code"] ?? ""));
         </div>
     </div>
 
-    <h1>📈 <?php echo t("adaptive_report"); ?></h1>
+    <h1><?php echo ui_icon("analytics"); ?> <?php echo t("adaptive_report"); ?></h1>
 
     <?php if ($roomCode !== ""): ?>
         <p>
@@ -56,7 +59,7 @@ $roomCode = strtoupper(trim($_GET["code"] ?? ""));
         </div>
     </section>
     <section class="admin-section">
-        <h2>📈 <?php echo t("adaptive_progression_chart"); ?></h2>
+        <h2><?php echo ui_icon("analytics"); ?> <?php echo t("adaptive_progression_chart"); ?></h2>
 
         <div class="chart-card">
             <canvas id="adaptiveChart"></canvas>
@@ -249,5 +252,8 @@ function renderAdaptiveChart(players) {
 }
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js"></script>
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

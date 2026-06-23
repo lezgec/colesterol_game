@@ -2,11 +2,12 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../lang/translate.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
 $room_code = strtoupper(trim($data["room_code"] ?? ""));
-$player_name = trim($data["player_name"] ?? "");
+$player_name = preg_replace('/\s+/u', ' ', trim($data["player_name"] ?? ""));
 
 if ($room_code === "" || $player_name === "") {
     echo json_encode([
@@ -62,7 +63,8 @@ $check = $conn->prepare("
     SELECT id 
     FROM room_players 
     WHERE room_id = ? 
-      AND player_name = ?
+      AND LOWER(TRIM(player_name)) = LOWER(TRIM(?))
+    LIMIT 1
 ");
 
 if (!$check) {
@@ -108,6 +110,15 @@ if ($checkResult->num_rows === 0) {
     }
 
     $insert->close();
+} else {
+    echo json_encode([
+        "success" => false,
+        "code" => "duplicate_player_name",
+        "message" => t("duplicate_room_player_name")
+    ], JSON_UNESCAPED_UNICODE);
+    $check->close();
+    $conn->close();
+    exit;
 }
 
 $check->close();

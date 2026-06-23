@@ -2,6 +2,10 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/adaptive_difficulty_schema.php';
+require_once __DIR__ . '/streak_helpers.php';
+
+ensure_adaptive_difficulty_columns($conn);
 
 $data = json_decode(file_get_contents("php://input"), true);
 
@@ -19,7 +23,15 @@ $is_correct = (int)($data["is_correct"] ?? 0);
 
 $response_time = (int)($data["response_time"] ?? 0);
 
-$difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
+$difficulty_level = round((float)($data["difficulty_level"] ?? 1), 1);
+
+if ($difficulty_level < 1) {
+    $difficulty_level = 1;
+}
+
+if ($difficulty_level > 5) {
+    $difficulty_level = 5;
+}
 
 $score_earned = (int)($data["score_earned"] ?? 0);
 
@@ -75,6 +87,8 @@ $stmt->bind_param(
 );
 
 if ($stmt->execute()) {
+    register_player_answer_streak($conn, $user_id, $is_correct);
+
     echo json_encode([
         "success" => true
     ], JSON_UNESCAPED_UNICODE);

@@ -30,6 +30,8 @@ if ($roomCode === "" || $playerName === "") {
           rel="stylesheet">
 
     <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -171,5 +173,6 @@ setInterval(loadPlayers, 2000);
 setInterval(checkRoomStatus, 2000);
 </script>
 
+<script src="/colesterol_game/assets/js/theme.js"></script>
 </body>
 </html>

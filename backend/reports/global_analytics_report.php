@@ -1,5 +1,7 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 ini_set('display_errors', 1);
 ini_set("precision", "10");
@@ -19,48 +21,58 @@ if (!has_role(["teacher", "super_admin"])) {
     exit;
 }
 
+$isSuperAdmin = is_super_admin();
+$userId = (int)($_SESSION["user_id"] ?? 0);
+$answerJoin = $isSuperAdmin ? "" : "INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id";
+$answerWhere = $isSuperAdmin ? "1 = 1" : "ga.game_mode = 'room' AND gr_scope.created_by = {$userId}";
+$roomWhere = $isSuperAdmin ? "1 = 1" : "created_by = {$userId}";
+$roomWhereWithAlias = $isSuperAdmin ? "1 = 1" : "gr.created_by = {$userId}";
+
 try {
 
     $summaryQuery = "
         SELECT
-            (SELECT COUNT(*) FROM users) AS total_users,
-            (SELECT COUNT(*) FROM game_results) AS total_games,
-            (SELECT COUNT(*) FROM game_rooms) AS total_rooms,
+            (SELECT COUNT(DISTINCT ga.user_id) FROM game_answers ga {$answerJoin} WHERE {$answerWhere} AND ga.user_id IS NOT NULL) AS total_users,
+            (SELECT COUNT(*) FROM game_results grs INNER JOIN game_rooms gr ON grs.room_id = gr.id WHERE {$roomWhereWithAlias}) AS total_games,
+            (SELECT COUNT(*) FROM game_rooms WHERE {$roomWhere}) AS total_rooms,
             (SELECT COUNT(*) FROM questions) AS total_questions,
 
-            (SELECT COUNT(*) FROM game_answers) AS total_answers,
+            (SELECT COUNT(*) FROM game_answers ga {$answerJoin} WHERE {$answerWhere}) AS total_answers,
 
             (
                 SELECT COALESCE(ROUND((SUM(is_correct) / COUNT(*)) * 100, 2), 0)
-                FROM game_answers
+                FROM game_answers ga {$answerJoin}
+                WHERE {$answerWhere}
             ) AS global_precision,
 
             (
                 SELECT COALESCE(ROUND(AVG(response_time), 2), 0)
-                FROM game_answers
+                FROM game_answers ga {$answerJoin}
+                WHERE {$answerWhere}
             ) AS avg_response_time,
 
             (
                 SELECT COALESCE(ROUND(AVG(difficulty_level), 2), 0)
-                FROM game_answers
+                FROM game_answers ga {$answerJoin}
+                WHERE {$answerWhere}
             ) AS avg_difficulty,
 
             (
                 SELECT COUNT(DISTINCT user_id)
-                FROM game_answers
-                WHERE user_id IS NOT NULL
+                FROM game_answers ga {$answerJoin}
+                WHERE {$answerWhere} AND user_id IS NOT NULL
             ) AS active_users,
 
             (
                 SELECT COUNT(*)
-                FROM game_answers
-                WHERE game_mode = 'solo'
+                FROM game_answers ga {$answerJoin}
+                WHERE {$answerWhere} AND game_mode = 'solo'
             ) AS solo_answers,
 
             (
                 SELECT COUNT(*)
-                FROM game_answers
-                WHERE game_mode = 'room'
+                FROM game_answers ga {$answerJoin}
+                WHERE {$answerWhere} AND game_mode = 'room'
             ) AS room_answers
     ";
 
@@ -84,7 +96,9 @@ try {
             COALESCE(ROUND(AVG(ga.difficulty_level), 2), 0) AS avg_difficulty,
             COALESCE(ROUND(MAX(ga.difficulty_level), 2), 0) AS max_difficulty
         FROM game_answers ga
+        {$answerJoin}
         LEFT JOIN users u ON ga.user_id = u.id
+        WHERE {$answerWhere}
         GROUP BY COALESCE(u.name, ga.player_name, 'Guest')
         ORDER BY total_score DESC, correct_answers DESC, avg_response_time ASC
         LIMIT 10
@@ -148,6 +162,7 @@ try {
             WHERE room_id IS NOT NULL
             GROUP BY room_id
         ) result_stats ON result_stats.room_id = gr.id
+        WHERE {$roomWhereWithAlias}
         ORDER BY total_players DESC, total_answers DESC
         LIMIT 10
     ";
@@ -185,7 +200,9 @@ try {
             COALESCE(ROUND(AVG(ga.response_time), 2), 0) AS avg_response_time,
             COALESCE(ROUND(AVG(ga.difficulty_level), 2), 0) AS avg_difficulty
         FROM game_answers ga
+        {$answerJoin}
         INNER JOIN questions q ON ga.question_id = q.id
+        WHERE {$answerWhere}
         GROUP BY q.category
         ORDER BY (COALESCE(SUM(ga.is_correct), 0) / COUNT(ga.id)) ASC, total_answers DESC
     ";

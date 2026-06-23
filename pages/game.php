@@ -1,8 +1,15 @@
 <?php
 require_once __DIR__ . '/../lang/translate.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_login();
+
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$soundVersion = filemtime(__DIR__ . '/../assets/js/sound_fx.js');
+$appVersion = filemtime(__DIR__ . '/../assets/js/app.js');
+$uiIconsJsVersion = filemtime(__DIR__ . '/../assets/js/ui_icons.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
@@ -22,7 +29,9 @@ header("Pragma: no-cache");
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap"
           rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?m=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 
 <body>
@@ -93,12 +102,12 @@ header("Pragma: no-cache");
 
             <div class="hud-stat">
                 <span><?php echo t("lives"); ?></span>
-                <strong id="lives">❤️❤️❤️</strong>
+                <strong id="lives" class="lives-icons" aria-label="<?php echo t("lives"); ?>"></strong>
             </div>
 
             <div class="hud-stat">
                 <span><?php echo t("difficulty"); ?></span>
-                <strong id="selected-difficulty">1.0 / 5</strong>
+                <strong id="selected-difficulty">1 / 5</strong>
             </div>
 
             <div class="hud-stat">
@@ -185,12 +194,16 @@ const I18N = {
     submitAnswer: "<?php echo t('submit_answer'); ?>",
     chooseAnswer: "<?php echo t('choose_answer'); ?>",
     timeOut: "<?php echo t('time_out'); ?>",
-    nextQuestionIn: "<?php echo t('next_question_in'); ?>",
-    playAgain: "<?php echo t('play_again'); ?>"
+    playAgain: "<?php echo t('play_again'); ?>",
+    newBadgeUnlocked: "<?php echo current_lang() === "en" ? "New achievement unlocked" : "Nuevo logro desbloqueado"; ?>",
+    close: "<?php echo t('close'); ?>"
 };
 </script>
 
-<script src="/colesterol_game/assets/js/app.js"></script>
+<script src="/colesterol_game/assets/js/ui_icons.js?m=<?php echo $uiIconsJsVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/sound_fx.js?m=<?php echo $soundVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/app.js?m=<?php echo $appVersion; ?>"></script>
 
+<script src="/colesterol_game/assets/js/theme.js?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

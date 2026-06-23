@@ -102,13 +102,13 @@ $difficultyRows = fetchAll(
     $conn,
     "
         SELECT
-            ROUND(COALESCE(ga.difficulty_level, 1.0), 1) AS difficulty,
+            ROUND(COALESCE(ga.difficulty_level, 1)) AS difficulty,
             COUNT(*) AS total_questions,
             COALESCE(SUM(ga.is_correct), 0) AS total_correct
         FROM game_answers ga
         {$answerScopeJoin}
         {$answerScopeWhere}
-        GROUP BY ROUND(COALESCE(ga.difficulty_level, 1.0), 1)
+        GROUP BY ROUND(COALESCE(ga.difficulty_level, 1))
         ORDER BY difficulty ASC
     ",
     $answerScopeTypes,
@@ -122,7 +122,7 @@ foreach ($difficultyRows as $row) {
     $correct = (int)$row["total_correct"];
 
     $difficultyStats[] = [
-        "difficulty" => round((float)$row["difficulty"], 1) . " / 5",
+        "difficulty" => (int)round((float)$row["difficulty"]) . " / 5",
         "correct" => $correct,
         "questions" => $questions,
         "percentage" => $questions > 0

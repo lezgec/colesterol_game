@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/room_question_requirements.php';
+require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
@@ -25,9 +26,11 @@ if ($roomCode === "") {
 
 try {
     ensure_room_question_requirements_table($conn);
+    ensure_question_workflow_columns($conn);
+    $accessSql = playable_question_access_sql("q");
 
     $stmtRoom = $conn->prepare("
-        SELECT id, room_code, name, status, language, question_count, question_mode
+        SELECT id, room_code, name, status, language, question_count, time_limit, question_mode
         FROM game_rooms
         WHERE room_code = ?
     ");
@@ -62,6 +65,7 @@ try {
         WHERE rq.room_id = ?
           AND q.status = 'verified'
           AND q.is_active = 1
+          AND {$accessSql}
     ");
 
     if (!$stmtReady) {
@@ -102,6 +106,7 @@ try {
           AND q.difficulty_level < ?
           AND q.status = 'verified'
           AND q.is_active = 1
+          AND {$accessSql}
     ");
 
     $stmtAvailableBlock = $conn->prepare("
@@ -204,7 +209,7 @@ try {
             "id" => (int)$question["id"],
             "question" => $question["question"],
             "category" => $question["category"],
-            "difficulty_level" => (float)$question["difficulty_level"],
+            "difficulty_level" => (int)round((float)$question["difficulty_level"]),
             "language" => $question["language"],
             "status" => $question["status"],
             "is_active" => (int)$question["is_active"],
@@ -214,9 +219,10 @@ try {
 
     $stmtQuestions->close();
 
+    $missingByTotal = max(0, $requiredTotal - $assignedReadyTotal);
     $missingTotal = count($requirements) > 0
-        ? $requirementMissingTotal
-        : max(0, $requiredTotal - $assignedReadyTotal);
+        ? max($requirementMissingTotal, $missingByTotal)
+        : $missingByTotal;
 
     echo json_encode([
         "success" => true,
@@ -227,6 +233,7 @@ try {
             "status" => $room["status"],
             "language" => $language,
             "question_count" => $requiredTotal,
+            "time_limit" => (int)$room["time_limit"],
             "question_mode" => $room["question_mode"]
         ],
         "required_total" => $requiredTotal,

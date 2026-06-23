@@ -1,25 +1,44 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
+require_once __DIR__ . '/../includes/user_menu.php';
 
-require_role(["player"]);
+require_role(["player", "super_admin"]);
+
+$requestedUserId = (int)($_GET["user_id"] ?? 0);
+$isAdminProfileView = is_super_admin() && $requestedUserId > 0;
+$profileUserParam = $isAdminProfileView
+    ? "?user_id=" . $requestedUserId
+    : "";
+$profileFetchParam = $isAdminProfileView
+    ? "&user_id=" . $requestedUserId
+    : "";
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 
-$userName = $_SESSION["user_name"] ?? "Player";
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$responsiveTablesVersion = filemtime(__DIR__ . '/../assets/js/responsive_tables.js');
+$uiIconsJsVersion = filemtime(__DIR__ . '/../assets/js/ui_icons.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
+
+$userName = $isAdminProfileView ? "Player" : ($_SESSION["user_name"] ?? "Player");
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("player_profile"); ?></title>
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?m=<?php echo $styleVersion; ?>">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
-<div class="game-container">
+<div class="game-container player-profile-container">
 
     <div class="top-actions">
         <div class="language-pill">
@@ -29,33 +48,199 @@ $userName = $_SESSION["user_name"] ?? "Player";
         </div>
 
         <div class="top-links">
-            <a href="/colesterol_game/pages/player_dashboard.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_player_dashboard"); ?>
+            <a href="<?php echo $isAdminProfileView ? '/colesterol_game/pages/users_management.php' : '/colesterol_game/pages/player_dashboard.php'; ?>" class="logout-btn secondary-btn">
+                <?php echo $isAdminProfileView ? t("users_management") : t("back_to_player_dashboard"); ?>
             </a>
 
-            <a href="/colesterol_game/pages/logout.php" class="logout-btn">
-                <?php echo t("logout"); ?>
-            </a>
+            <?php if (!$isAdminProfileView): ?>
+                <?php render_user_menu(); ?>
+            <?php else: ?>
+                <a href="/colesterol_game/pages/logout.php" class="logout-btn">
+                    <?php echo t("logout"); ?>
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 
-    <h1>👤 <?php echo t("player_profile"); ?></h1>
+    <h1><?php echo ui_icon("users"); ?> <?php echo t("player_profile"); ?></h1>
 
     <a href="/colesterol_game/backend/exports/export_player_profile_csv.php"
     class="primary-btn"
     style="display:block; text-align:center; text-decoration:none; margin-bottom:15px;">
-        📥 <?php echo t("export_csv"); ?>
+        <?php echo ui_icon("download"); ?> <?php echo t("export_csv"); ?>
     </a>
     <a href="/colesterol_game/backend/exports/pdf/export_player_profile_pdf.php"
     class="primary-btn"
     style="display:block; text-align:center; text-decoration:none; margin-bottom:15px;">
-        📄 <?php echo t("export_pdf"); ?>
+        <?php echo ui_icon("file"); ?> <?php echo t("export_pdf"); ?>
     </a>
 
     <p class="player-welcome">
         <?php echo t("learning_report_for"); ?>
         <strong><?php echo htmlspecialchars($userName); ?></strong>
     </p>
+
+    <section class="admin-section profile-editor-section profile-page-section">
+        <div class="profile-display-card profile-showcase-card">
+            <aside class="profile-showcase-identity">
+                <div id="profile-display-avatar" class="profile-avatar avatar-pulse"><?php echo ui_icon("heart"); ?></div>
+
+                <div class="profile-showcase-nameblock">
+                    <h2 id="profile-display-name"><?php echo htmlspecialchars($userName); ?></h2>
+                    <p id="profile-display-email"></p>
+                </div>
+
+                <button type="button" id="edit-profile-btn" class="icon-action-btn profile-edit-text-btn" <?php echo $isAdminProfileView ? 'hidden' : ''; ?> title="<?php echo current_lang() === "en" ? "Edit profile" : "Editar perfil"; ?>">
+                    <?php echo ui_icon("edit"); ?> <span><?php echo current_lang() === "en" ? "Edit" : "Editar"; ?></span>
+                </button>
+            </aside>
+            <div class="profile-display-main">
+                <div class="profile-social-stats">
+                    <div>
+                        <strong id="profile-stat-correct">0</strong>
+                        <span><?php echo current_lang() === "en" ? "Correct" : "Correctas"; ?></span>
+                    </div>
+                    <div>
+                        <strong id="profile-stat-rooms">0</strong>
+                        <span><?php echo current_lang() === "en" ? "Rooms" : "Salas"; ?></span>
+                    </div>
+                    <div>
+                        <strong id="profile-stat-points">0</strong>
+                        <span><?php echo current_lang() === "en" ? "Points" : "Puntos"; ?></span>
+                    </div>
+                    <div>
+                        <strong id="profile-stat-precision">0%</strong>
+                        <span><?php echo current_lang() === "en" ? "Precision" : "Precision"; ?></span>
+                    </div>
+                </div>
+
+                <div class="profile-detail-grid">
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "Country" : "Pais"; ?></span>
+                        <strong id="profile-display-country">-</strong>
+                    </div>
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "City" : "Ciudad"; ?></span>
+                        <strong id="profile-display-city">-</strong>
+                    </div>
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "University or workplace" : "Universidad o trabajo"; ?></span>
+                        <strong id="profile-display-institution">-</strong>
+                    </div>
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "Occupation" : "Ocupacion"; ?></span>
+                        <strong id="profile-display-occupation">-</strong>
+                    </div>
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "Age" : "Edad"; ?></span>
+                        <strong id="profile-display-age">-</strong>
+                    </div>
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "Career" : "Carrera"; ?></span>
+                        <strong id="profile-display-career">-</strong>
+                    </div>
+                    <div>
+                        <span><?php echo current_lang() === "en" ? "Level" : "Nivel"; ?></span>
+                        <strong id="profile-display-education-level">-</strong>
+                    </div>
+                </div>
+
+                <p id="profile-display-bio" class="profile-display-bio"></p>
+            </div>
+        </div>
+
+        <div class="profile-editor-header">
+            <div id="profile-avatar-preview" class="profile-avatar avatar-pulse"><?php echo ui_icon("heart"); ?></div>
+            <div>
+                <h2><?php echo current_lang() === "en" ? "Player profile" : "Perfil del jugador"; ?></h2>
+                <p><?php echo current_lang() === "en"
+                    ? "Customize your avatar and add context about where you study or work."
+                    : "Personaliza tu avatar y agrega contexto sobre donde estudias o trabajas."; ?></p>
+            </div>
+        </div>
+
+        <form id="profile-form" class="profile-form profile-edit-panel" hidden data-admin-readonly="<?php echo $isAdminProfileView ? '1' : '0'; ?>" enctype="multipart/form-data">
+            <div class="form-group">
+                <label><?php echo current_lang() === "en" ? "Avatar" : "Avatar"; ?></label>
+                <div id="profile-avatar-picker" class="avatar-picker"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="profile-avatar-file"><?php echo current_lang() === "en" ? "Upload your avatar" : "Subir tu avatar"; ?></label>
+                <input type="file" id="profile-avatar-file" accept="image/png,image/jpeg,image/webp,image/gif">
+                <small class="field-hint">
+                    <?php echo current_lang() === "en"
+                        ? "Allowed files: JPG, PNG, WebP or GIF. Maximum size: 2 MB. Square images look best."
+                        : "Archivos permitidos: JPG, PNG, WebP o GIF. Tamano maximo: 2 MB. Se ve mejor si la imagen es cuadrada."; ?>
+                </small>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="profile-country"><?php echo current_lang() === "en" ? "Country" : "Pais"; ?></label>
+                    <select id="profile-country"></select>
+                </div>
+
+                <div class="form-group">
+                    <label for="profile-city"><?php echo current_lang() === "en" ? "City" : "Ciudad"; ?></label>
+                    <input type="text" id="profile-city" maxlength="80">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="profile-institution"><?php echo current_lang() === "en" ? "University or workplace" : "Universidad o trabajo"; ?></label>
+                    <input type="text" id="profile-institution" maxlength="140">
+                </div>
+
+                <div class="form-group">
+                    <label for="profile-occupation"><?php echo current_lang() === "en" ? "Occupation" : "Ocupacion"; ?></label>
+                    <input type="text" id="profile-occupation" maxlength="120">
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="profile-age"><?php echo current_lang() === "en" ? "Age" : "Edad"; ?></label>
+                    <input type="number" id="profile-age" min="5" max="120" inputmode="numeric">
+                </div>
+
+                <div class="form-group">
+                    <label for="profile-career"><?php echo current_lang() === "en" ? "Career" : "Carrera"; ?></label>
+                    <input type="text" id="profile-career" maxlength="140">
+                </div>
+
+                <div class="form-group">
+                    <label for="profile-education-level"><?php echo current_lang() === "en" ? "Level" : "Nivel"; ?></label>
+                    <input type="text" id="profile-education-level" maxlength="80">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="profile-bio"><?php echo current_lang() === "en" ? "About you" : "Sobre ti"; ?></label>
+                <textarea id="profile-bio" maxlength="500"></textarea>
+            </div>
+
+            <button type="submit" class="primary-btn">
+                <?php echo current_lang() === "en" ? "Save profile" : "Guardar perfil"; ?>
+            </button>
+
+            <button type="button" id="cancel-profile-edit-btn" class="secondary-form-btn">
+                <?php echo current_lang() === "en" ? "Cancel" : "Cancelar"; ?>
+            </button>
+
+            <p id="profile-form-message"></p>
+        </form>
+    </section>
+
+    <section class="profile-export-actions">
+        <a href="/colesterol_game/backend/exports/export_player_profile_csv.php<?php echo $profileUserParam; ?>" class="primary-btn">
+            <?php echo t("export_csv"); ?>
+        </a>
+        <a href="/colesterol_game/backend/exports/pdf/export_player_profile_pdf.php<?php echo $profileUserParam; ?>" class="primary-btn">
+            <?php echo t("export_pdf"); ?>
+        </a>
+    </section>
 
 
     <section class="dashboard-grid" id="profile-summary">
@@ -90,7 +275,7 @@ $userName = $_SESSION["user_name"] ?? "Player";
         </div>
     </section>
     <section class="admin-section">
-        <h2>📊 <?php echo t("visual_analytics"); ?></h2>
+        <h2><?php echo ui_icon("analytics"); ?> <?php echo t("visual_analytics"); ?></h2>
 
         <div class="analytics-layout">
 
@@ -116,17 +301,22 @@ $userName = $_SESSION["user_name"] ?? "Player";
 
         </div>
     </section>
-    <section class="admin-section">
-        <h2>🧠 <?php echo t("smart_insights"); ?></h2>
+    <section class="admin-section profile-achievements-section">
+        <div class="profile-achievements-layout">
+            <div class="profile-streaks-panel">
+                <h2><?php echo current_lang() === "en" ? "Streaks" : "Rachas"; ?></h2>
+                <p><?php echo current_lang() === "en"
+                    ? "Your current momentum and best answer streak."
+                    : "Tu impulso actual y tu mejor cadena de respuestas."; ?></p>
+                <div id="profile-streaks-list" class="profile-streaks-list"></div>
+            </div>
 
-        <div id="insights-container" class="insights-grid"></div>
+            <div class="profile-badges-panel">
+                <h2><?php echo t("badges"); ?></h2>
+                <div id="badges-container" class="badges-grid"></div>
+            </div>
+        </div>
     </section>
-    <section class="admin-section">
-        <h2>🏅 <?php echo t("badges"); ?></h2>
-
-        <div id="badges-container" class="badges-grid"></div>
-    </section>
-
     <section class="admin-section">
         <h2><?php echo t("performance_by_category"); ?></h2>
 
@@ -159,8 +349,10 @@ $userName = $_SESSION["user_name"] ?? "Player";
 
 </div>
 
+<script src="/colesterol_game/assets/js/ui_icons.js?m=<?php echo $uiIconsJsVersion; ?>"></script>
 <script>
 const PROFILE_I18N = {
+    lang: "<?php echo current_lang(); ?>",
     noData: "<?php echo t('no_data_available'); ?>",
     noMistakes: "<?php echo t('no_mistakes_recorded'); ?>",
     noInsights: "<?php echo t('no_insights_available'); ?>",
@@ -169,10 +361,254 @@ const PROFILE_I18N = {
     correctAnswer: "<?php echo t('correct_answer'); ?>",
     difficulty: "<?php echo t('difficulty'); ?>",
     precisionPercent: "<?php echo t('precision_percent'); ?>",
-    avgResponseTimeShort: "<?php echo t('avg_response_time_short'); ?>"
+    avgResponseTimeShort: "<?php echo t('avg_response_time_short'); ?>",
+    loading: "<?php echo t('loading'); ?>",
+    saved: "<?php echo current_lang() === "en" ? "Profile saved" : "Perfil guardado"; ?>",
+    error: "<?php echo t('error'); ?>"
 };
+const PROFILE_TARGET_QUERY = "<?php echo $isAdminProfileView ? '?user_id=' . $requestedUserId : ''; ?>";
 
-fetch("/colesterol_game/backend/reports/player_profile_report.php")
+function profileEndpoint(path, query = PROFILE_TARGET_QUERY) {
+    const base = `${path}${query || ""}`;
+    const separator = base.includes("?") ? "&" : "?";
+    return `${base}${separator}lang=${encodeURIComponent(PROFILE_I18N.lang)}`;
+}
+
+let profileAvatars = {};
+
+function avatarClass(key) {
+    return `profile-avatar avatar-${key || "pulse"}`;
+}
+
+function renderAvatarPicker(avatars, selectedKey, currentAvatar = null) {
+    const picker = document.getElementById("profile-avatar-picker");
+    picker.innerHTML = "";
+
+    if (currentAvatar && currentAvatar.type === "custom" && currentAvatar.url) {
+        const customLabel = document.createElement("label");
+        customLabel.className = "avatar-choice";
+        customLabel.innerHTML = `
+            <input type="radio" name="profile_avatar_key" value="custom" ${selectedKey === "custom" ? "checked" : ""}>
+            <span class="profile-avatar profile-avatar-image"><img src="${currentAvatar.url}" alt="Avatar actual"></span>
+            <em><?php echo current_lang() === "en" ? "Current avatar" : "Avatar actual"; ?></em>
+        `;
+        picker.appendChild(customLabel);
+    }
+
+    Object.entries(avatars || {}).forEach(([key, avatar]) => {
+        const label = document.createElement("label");
+        label.className = "avatar-choice";
+        label.innerHTML = `
+            <input type="radio" name="profile_avatar_key" value="${key}" ${key === selectedKey ? "checked" : ""}>
+            <span class="${avatarClass(key)}">${window.uiIcon ? window.uiIcon(avatar.icon || "heart", "ui-icon profile-avatar-svg") : ""}</span>
+            <em>${avatar.label}</em>
+        `;
+        picker.appendChild(label);
+    });
+
+    picker.querySelectorAll("input[name='profile_avatar_key']").forEach(input => {
+        input.addEventListener("change", () => {
+            updateAvatarPreview(input.value);
+        });
+    });
+}
+
+function updateAvatarPreview(key) {
+    const preview = document.getElementById("profile-avatar-preview");
+    if (key === "custom" && currentProfileUser?.avatar?.type === "custom") {
+        setProfileAvatarElement(preview, currentProfileUser.avatar);
+        return;
+    }
+    const avatar = profileAvatars[key] || profileAvatars.pulse || { icon: "heart" };
+    preview.className = avatarClass(key);
+    preview.innerHTML = window.uiIcon ? window.uiIcon(avatar.icon || "heart", "ui-icon profile-avatar-svg") : "";
+}
+
+let profileCountries = {};
+let currentProfileUser = null;
+
+function setProfileAvatarElement(element, avatar) {
+    if (!element) return;
+
+    element.innerHTML = "";
+
+    if (avatar?.type === "custom" && avatar.url) {
+        element.className = "profile-avatar profile-avatar-image";
+        const img = document.createElement("img");
+        img.src = avatar.url;
+        img.alt = "Avatar";
+        element.appendChild(img);
+        return;
+    }
+
+    const key = avatar?.key || "pulse";
+    element.className = avatarClass(key);
+    element.innerHTML = window.uiIcon ? window.uiIcon(avatar?.icon || profileAvatars[key]?.icon || "heart", "ui-icon profile-avatar-svg") : "";
+}
+
+function renderCountrySelect(countries, selectedCode) {
+    const select = document.getElementById("profile-country");
+    if (!select) return;
+
+    select.innerHTML = `<option value="">${PROFILE_I18N.noData}</option>`;
+
+    Object.entries(countries || {}).forEach(([code, country]) => {
+        const option = document.createElement("option");
+        option.value = code;
+        option.textContent = `${country.flag} ${country.<?php echo current_lang() === "en" ? "en" : "es"; ?>}`;
+        option.selected = code === selectedCode;
+        select.appendChild(option);
+    });
+}
+
+function renderProfileDisplay(user) {
+    currentProfileUser = user;
+
+    setProfileAvatarElement(document.getElementById("profile-display-avatar"), user.avatar);
+    document.getElementById("profile-display-name").textContent = user.name || "-";
+    document.getElementById("profile-display-email").textContent = user.email || "";
+
+    const country = user.country_display || {};
+    document.getElementById("profile-display-country").textContent =
+        country.name ? `${country.flag} ${country.name}` : "-";
+    document.getElementById("profile-display-city").textContent = user.city || "-";
+    document.getElementById("profile-display-institution").textContent = user.institution || "-";
+    document.getElementById("profile-display-occupation").textContent = user.occupation || "-";
+    document.getElementById("profile-display-age").textContent = user.age || "-";
+    document.getElementById("profile-display-career").textContent = user.career || "-";
+    document.getElementById("profile-display-education-level").textContent = user.education_level || "-";
+    document.getElementById("profile-display-bio").textContent =
+        user.bio || "<?php echo current_lang() === "en" ? "No bio yet." : "Aún no hay biografía."; ?>";
+}
+
+function fillProfileEditForm(user) {
+    const presetKey = user.avatar?.type === "custom" ? "custom" : (user.avatar_key || "pulse");
+
+    setProfileAvatarElement(document.getElementById("profile-avatar-preview"), user.avatar);
+    renderAvatarPicker(profileAvatars, presetKey, user.avatar || null);
+    renderCountrySelect(profileCountries, user.country || "");
+
+    document.getElementById("profile-city").value = user.city || "";
+    document.getElementById("profile-institution").value = user.institution || "";
+    document.getElementById("profile-occupation").value = user.occupation || "";
+    document.getElementById("profile-age").value = user.age || "";
+    document.getElementById("profile-career").value = user.career || "";
+    document.getElementById("profile-education-level").value = user.education_level || "";
+    document.getElementById("profile-bio").value = user.bio || "";
+    document.getElementById("profile-avatar-file").value = "";
+}
+
+function ensureProfileStreakStats(summary) {
+    const stats = document.getElementById("profile-streaks-list");
+
+    if (!stats) return;
+
+    const items = [
+        {
+            id: "profile-stat-best-streak",
+            value: summary.best_correct_streak || 0,
+            label: "<?php echo current_lang() === "en" ? "Best correct streak" : "Mejor racha correcta"; ?>",
+            hint: "<?php echo current_lang() === "en" ? "Most correct answers in a row" : "Mayor cantidad de aciertos seguidos"; ?>"
+        },
+        {
+            id: "profile-stat-daily-streak",
+            value: summary.current_daily_streak || 0,
+            label: "<?php echo current_lang() === "en" ? "Daily streak" : "Racha diaria"; ?>",
+            hint: "<?php echo current_lang() === "en" ? "Consecutive active days" : "Dias activos consecutivos"; ?>"
+        }
+    ];
+
+    stats.innerHTML = "";
+
+    items.forEach(item => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "streak-card";
+        wrapper.innerHTML = `
+            <strong id="${item.id}">${item.value}</strong>
+            <span>${item.label}</span>
+            <small>${item.hint}</small>
+        `;
+        stats.appendChild(wrapper);
+    });
+}
+
+async function loadPublicProfile() {
+    const response = await fetch(profileEndpoint("/colesterol_game/backend/users/get_profile.php"));
+    const data = await response.json();
+
+    if (!data.success) return;
+
+    profileAvatars = data.avatars || {};
+    profileCountries = data.countries || {};
+    renderProfileDisplay(data.user || {});
+    fillProfileEditForm(data.user || {});
+}
+
+document.getElementById("edit-profile-btn").addEventListener("click", () => {
+    fillProfileEditForm(currentProfileUser || {});
+    document.getElementById("profile-form").hidden = false;
+});
+
+document.getElementById("cancel-profile-edit-btn").addEventListener("click", () => {
+    document.getElementById("profile-form").hidden = true;
+    document.getElementById("profile-form-message").textContent = "";
+});
+
+document.getElementById("profile-avatar-file").addEventListener("change", event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setProfileAvatarElement(
+        document.getElementById("profile-avatar-preview"),
+        { type: "custom", url: URL.createObjectURL(file) }
+    );
+});
+
+document.getElementById("profile-form").addEventListener("submit", async event => {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const message = document.getElementById("profile-form-message");
+    const avatarFile = document.getElementById("profile-avatar-file").files?.[0];
+    const payload = new FormData();
+
+    message.textContent = PROFILE_I18N.loading;
+    payload.append("avatar_key", document.querySelector("input[name='profile_avatar_key']:checked")?.value || "pulse");
+    payload.append("country", document.getElementById("profile-country").value);
+    payload.append("city", document.getElementById("profile-city").value.trim());
+    payload.append("institution", document.getElementById("profile-institution").value.trim());
+    payload.append("occupation", document.getElementById("profile-occupation").value.trim());
+    payload.append("age", document.getElementById("profile-age").value);
+    payload.append("career", document.getElementById("profile-career").value.trim());
+    payload.append("education_level", document.getElementById("profile-education-level").value.trim());
+    payload.append("bio", document.getElementById("profile-bio").value.trim());
+
+    if (avatarFile) {
+        payload.append("avatar_file", avatarFile);
+    }
+
+    try {
+        const response = await fetch("/colesterol_game/backend/users/update_profile.php", {
+            method: "POST",
+            body: payload
+        });
+        const result = await response.json();
+
+        message.textContent = result.success ? PROFILE_I18N.saved : (result.message || PROFILE_I18N.error);
+
+        if (result.success) {
+            await loadPublicProfile();
+            document.getElementById("profile-form").hidden = true;
+        }
+    } catch (error) {
+        console.error(error);
+        message.textContent = PROFILE_I18N.error;
+    }
+}, true);
+
+loadPublicProfile().catch(console.error);
+
+fetch(profileEndpoint("/colesterol_game/backend/reports/player_profile_report.php"))
     .then(res => res.json())
     .then(data => {
         if (!data.success) {
@@ -187,11 +623,15 @@ fetch("/colesterol_game/backend/reports/player_profile_report.php")
         document.getElementById("max-difficulty").textContent = summary.max_difficulty + " / 5";
         document.getElementById("avg-response-time").textContent = summary.avg_response_time + "s";
         document.getElementById("total-points").textContent = summary.total_points;
+        document.getElementById("profile-stat-correct").textContent = summary.correct_answers;
+        document.getElementById("profile-stat-rooms").textContent = summary.rooms_played || 0;
+        document.getElementById("profile-stat-points").textContent = summary.total_points;
+        document.getElementById("profile-stat-precision").textContent = summary.precision + "%";
+        ensureProfileStreakStats(summary);
 
         renderCategories(data.categories);
         renderMistakes(data.mistakes);
-        renderCharts(data);
-        loadInsights();
+        renderCharts(data);
         loadBadges();
     })
     .catch(console.error);
@@ -262,8 +702,8 @@ function renderMistakes(mistakes) {
             <h3>${item.question}</h3>
 
             <p>
-                <strong>${item.category}</strong> • 
-                ${PROFILE_I18N.difficulty} ${item.difficulty_level} / 5 • 
+                <strong>${item.category}</strong> - 
+                ${PROFILE_I18N.difficulty} ${item.difficulty_level} / 5 - 
                 ${item.response_time}s
             </p>
 
@@ -415,7 +855,7 @@ async function loadInsights() {
     try {
 
         const response = await fetch(
-            "/colesterol_game/backend/exports/player_insights_report.php"
+            profileEndpoint("/colesterol_game/backend/exports/player_insights_report.php")
         );
 
         const data = await response.json();
@@ -471,34 +911,36 @@ function renderInsights(insights) {
 
 function getInsightIcon(type) {
 
+    const icon = (name) => window.uiIcon ? window.uiIcon(name, "ui-icon insight-svg") : "";
+
     switch(type) {
 
         case "weak_category":
-            return "⚠️";
+            return icon("target");
 
         case "strong_category":
-            return "🏆";
+            return icon("trophy");
 
         case "fast_player":
-            return "⚡";
+            return icon("zap");
 
         case "slow_player":
-            return "🐢";
+            return icon("clock");
 
         case "advanced_player":
-            return "📈";
+            return icon("analytics");
 
         case "difficulty_master":
-            return "🔥";
+            return icon("rocket");
 
         case "excellent_precision":
-            return "🎯";
+            return icon("target");
 
         case "needs_practice":
-            return "📚";
+            return icon("file");
 
         default:
-            return "🧠";
+            return icon("brain");
     }
 }
 
@@ -507,7 +949,7 @@ async function loadBadges() {
     try {
 
         const response = await fetch(
-            "/colesterol_game/backend/badges/get_user_badges.php"
+            profileEndpoint("/colesterol_game/backend/badges/get_user_badges.php")
         );
 
         const data = await response.json();
@@ -550,7 +992,7 @@ function renderBadges(badges) {
 
         card.innerHTML = `
             <div class="badge-icon">
-                ${extractBadgeEmoji(badge.badge_name)}
+                ${renderBadgeIcon(badge)}
             </div>
 
             <div class="badge-content">
@@ -568,14 +1010,28 @@ function renderBadges(badges) {
     });
 }
 
-function extractBadgeEmoji(text) {
+function renderBadgeIcon(badge) {
+    const iconKey = normalizeBadgeIconKey(
+        badge.badge_icon || badge.badge_key || badge.badge_name
+    );
 
-    const match =
-        text.match(
-            /([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF])/
-        );
+    return window.uiIcon
+        ? window.uiIcon(iconKey, "ui-icon badge-svg")
+        : "";
+}
 
-    return match ? match[0] : "🏅";
+function normalizeBadgeIconKey(value) {
+    const text = String(value || "").toLowerCase();
+    const directKeys = ["school", "home", "rocket", "check", "target", "file", "users", "analytics", "star", "zap", "calendar", "medal", "gamepad", "trophy", "brain"];
+
+    if (directKeys.includes(text)) return text;
+    if (text.includes("streak") || text.includes("racha") || text.includes("fast") || text.includes("difficulty")) return "zap";
+    if (text.includes("precision") || text.includes("expert")) return "target";
+    if (text.includes("answer")) return "analytics";
+    if (text.includes("game") || text.includes("first")) return "gamepad";
+    if (text.includes("advanced")) return "rocket";
+
+    return "medal";
 }
 
 function formatBadgeDate(date) {
@@ -583,7 +1039,19 @@ function formatBadgeDate(date) {
     return new Date(date)
         .toLocaleDateString();
 }
+
+if (
+    new URLSearchParams(window.location.search).get("edit") === "1" &&
+    document.getElementById("edit-profile-btn") &&
+    !document.getElementById("edit-profile-btn").hidden
+) {
+    document.getElementById("edit-profile-btn").click();
+}
 </script>
 
+
+<script src="/colesterol_game/assets/js/responsive_tables.js?m=<?php echo $responsiveTablesVersion; ?>"></script>
+<script src="/colesterol_game/assets/js/theme.js?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>
+

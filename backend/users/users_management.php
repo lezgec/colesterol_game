@@ -8,6 +8,8 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/session_guard.php';
+require_once __DIR__ . '/../../includes/mail_helpers.php';
 
 if (!has_role(["super_admin"])) {
     echo json_encode([
@@ -149,6 +151,12 @@ if ($method === "POST" && $action === "create") {
     $newId = $stmt->insert_id;
     $stmt->close();
 
+    try {
+        send_welcome_email($email, $name, $role, $_SESSION["lang"] ?? "es");
+    } catch (RuntimeException $exception) {
+        error_log("Admin-created welcome email failed for user {$newId}: " . $exception->getMessage());
+    }
+
     jsonResponse([
         "success" => true,
         "message" => "Usuario creado correctamente",
@@ -193,6 +201,16 @@ if ($method === "POST" && $action === "update") {
         $status = "active";
     }
 
+    $previousUser = null;
+    $previousStmt = $conn->prepare("SELECT name, email, role FROM users WHERE id = ? LIMIT 1");
+
+    if ($previousStmt) {
+        $previousStmt->bind_param("i", $id);
+        $previousStmt->execute();
+        $previousUser = $previousStmt->get_result()->fetch_assoc();
+        $previousStmt->close();
+    }
+
     $stmt = $conn->prepare("
         UPDATE users
         SET
@@ -230,6 +248,20 @@ if ($method === "POST" && $action === "update") {
 
     $stmt->close();
 
+    if ($previousUser && ($previousUser["role"] ?? "") !== $role) {
+        try {
+            send_role_changed_email(
+                $email,
+                $name,
+                $previousUser["role"],
+                $role,
+                $_SESSION["lang"] ?? "es"
+            );
+        } catch (RuntimeException $exception) {
+            error_log("Role change email failed for user {$id}: " . $exception->getMessage());
+        }
+    }
+
     jsonResponse([
         "success" => true,
         "message" => "Usuario actualizado correctamente"
@@ -250,9 +282,19 @@ if ($method === "POST" && $action === "reset_password") {
 
     $hash = password_hash($password, PASSWORD_DEFAULT);
 
+    if (!ensure_user_session_columns($conn)) {
+        jsonResponse([
+            "success" => false,
+            "message" => "No se pudo preparar la seguridad de sesión",
+            "error" => $conn->error
+        ]);
+    }
+
     $stmt = $conn->prepare("
         UPDATE users
-        SET password = ?
+        SET password = ?,
+            session_token = NULL,
+            session_updated_at = NULL
         WHERE id = ?
     ");
 

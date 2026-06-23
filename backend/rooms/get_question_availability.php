@@ -4,6 +4,7 @@ header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/question_categories.php';
+require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
@@ -33,6 +34,8 @@ if ($difficulty > 5) {
 
 $minDifficulty = (float)$difficulty;
 $maxDifficulty = $difficulty >= 5 ? 5.1 : (float)($difficulty + 1);
+ensure_question_workflow_columns($conn);
+$accessSql = playable_question_access_sql("");
 
 $stmt = $conn->prepare("
     SELECT COUNT(*) AS total
@@ -43,6 +46,7 @@ $stmt = $conn->prepare("
       AND difficulty_level < ?
       AND status = 'verified'
       AND is_active = 1
+      AND {$accessSql}
 ");
 
 if (!$stmt) {

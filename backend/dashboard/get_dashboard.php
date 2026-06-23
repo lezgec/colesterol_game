@@ -5,6 +5,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../lang/translate.php';
 
 if (!is_logged_in()) {
     echo json_encode([
@@ -96,7 +97,7 @@ while ($row = $recentResult->fetch_assoc()) {
         "score" => (int)$row["score"],
         "correct_answers" => (int)$row["correct_answers"],
         "total_questions" => (int)$row["total_questions"],
-        "final_difficulty" => round((float)($row["final_difficulty"] ?? 1.0), 1),
+        "final_difficulty" => round((float)($row["final_difficulty"] ?? 1), 1),
         "played_at" => $row["played_at"]
     ];
 }

@@ -4,6 +4,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 
 $isLogged = isset($_SESSION["user_id"]);
 $role = $_SESSION["user_role"] ?? null;
+$styleVersion = filemtime(__DIR__ . '/../../assets/css/style.css');
+$themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -17,7 +19,9 @@ $role = $_SESSION["user_role"] ?? null;
 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css?v=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="/colesterol_game/assets/icons/icon.svg">
+
 </head>
 <body>
 
@@ -52,8 +56,7 @@ $role = $_SESSION["user_role"] ?? null;
     <?php if ($isLogged && in_array($role, ["teacher", "super_admin"])): ?>
 
         <a href="/colesterol_game/pages/rooms/create.php"
-           class="primary-btn"
-           style="display:block; text-align:center; text-decoration:none; margin-bottom:15px;">
+           class="primary-btn room-menu-btn">
 
             <?php echo t("create_room"); ?>
         </a>
@@ -61,8 +64,7 @@ $role = $_SESSION["user_role"] ?? null;
     <?php endif; ?>
 
     <a href="/colesterol_game/pages/rooms/join.php"
-       class="primary-btn secondary-dark-btn"
-       style="display:block; text-align:center; text-decoration:none;">
+       class="primary-btn secondary-dark-btn room-menu-btn">
 
         <?php echo t("join_room"); ?>
     </a>
@@ -72,14 +74,14 @@ $role = $_SESSION["user_role"] ?? null;
     <?php if ($isLogged && in_array($role, ["teacher", "super_admin"])): ?>
 
         <a href="/colesterol_game/pages/admin_dashboard.php"
-           class="secondary-link">
+           class="secondary-link room-back-link">
             <?php echo t("back_dashboard"); ?>
         </a>
 
     <?php else: ?>
 
         <a href="/colesterol_game/index.php"
-           class="secondary-link">
+           class="secondary-link room-back-link">
             <?php echo t("back_to_home"); ?>
         </a>
 
@@ -87,5 +89,6 @@ $role = $_SESSION["user_role"] ?? null;
 
 </div>
 
+<script src="/colesterol_game/assets/js/theme.js?v=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

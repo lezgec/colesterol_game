@@ -7,7 +7,7 @@ form.addEventListener("submit", async (e) => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
 
-    message.textContent = "Iniciando sesión...";
+    message.textContent = LOGIN_I18N.loading;
 
     try {
 
@@ -28,7 +28,7 @@ form.addEventListener("submit", async (e) => {
 
         if (result.success) {
 
-            message.textContent = "✅ Inicio de sesión correcto";
+            message.textContent = LOGIN_I18N.success;
 
             setTimeout(() => {
                 window.location.href =
@@ -38,7 +38,7 @@ form.addEventListener("submit", async (e) => {
         } else {
 
             message.textContent =
-                "❌ " + (result.message || "No se pudo iniciar sesión");
+                result.message || LOGIN_I18N.failed;
 
         }
 
@@ -46,7 +46,7 @@ form.addEventListener("submit", async (e) => {
 
         console.error(error);
 
-        message.textContent = "❌ Error de conexión";
+        message.textContent = LOGIN_I18N.connectionError;
 
     }
 });

@@ -2,29 +2,38 @@
 session_start();
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/export_helpers.php';
 
-if (!isset($_SESSION["user_id"])) {
+if (!is_logged_in()) {
     die("No autorizado");
 }
 
-$userId = (int)$_SESSION["user_id"];
+$requestedUserId = (int)($_GET["user_id"] ?? 0);
+$userId = is_super_admin() && $requestedUserId > 0
+    ? $requestedUserId
+    : (int)$_SESSION["user_id"];
 $userName = $_SESSION["user_name"] ?? "player";
+
+$stmtUser = $conn->prepare("SELECT name FROM users WHERE id = ?");
+$stmtUser->bind_param("i", $userId);
+$stmtUser->execute();
+$userRow = $stmtUser->get_result()->fetch_assoc();
+$stmtUser->close();
+
+if ($userRow) {
+    $userName = $userRow["name"];
+}
 
 $filename = "player_profile_report_" . date("Y-m-d_H-i-s") . ".csv";
 
-header("Content-Type: text/csv; charset=utf-8");
-header("Content-Disposition: attachment; filename=\"$filename\"");
+$output = export_csv_open($filename);
 
-$output = fopen("php://output", "w");
-
-fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-
-fputcsv($output, ["PLAYER PROFILE REPORT"]);
-fputcsv($output, ["Player", $userName]);
-fputcsv($output, ["Generated at", date("Y-m-d H:i:s")]);
+export_csv_title($output, export_label("player_report"));
+fputcsv($output, [export_label("player"), $userName]);
 fputcsv($output, []);
 
-fputcsv($output, ["SUMMARY"]);
+export_csv_section($output, export_label("summary"));
 
 $summarySql = "
     SELECT
@@ -48,17 +57,23 @@ $totalAnswers = (int)$summary["total_answers"];
 $correctAnswers = (int)$summary["correct_answers"];
 $precision = $totalAnswers > 0 ? round(($correctAnswers / $totalAnswers) * 100, 2) : 0;
 
-fputcsv($output, ["Total answers", $totalAnswers]);
-fputcsv($output, ["Correct answers", $correctAnswers]);
-fputcsv($output, ["Precision", $precision . "%"]);
-fputcsv($output, ["Average response time", round((float)$summary["avg_response_time"], 2) . "s"]);
-fputcsv($output, ["Average difficulty", round((float)$summary["avg_difficulty"], 1) . " / 5"]);
-fputcsv($output, ["Max difficulty", round((float)$summary["max_difficulty"], 1) . " / 5"]);
-fputcsv($output, ["Total points", (int)$summary["total_points"]]);
+fputcsv($output, [export_label("total_answers"), $totalAnswers]);
+fputcsv($output, [export_label("correct_answers"), $correctAnswers]);
+fputcsv($output, [export_label("precision"), $precision . "%"]);
+fputcsv($output, [export_label("average_response_time"), round((float)$summary["avg_response_time"], 2) . "s"]);
+fputcsv($output, [export_label("average_difficulty"), round((float)$summary["avg_difficulty"], 1) . " / 5"]);
+fputcsv($output, [export_label("max_difficulty"), round((float)$summary["max_difficulty"], 1) . " / 5"]);
+fputcsv($output, [export_label("total_points"), (int)$summary["total_points"]]);
 
-fputcsv($output, []);
-fputcsv($output, ["PERFORMANCE BY CATEGORY"]);
-fputcsv($output, ["Category", "Total answers", "Correct answers", "Precision", "Average response time", "Average difficulty"]);
+export_csv_section($output, export_label("performance_by_category"));
+fputcsv($output, [
+    export_label("category"),
+    export_label("total_answers"),
+    export_label("correct_answers"),
+    export_label("precision"),
+    export_label("average_response_time"),
+    export_label("average_difficulty")
+]);
 
 $categorySql = "
     SELECT
@@ -96,23 +111,22 @@ while ($row = $result->fetch_assoc()) {
 
 $stmt->close();
 
-fputcsv($output, []);
-fputcsv($output, ["MISTAKES"]);
+export_csv_section($output, export_label("mistakes"));
 fputcsv($output, [
-    "Date",
-    "Question",
-    "Category",
-    "Option A",
-    "Option B",
-    "Option C",
-    "Option D",
-    "Selected option",
-    "Selected answer",
-    "Correct option",
-    "Correct answer",
-    "Response time",
-    "Difficulty",
-    "Explanation"
+    export_label("date"),
+    export_label("question"),
+    export_label("category"),
+    "A",
+    "B",
+    "C",
+    "D",
+    export_label("selected"),
+    export_label("selected_answer"),
+    export_label("correct"),
+    export_label("correct_answer"),
+    export_label("average_response_time"),
+    export_label("difficulty"),
+    export_label("explanation")
 ]);
 
 $mistakesSql = "
@@ -164,7 +178,7 @@ while ($row = $result->fetch_assoc()) {
         $row["correct_option"],
         $options[$correctOption] ?? "",
         round((float)$row["response_time"], 2) . "s",
-        round((float)$row["difficulty_level"], 1) . " / 5",
+        (int)round((float)$row["difficulty_level"]) . " / 5",
         $row["explanation"]
     ]);
 }
