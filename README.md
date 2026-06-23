@@ -72,28 +72,9 @@ define("GEMINI_API_KEY", "TU_API_KEY_REAL");
 define("GEMINI_MODEL", "gemini-2.5-flash");
 ```
 
-## Flujo de despliegue recomendado
-
-Para subir la versión principal:
-
-```bash
-git add .
-git commit -m "Release version with deployment docs"
-git push origin rescue-local
-```
-
-Para crear la rama de despliegue del docente:
-
-```bash
-git checkout -b docente-deploy
-git push -u origin docente-deploy
-```
-
-La rama `docente-deploy` debe mantener el SQL separado en `database/schema.sql` y no debe incluir datos reales de usuarios, partidas, correos o preguntas privadas.
-
 ## Notas de seguridad
 
 - Los archivos `config/mail.php` y `config/gemini.php` del repositorio contienen datos de ejemplo.
-- No subas contraseñas reales ni claves reales al repositorio.
+- No subir contraseñas reales ni claves reales al repositorio.
 - Cambia el superadmin genérico después de instalar.
 - Si el servidor usa otra ruta base, actualiza `app_url` en `config/mail.php`.
