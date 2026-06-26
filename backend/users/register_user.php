@@ -46,7 +46,8 @@ $age = sanitize_profile_age($data["age"] ?? null);
 $career = sanitize_profile_text($data["career"] ?? "", 140);
 $educationLevel = sanitize_profile_text($data["education_level"] ?? "", 80);
 $bio = sanitize_profile_text($data["bio"] ?? "", 500);
-$role = "player";
+$requestedRole = strtolower(trim((string)($data["role"] ?? "player")));
+$role = in_array($requestedRole, ["player", "teacher"], true) ? $requestedRole : "player";
 $customAvatarPath = "";
 $uploadedAvatarPath = "";
 

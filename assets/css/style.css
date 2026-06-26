@@ -436,6 +436,71 @@ textarea {
     font-size: 14px;
 }
 
+.role-picker {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.role-choice {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 7px 10px;
+    align-items: center;
+    min-height: 96px;
+    padding: 13px;
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.55);
+    cursor: pointer;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.role-choice input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.role-choice-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #5b5ce2, #14b8a6);
+}
+
+.role-choice strong {
+    color: #f8fafc;
+    font-size: 15px;
+    line-height: 1.15;
+}
+
+.role-choice em {
+    grid-column: 1 / -1;
+    color: #cbd5e1;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 1.35;
+}
+
+.role-choice:has(input:checked) {
+    border-color: #7c3aed;
+    background: linear-gradient(135deg, rgba(91, 92, 226, 0.3), rgba(20, 184, 166, 0.16));
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+.role-choice:hover {
+    transform: translateY(-1px);
+    border-color: #8b5cf6;
+}
+
 :root[data-theme="light"] .register-panel {
     background: rgba(248, 250, 252, 0.94);
     border-color: rgba(203, 213, 225, 0.95);
@@ -449,6 +514,30 @@ textarea {
 :root[data-theme="light"] .optional-section-heading span {
     background: rgba(91, 92, 226, 0.12);
     color: #3730a3;
+}
+
+:root[data-theme="light"] .role-choice {
+    background: #ffffff;
+    border-color: #cbd5e1;
+}
+
+:root[data-theme="light"] .role-choice strong {
+    color: #0f172a;
+}
+
+:root[data-theme="light"] .role-choice em {
+    color: #475569;
+}
+
+:root[data-theme="light"] .role-choice:has(input:checked) {
+    background: linear-gradient(135deg, rgba(238, 242, 255, 0.98), rgba(240, 253, 250, 0.98));
+    border-color: #5b5ce2;
+}
+
+@media (max-width: 640px) {
+    .role-picker {
+        grid-template-columns: 1fr;
+    }
 }
 
 .metric-empty-note {

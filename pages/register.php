@@ -67,7 +67,32 @@ $themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 
         <div class="register-layout">
             <section class="register-panel register-required-panel">
-                <h2><?php echo current_lang() === "en" ? "Required data" : "Datos obligatorios"; ?></h2>
+                <h2><?php echo t("required_data"); ?></h2>
+
+                <div class="form-group">
+                    <label>
+                        <?php echo t("register_role_question"); ?> <span class="required-mark">*</span>
+                    </label>
+                    <div class="role-picker" role="radiogroup" aria-label="<?php echo htmlspecialchars(t("register_role_question"), ENT_QUOTES, "UTF-8"); ?>">
+                        <label class="role-choice">
+                            <input type="radio" name="role" value="player" checked>
+                            <span class="role-choice-icon">
+                                <?php echo ui_icon("gamepad", "ui-icon"); ?>
+                            </span>
+                            <strong><?php echo t("role_player"); ?></strong>
+                            <em><?php echo t("register_role_player_hint"); ?></em>
+                        </label>
+
+                        <label class="role-choice">
+                            <input type="radio" name="role" value="teacher">
+                            <span class="role-choice-icon">
+                                <?php echo ui_icon("school", "ui-icon"); ?>
+                            </span>
+                            <strong><?php echo t("role_teacher"); ?></strong>
+                            <em><?php echo t("register_role_teacher_hint"); ?></em>
+                        </label>
+                    </div>
+                </div>
 
                 <div class="form-grid">
                     <div class="form-group">
