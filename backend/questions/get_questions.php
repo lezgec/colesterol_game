@@ -1,14 +1,18 @@
 <?php
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/question_option_helpers.php';
+require_once __DIR__ . '/question_workflow_helpers.php';
+
+ensure_question_workflow_columns($conn);
 
 $lang = $_GET['lang'] ?? 'es';
-$target_difficulty = (float)($_GET['difficulty_level'] ?? 1.0);
+$target_difficulty = (int)round((float)($_GET['difficulty_level'] ?? 1));
 $limit = (int)($_GET['limit'] ?? 10);
 
 if (!in_array($lang, ['es', 'en'], true)) {
@@ -19,12 +23,12 @@ if (!in_array($lang, ['es', 'en'], true)) {
     exit;
 }
 
-if ($target_difficulty < 1.0) {
-    $target_difficulty = 1.0;
+if ($target_difficulty < 1) {
+    $target_difficulty = 1;
 }
 
-if ($target_difficulty > 5.0) {
-    $target_difficulty = 5.0;
+if ($target_difficulty > 5) {
+    $target_difficulty = 5;
 }
 
 if ($limit < 1) {
@@ -36,23 +40,25 @@ if ($limit > 50) {
 }
 
 $sql = "
-    SELECT 
-        id, 
-        question, 
-        option_a, 
-        option_b, 
-        option_c, 
-        option_d, 
-        correct_option, 
-        explanation, 
-        category, 
-        difficulty_level, 
+    SELECT
+        id,
+        question,
+        option_a,
+        option_b,
+        option_c,
+        option_d,
+        correct_option,
+        explanation,
+        category,
+        difficulty_level,
         language
     FROM questions
-    WHERE 
+    WHERE
         language = ?
         AND status = 'verified'
         AND is_active = 1
+        AND visibility = 'global'
+        AND global_request_status = 'approved'
     ORDER BY ABS(difficulty_level - ?) ASC, RAND()
     LIMIT ?
 ";
@@ -84,38 +90,25 @@ $result = $stmt->get_result();
 $questions = [];
 
 while ($row = $result->fetch_assoc()) {
-    $correctOption = strtoupper(trim($row["correct_option"]));
-    $letters = ["A", "B", "C", "D"];
-    $correctIndex = array_search($correctOption, $letters, true);
+    $optionPayload = build_shuffled_question_payload($row);
 
-    if ($correctIndex === false) {
-        $correctIndex = 0;
+    $difficultyLevel = (int)round((float)$row["difficulty_level"]);
+
+    if ($difficultyLevel < 1) {
+        $difficultyLevel = 1;
     }
 
-    $difficultyLevel = (float)$row["difficulty_level"];
-
-    if ($difficultyLevel < 1.0) {
-        $difficultyLevel = 1.0;
-    }
-
-    if ($difficultyLevel > 5.0) {
-        $difficultyLevel = 5.0;
+    if ($difficultyLevel > 5) {
+        $difficultyLevel = 5;
     }
 
     $questions[] = [
         "id" => (int)$row["id"],
         "question" => $row["question"],
-        "options" => [
-            $row["option_a"],
-            $row["option_b"],
-            $row["option_c"],
-            $row["option_d"]
-        ],
-        "correct" => $correctIndex,
-        "correct_option" => $correctOption,
-        "explanation" => $row["explanation"],
+        "options" => $optionPayload["options"],
+        "option_letters" => $optionPayload["option_letters"],
         "category" => $row["category"],
-        "difficulty_level" => round($difficultyLevel, 1),
+        "difficulty_level" => $difficultyLevel,
         "language" => $row["language"]
     ];
 }

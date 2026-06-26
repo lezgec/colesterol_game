@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_login();
 
@@ -13,7 +14,9 @@ header("Pragma: no-cache");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("dashboard"); ?></title>
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 <body>
 
@@ -27,17 +30,17 @@ header("Pragma: no-cache");
         </div>
 
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_game"); ?>
+            <a href="<?php echo app_path('pages/player_dashboard.php'); ?>" class="logout-btn secondary-btn">
+                <?php echo t("back_to_player_dashboard"); ?>
             </a>
 
-            <a href="/colesterol_game/logout.php" class="logout-btn">
+            <a href="<?php echo app_path('pages/logout.php'); ?>" class="logout-btn">
                 <?php echo t("logout"); ?>
             </a>
         </div>
     </div>
 
-    <h1>📈 <?php echo t("dashboard"); ?></h1>
+    <h1><?php echo ui_icon("analytics"); ?> <?php echo t("dashboard"); ?></h1>
     <p><?php echo t("dashboard_description"); ?></p>
 
     <div id="dashboard-cards" class="dashboard-grid">
@@ -86,13 +89,16 @@ header("Pragma: no-cache");
 </div>
 
 <script>
+const APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 'UTF-8'); ?>";
+const appUrl = path => `${APP_BASE_PATH}/${String(path || "").replace(/^\//, "")}`;
 const DASHBOARD_I18N = {
-    loadError: "<?php echo current_lang() === 'en' ? 'Could not load dashboard.' : 'No se pudo cargar el dashboard.'; ?>",
-    noGames: "<?php echo current_lang() === 'en' ? 'No games registered' : 'No hay partidas registradas'; ?>",
+    lang: "<?php echo current_lang(); ?>",
+    loadError: "<?php echo t('loading_error'); ?>",
+    noGames: "<?php echo t('no_games_registered'); ?>",
     error: "<?php echo t('error'); ?>"
 };
 
-fetch("/colesterol_game/backend/dashboard/get_dashboard.php")
+fetch(appUrl(`backend/dashboard/get_dashboard.php?lang=${encodeURIComponent(DASHBOARD_I18N.lang)}`))
     .then(res => res.json())
     .then(data => {
         if (!data.success) {
@@ -134,5 +140,8 @@ fetch("/colesterol_game/backend/dashboard/get_dashboard.php")
     });
 </script>
 
+
+<script src="<?php echo asset_path('js/responsive_tables.js'); ?>"></script>
+<script src="<?php echo asset_path('js/theme.js'); ?>"></script>
 </body>
 </html>

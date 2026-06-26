@@ -2,6 +2,7 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../questions/question_option_helpers.php';
 
 $code = strtoupper(trim($_GET["code"] ?? ""));
 
@@ -13,14 +14,14 @@ if ($code === "") {
     exit;
 }
 
-$sqlRoom = "SELECT 
-                id, 
-                initial_difficulty, 
-                language, 
-                question_count, 
-                time_limit, 
-                question_mode 
-            FROM game_rooms 
+$sqlRoom = "SELECT
+                id,
+                initial_difficulty,
+                language,
+                question_count,
+                time_limit,
+                question_mode
+            FROM game_rooms
             WHERE room_code = ?";
 
 $stmtRoom = $conn->prepare($sqlRoom);
@@ -49,16 +50,16 @@ if ($resRoom->num_rows === 0) {
 $room = $resRoom->fetch_assoc();
 
 $roomId = (int)$room["id"];
-$initialDifficulty = (float)$room["initial_difficulty"];
+$initialDifficulty = (int)round((float)$room["initial_difficulty"]);
 $questionCount = (int)$room["question_count"];
 $timeLimit = (int)$room["time_limit"];
 
-if ($initialDifficulty < 1.0) {
-    $initialDifficulty = 1.0;
+if ($initialDifficulty < 1) {
+    $initialDifficulty = 1;
 }
 
-if ($initialDifficulty > 5.0) {
-    $initialDifficulty = 5.0;
+if ($initialDifficulty > 5) {
+    $initialDifficulty = 5;
 }
 
 if ($questionCount <= 0) {
@@ -69,16 +70,16 @@ if ($timeLimit <= 0) {
     $timeLimit = 20;
 }
 
-$sql = "SELECT 
-            q.id, 
-            q.question, 
-            q.option_a, 
-            q.option_b, 
-            q.option_c, 
+$sql = "SELECT
+            q.id,
+            q.question,
+            q.option_a,
+            q.option_b,
+            q.option_c,
             q.option_d,
-            q.correct_option, 
-            q.explanation, 
-            q.category, 
+            q.correct_option,
+            q.explanation,
+            q.category,
             q.language,
             q.difficulty_level,
             q.status,
@@ -86,11 +87,11 @@ $sql = "SELECT
             q.is_active
         FROM room_questions rq
         INNER JOIN questions q ON rq.question_id = q.id
-        WHERE 
+        WHERE
             rq.room_id = ?
             AND q.status = 'verified'
             AND q.is_active = 1
-        ORDER BY q.difficulty_level ASC, rq.id ASC";
+        ORDER BY rq.id ASC";
 
 $stmt = $conn->prepare($sql);
 
@@ -111,36 +112,23 @@ $result = $stmt->get_result();
 $questions = [];
 
 while ($row = $result->fetch_assoc()) {
-    $letters = ["A", "B", "C", "D"];
-    $correctOption = strtoupper(trim($row["correct_option"]));
-    $correctIndex = array_search($correctOption, $letters, true);
+    $optionPayload = build_shuffled_question_payload($row);
 
-    if ($correctIndex === false) {
-        $correctIndex = 0;
+    $difficultyLevel = (int)round((float)$row["difficulty_level"]);
+
+    if ($difficultyLevel < 1) {
+        $difficultyLevel = 1;
     }
 
-    $difficultyLevel = (float)$row["difficulty_level"];
-
-    if ($difficultyLevel < 1.0) {
-        $difficultyLevel = 1.0;
-    }
-
-    if ($difficultyLevel > 5.0) {
-        $difficultyLevel = 5.0;
+    if ($difficultyLevel > 5) {
+        $difficultyLevel = 5;
     }
 
     $questions[] = [
         "id" => (int)$row["id"],
         "question" => $row["question"],
-        "options" => [
-            $row["option_a"],
-            $row["option_b"],
-            $row["option_c"],
-            $row["option_d"]
-        ],
-        "correct" => $correctIndex,
-        "correct_option" => $correctOption,
-        "explanation" => $row["explanation"],
+        "options" => $optionPayload["options"],
+        "option_letters" => $optionPayload["option_letters"],
         "category" => $row["category"],
         "language" => $row["language"],
         "difficulty_level" => $difficultyLevel

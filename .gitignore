@@ -1,1 +1,11 @@
-config/gemini.php
+*.log
+.env
+.env.*
+!.env.example
+
+assets/uploads/*
+!assets/uploads/.gitkeep
+
+database/*.bak
+database/*.dump
+database/*.tmp

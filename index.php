@@ -1,9 +1,10 @@
 <?php
 require_once __DIR__ . '/lang/translate.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/ui_icons.php';
 
-$isLogged = is_logged_in();
-$role = current_user_role();
+$isLogged = current_session_is_active();
+$role = $isLogged ? current_user_role() : "guest";
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -20,7 +21,9 @@ $role = current_user_role();
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap"
           rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 
 <body>
@@ -35,7 +38,7 @@ $role = current_user_role();
         </div>
 
         <?php if ($isLogged): ?>
-            <a href="/colesterol_game/pages/logout.php" class="admin-login-link">
+            <a href="<?php echo app_path('pages/logout.php'); ?>" class="admin-login-link">
                 <?php echo t("logout"); ?>
             </a>
         <?php endif; ?>
@@ -44,7 +47,7 @@ $role = current_user_role();
     <div class="hero-section">
         <div class="hero-title">
             <img
-                src="/colesterol_game/assets/icons/icon.svg"
+                src="<?php echo asset_path('icons/icon.svg'); ?>"
                 alt="Game Logo"
                 class="hero-logo"
             >
@@ -59,28 +62,40 @@ $role = current_user_role();
 
     <div class="landing-actions">
 
-        <a href="/colesterol_game/pages/game.php"
+        <a href="<?php echo app_path('pages/game.php'); ?>"
            class="primary-btn landing-btn">
-            🎮 <?php echo t("play_solo"); ?>
+            <?php echo ui_icon("gamepad", "ui-icon landing-btn-icon"); ?>
+            <?php echo t("play_solo"); ?>
         </a>
 
-        <a href="/colesterol_game/pages/rooms/join.php"
+        <a href="<?php echo app_path('pages/rooms/join.php'); ?>"
            class="primary-btn landing-btn secondary-landing">
-            👥 <?php echo t("join_room"); ?>
+            <?php echo ui_icon("users", "ui-icon landing-btn-icon"); ?>
+            <?php echo t("join_room"); ?>
         </a>
 
         <?php if ($isLogged && in_array($role, ["teacher", "super_admin"], true)): ?>
 
-            <a href="/colesterol_game/pages/admin_dashboard.php"
+            <a href="<?php echo app_path('pages/admin_dashboard.php'); ?>"
                class="admin-login-link">
-                🔐 <?php echo t("admin_dashboard"); ?>
+                <?php echo ui_icon("school", "ui-icon landing-btn-icon"); ?>
+                <?php echo t("admin_dashboard"); ?>
+            </a>
+
+        <?php elseif ($isLogged): ?>
+
+            <a href="<?php echo app_path('pages/player_dashboard.php'); ?>"
+               class="admin-login-link">
+                <?php echo ui_icon("gamepad", "ui-icon landing-btn-icon"); ?>
+                <?php echo t("player_dashboard"); ?>
             </a>
 
         <?php else: ?>
 
-            <a href="/colesterol_game/pages/login.php"
+            <a href="<?php echo app_path('pages/login.php'); ?>"
                class="admin-login-link">
-                🔐 <?php echo t("login_title"); ?>
+                <?php echo ui_icon("users", "ui-icon landing-btn-icon"); ?>
+                <?php echo t("login_title"); ?>
             </a>
 
         <?php endif; ?>
@@ -89,5 +104,6 @@ $role = current_user_role();
 
 </div>
 
+<script src="<?php echo asset_path('js/theme.js'); ?>"></script>
 </body>
 </html>

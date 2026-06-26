@@ -11,8 +11,8 @@ if ($roomCode === "") {
 }
 
 $stmtRoom = $conn->prepare("
-    SELECT id 
-    FROM game_rooms 
+    SELECT id
+    FROM game_rooms
     WHERE room_code = ?
 ");
 
@@ -37,7 +37,7 @@ $roomId = (int)$room["id"];
 $stmtRoom->close();
 
 $sql = "
-    SELECT 
+    SELECT
         player_name,
         MAX(score) AS best_score,
         MAX(correct_answers) AS best_correct,
@@ -79,7 +79,7 @@ while ($row = $result->fetch_assoc()) {
         "best_correct" => $bestCorrect,
         "total_questions" => $totalQuestions,
         "precision" => $precision,
-        "final_difficulty" => round((float)($row["final_difficulty"] ?? 1.0), 1)
+        "final_difficulty" => round((float)($row["final_difficulty"] ?? 1), 1)
     ];
 }
 

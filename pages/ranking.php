@@ -1,8 +1,13 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_login();
+
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$responsiveTablesVersion = filemtime(__DIR__ . '/../assets/js/responsive_tables.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
@@ -13,35 +18,37 @@ header("Pragma: no-cache");
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("ranking"); ?></title>
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>?m=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 <body>
 
 <div class="game-container">
 
-    <div class="top-actions">
-        <h1>🏆 <?php echo t("ranking"); ?></h1>
-
+    <div class="top-actions page-centered-top-actions">
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_game"); ?>
+            <a href="<?php echo app_path('pages/player_dashboard.php'); ?>" class="logout-btn secondary-btn">
+                <?php echo t("back_to_player_dashboard"); ?>
             </a>
         </div>
     </div>
 
-    <p>
-        <?php echo current_lang() === "en"
-            ? "Top 10 players based on their best registered score."
-            : "Se muestran los 10 mejores jugadores según su mejor puntaje registrado."; ?>
-    </p>
+    <header class="page-title-block">
+        <h1><?php echo ui_icon("trophy"); ?> <?php echo t("global_ranking"); ?></h1>
+        <p><?php echo t("top_10_global_description"); ?></p>
+    </header>
 
-    <table id="rankingTable" class="admin-table" width="100%">
+    <table id="rankingTable" class="admin-table ranking-table" width="100%">
         <thead>
             <tr>
                 <th>#</th>
                 <th><?php echo t("player_name"); ?></th>
+                <th><?php echo current_lang() === "en" ? "Location" : "Ubicación"; ?></th>
                 <th><?php echo t("best_score"); ?></th>
                 <th><?php echo t("total_games"); ?></th>
+                <th><?php echo current_lang() === "en" ? "Best streak" : "Mejor racha"; ?></th>
+                <th><?php echo current_lang() === "en" ? "Daily" : "Diaria"; ?></th>
                 <th><?php echo t("precision"); ?></th>
                 <th><?php echo t("average_difficulty"); ?></th>
             </tr>
@@ -52,18 +59,20 @@ header("Pragma: no-cache");
 </div>
 
 <script>
+const APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 'UTF-8'); ?>";
+const appUrl = path => `${APP_BASE_PATH}/${String(path || "").replace(/^\//, "")}`;
 const RANKING_I18N = {
-    noData: "<?php echo current_lang() === 'en' ? 'No ranking data available' : 'No hay datos de ranking disponibles'; ?>",
+    noData: "<?php echo t('no_ranking_data'); ?>",
     error: "<?php echo t('error'); ?>"
 };
 
-fetch("/colesterol_game/backend/game/get_ranking.php")
+fetch(appUrl("backend/game/get_ranking.php?lang=<?php echo current_lang(); ?>"))
     .then(res => res.json())
     .then(data => {
         const tbody = document.querySelector("#rankingTable tbody");
 
         if (!Array.isArray(data) || data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6">${RANKING_I18N.noData}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9">${RANKING_I18N.noData}</td></tr>`;
             return;
         }
 
@@ -72,11 +81,20 @@ fetch("/colesterol_game/backend/game/get_ranking.php")
         data.forEach((player, index) => {
             const row = document.createElement("tr");
 
+            const country = player.country || {};
+            const location = [
+                country.name ? `${country.flag} ${country.name}` : "",
+                player.city || ""
+            ].filter(Boolean).join(" · ") || "-";
+
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${player.name}</td>
+                <td>${location}</td>
                 <td>${player.best_score}</td>
                 <td>${player.total_games}</td>
+                <td>${player.best_correct_streak || 0}</td>
+                <td>${player.current_daily_streak || 0}</td>
                 <td>${player.precision}%</td>
                 <td>${player.avg_difficulty} / 5</td>
             `;
@@ -89,9 +107,12 @@ fetch("/colesterol_game/backend/game/get_ranking.php")
 
         const tbody = document.querySelector("#rankingTable tbody");
 
-        tbody.innerHTML = `<tr><td colspan="6">${RANKING_I18N.error}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9">${RANKING_I18N.error}</td></tr>`;
     });
 </script>
 
+
+<script src="<?php echo asset_path('js/responsive_tables.js'); ?>?m=<?php echo $responsiveTablesVersion; ?>"></script>
+<script src="<?php echo asset_path('js/theme.js'); ?>?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

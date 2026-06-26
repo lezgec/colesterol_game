@@ -1,9 +1,11 @@
 <?php
 require_once __DIR__ . '/../../lang/translate.php';
-require_once __DIR__ . '/../../assets/includes/auth.php';
+require_once __DIR__ . '/../../includes/auth.php';
 
 $isLogged = isset($_SESSION["user_id"]);
 $role = $_SESSION["user_role"] ?? null;
+$styleVersion = filemtime(__DIR__ . '/../../assets/css/style.css');
+$themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo current_lang(); ?>">
@@ -17,7 +19,9 @@ $role = $_SESSION["user_role"] ?? null;
 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>?v=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 <body>
 
@@ -32,7 +36,7 @@ $role = $_SESSION["user_role"] ?? null;
         </div>
 
         <?php if ($isLogged): ?>
-            <a href="/colesterol_game/logout.php" class="logout-btn">
+            <a href="<?php echo app_path('pages/logout.php'); ?>" class="logout-btn">
                 <?php echo t("logout"); ?>
             </a>
         <?php endif; ?>
@@ -51,18 +55,16 @@ $role = $_SESSION["user_role"] ?? null;
 
     <?php if ($isLogged && in_array($role, ["teacher", "super_admin"])): ?>
 
-        <a href="/colesterol_game/pages/rooms/create.php"
-           class="primary-btn"
-           style="display:block; text-align:center; text-decoration:none; margin-bottom:15px;">
+        <a href="<?php echo app_path('pages/rooms/create.php'); ?>"
+           class="primary-btn room-menu-btn">
 
             <?php echo t("create_room"); ?>
         </a>
 
     <?php endif; ?>
 
-    <a href="/colesterol_game/pages/rooms/join.php"
-       class="primary-btn secondary-dark-btn"
-       style="display:block; text-align:center; text-decoration:none;">
+    <a href="<?php echo app_path('pages/rooms/join.php'); ?>"
+       class="primary-btn secondary-dark-btn room-menu-btn">
 
         <?php echo t("join_room"); ?>
     </a>
@@ -71,25 +73,22 @@ $role = $_SESSION["user_role"] ?? null;
 
     <?php if ($isLogged && in_array($role, ["teacher", "super_admin"])): ?>
 
-        <a href="/colesterol_game/pages/admin_dashboard.php"
-           class="secondary-link">
-            <?php
-            echo current_lang() === "en"
-                ? "Back to dashboard"
-                : "Volver al panel";
-            ?>
+        <a href="<?php echo app_path('pages/admin_dashboard.php'); ?>"
+           class="secondary-link room-back-link">
+            <?php echo t("back_dashboard"); ?>
         </a>
 
     <?php else: ?>
 
-        <a href="/colesterol_game/index.php"
-           class="secondary-link">
-            <?php echo t("back"); ?>
+        <a href="<?php echo app_path('index.php'); ?>"
+           class="secondary-link room-back-link">
+            <?php echo t("back_to_home"); ?>
         </a>
 
     <?php endif; ?>
 
 </div>
 
+<script src="<?php echo asset_path('js/theme.js'); ?>?v=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

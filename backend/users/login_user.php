@@ -3,6 +3,10 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/session_guard.php';
+require_once __DIR__ . '/../../includes/mail_helpers.php';
+
+require_csrf_token();
 
 $input = file_get_contents("php://input");
 $data = json_decode($input, true);
@@ -18,7 +22,7 @@ if ($email === "" || $password === "") {
     exit;
 }
 
-$sql = "SELECT id, name, email, password, role FROM users WHERE email = ?";
+$sql = "SELECT id, name, email, password, role, status FROM users WHERE email = ?";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
@@ -59,10 +63,33 @@ if (!in_array($role, ["player", "teacher", "super_admin"], true)) {
     $role = "player";
 }
 
+if (($user["status"] ?? "active") !== "active") {
+    echo json_encode([
+        "success" => false,
+        "message" => "Tu usuario está bloqueado. Contacta a soporte: " . app_support_email(),
+        "code" => "user_inactive",
+        "support_email" => app_support_email()
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+$sessionToken = create_user_session_token();
+
+if (!store_user_session_token($conn, (int)$user["id"], $sessionToken)) {
+    echo json_encode([
+        "success" => false,
+        "message" => "No se pudo iniciar la sesión segura"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+session_regenerate_id(true);
+
 $_SESSION["user_id"] = (int)$user["id"];
 $_SESSION["user_name"] = $user["name"];
 $_SESSION["user_email"] = $user["email"];
 $_SESSION["user_role"] = $role;
+$_SESSION["session_token"] = $sessionToken;
 
 echo json_encode([
     "success" => true,

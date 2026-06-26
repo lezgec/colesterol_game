@@ -2,7 +2,12 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/gemini.php';
+require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/question_option_helpers.php';
+
+require_csrf_token();
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
@@ -15,30 +20,29 @@ if (!has_role(["teacher", "super_admin"])) {
 $data = json_decode(file_get_contents("php://input"), true);
 
 $topic = trim($data["topic"] ?? "");
-$difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
+$category = trim($data["category"] ?? "");
+$difficulty_level = (int)round((float)($data["difficulty_level"] ?? 1));
 $language = trim($data["language"] ?? "es");
 
-if ($topic === "") {
-    echo json_encode([
-        "success" => false,
-        "message" => "El tema es obligatorio"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
+if ($difficulty_level < 1) {
+    $difficulty_level = 1;
 }
 
-if ($difficulty_level < 1.0) {
-    $difficulty_level = 1.0;
+if ($difficulty_level > 5) {
+    $difficulty_level = 5;
 }
-
-if ($difficulty_level > 5.0) {
-    $difficulty_level = 5.0;
-}
-
-$difficulty_level = round($difficulty_level, 1);
 
 if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
 }
+
+$category = normalize_question_category($category, $language);
+$topicFocus = $topic !== "" ? $topic : $category;
+$allowedCategoryList = array_values(array_unique(array_merge(
+    question_categories($language),
+    [$category]
+)));
+$allowedCategories = implode(", ", $allowedCategoryList);
 
 $langInstruction = $language === "en"
     ? "Generate the question in English."
@@ -47,16 +51,19 @@ $langInstruction = $language === "en"
 $prompt = "
 You are an educational content generator for a serious game about high cholesterol and cardiovascular prevention.
 
-Create ONE multiple-choice question about this topic: {$topic}.
+Create ONE multiple-choice question.
+Content focus: {$topicFocus}.
+Use this category exactly: {$category}.
 
 Difficulty level: {$difficulty_level} out of 5.
 Language: {$language}. {$langInstruction}
 
 Difficulty guide:
-- 1.0 to 1.9 = basic concepts and simple prevention.
-- 2.0 to 2.9 = intermediate understanding.
-- 3.0 to 3.9 = applied reasoning.
-- 4.0 to 5.0 = advanced clinical/public health reasoning.
+- 1 = basic concepts and simple prevention.
+- 2 = intermediate understanding.
+- 3 = applied reasoning.
+- 4 = advanced reasoning.
+- 5 = advanced clinical/public health reasoning.
 
 Rules:
 - The question must be educational and medically safe.
@@ -65,9 +72,14 @@ Rules:
 - It must have exactly four options.
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
+- Avoid always placing the correct answer in A. Use a varied correct_option position.
+- Avoid acronyms or abbreviations in the question and answer options whenever possible.
+- Do not write standalone abbreviations such as LDL, HDL, VLDL, TG, IMC, BMI, ECV, or CVD.
+- If an abbreviation is truly necessary, write the full meaning first and the abbreviation in parentheses in the same sentence, using the selected language. Example in Spanish: lipoproteína de baja densidad (LDL). Example in English: low-density lipoprotein (LDL).
+- Do not use an abbreviation later by itself unless its full meaning appeared earlier in that same question or option.
 - explanation must briefly explain why the correct answer is correct.
-- category must be short.
-- difficulty_level must be a number between 1.0 and 5.0.
+- category must be exactly one of: {$allowedCategories}.
+- difficulty_level must be the integer {$difficulty_level}.
 - language must be es or en.
 - Return only valid JSON.
 ";
@@ -99,7 +111,7 @@ $payload = [
                 ],
                 "explanation" => ["type" => "string"],
                 "category" => ["type" => "string"],
-                "difficulty_level" => ["type" => "number"],
+                "difficulty_level" => ["type" => "integer"],
                 "language" => [
                     "type" => "string",
                     "enum" => ["es", "en"]
@@ -171,20 +183,22 @@ if (!$generated) {
     exit;
 }
 
-$generatedDifficulty = (float)($generated["difficulty_level"] ?? $difficulty_level);
+$generatedDifficulty = (int)round((float)($generated["difficulty_level"] ?? $difficulty_level));
 
-if ($generatedDifficulty < 1.0) {
-    $generatedDifficulty = 1.0;
+if ($generatedDifficulty < 1) {
+    $generatedDifficulty = 1;
 }
 
-if ($generatedDifficulty > 5.0) {
-    $generatedDifficulty = 5.0;
+if ($generatedDifficulty > 5) {
+    $generatedDifficulty = 5;
 }
 
-$generated["difficulty_level"] = round($generatedDifficulty, 1);
+$generated["difficulty_level"] = $generatedDifficulty;
 $generated["language"] = in_array(($generated["language"] ?? $language), ["es", "en"], true)
     ? $generated["language"]
     : $language;
+$generated["category"] = $category;
+$generated = normalize_correct_option_position($generated);
 
 $generated["status"] = "pending";
 $generated["origin"] = "ai";

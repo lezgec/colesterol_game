@@ -1,8 +1,13 @@
 <?php
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../lang/translate.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_login();
+
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$responsiveTablesVersion = filemtime(__DIR__ . '/../assets/js/responsive_tables.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
@@ -12,21 +17,26 @@ header("Pragma: no-cache");
 <head>
     <meta charset="UTF-8">
     <title><?php echo t("history"); ?></title>
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>?m=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 <body>
 
 <div class="game-container">
 
-    <div class="top-actions">
-        <h1>📊 <?php echo t("history"); ?></h1>
-
+    <div class="top-actions page-centered-top-actions">
         <div class="top-links">
-            <a href="/colesterol_game/pages/game.php" class="logout-btn secondary-btn">
-                <?php echo t("back_to_game"); ?>
+            <a href="<?php echo app_path('pages/player_dashboard.php'); ?>" class="logout-btn secondary-btn">
+                <?php echo t("back_to_player_dashboard"); ?>
             </a>
         </div>
     </div>
+
+    <header class="page-title-block">
+        <h1><?php echo ui_icon("calendar"); ?> <?php echo t("history"); ?></h1>
+        <p><?php echo t("history_description"); ?></p>
+    </header>
 
     <table class="admin-table" width="100%" id="historyTable">
 
@@ -48,24 +58,20 @@ header("Pragma: no-cache");
 </div>
 
 <script>
+const APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 'UTF-8'); ?>";
+const appUrl = path => `${APP_BASE_PATH}/${String(path || "").replace(/^\//, "")}`;
 
 const HISTORY_I18N = {
-    noGames: "<?php echo current_lang() === 'en'
-        ? 'No games registered'
-        : 'No hay partidas registradas'; ?>",
+    noGames: "<?php echo t('no_games_registered'); ?>",
 
     error: "<?php echo t('error'); ?>",
 
-    room: "<?php echo current_lang() === 'en'
-        ? 'Room'
-        : 'Sala'; ?>",
+    room: "<?php echo t('room'); ?>",
 
-    solo: "<?php echo current_lang() === 'en'
-        ? 'Solo'
-        : 'Solo'; ?>"
+    solo: "<?php echo t('solo'); ?>"
 };
 
-fetch("/colesterol_game/backend/game/get_user_results.php")
+fetch(appUrl("backend/game/get_user_results.php"))
 .then(res => res.json())
 .then(response => {
 
@@ -93,8 +99,8 @@ fetch("/colesterol_game/backend/game/get_user_results.php")
 
     data.forEach(item => {
 
-        const mode = item.room_id
-            ? `${HISTORY_I18N.room} #${item.room_id}`
+        const mode = item.room_id || item.game_mode === "room"
+            ? `${HISTORY_I18N.room} #${item.room_id || "-"}`
             : HISTORY_I18N.solo;
 
         const row = document.createElement("tr");
@@ -126,5 +132,8 @@ fetch("/colesterol_game/backend/game/get_user_results.php")
 });
 </script>
 
+
+<script src="<?php echo asset_path('js/responsive_tables.js'); ?>?m=<?php echo $responsiveTablesVersion; ?>"></script>
+<script src="<?php echo asset_path('js/theme.js'); ?>?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

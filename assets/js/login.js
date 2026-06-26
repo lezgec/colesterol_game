@@ -7,15 +7,15 @@ form.addEventListener("submit", async (e) => {
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
 
-    message.textContent = "Iniciando sesión...";
+    message.textContent = LOGIN_I18N.loading;
 
     try {
 
-        const response = await fetch("/colesterol_game/backend/users/login_user.php", {
+        const response = await fetch(appUrl("backend/users/login_user.php"), {
             method: "POST",
-            headers: {
+            headers: csrfHeaders({
                 "Content-Type": "application/json"
-            },
+            }),
             body: JSON.stringify({
                 email,
                 password
@@ -28,17 +28,17 @@ form.addEventListener("submit", async (e) => {
 
         if (result.success) {
 
-            message.textContent = "✅ Inicio de sesión correcto";
+            message.textContent = LOGIN_I18N.success;
 
             setTimeout(() => {
                 window.location.href =
-                    result.redirect || "/colesterol_game/pages/player_dashboard.php";
+                    result.redirect || appUrl("pages/player_dashboard.php");
             }, 500);
 
         } else {
 
             message.textContent =
-                "❌ " + (result.message || "No se pudo iniciar sesión");
+                result.message || LOGIN_I18N.failed;
 
         }
 
@@ -46,7 +46,7 @@ form.addEventListener("submit", async (e) => {
 
         console.error(error);
 
-        message.textContent = "❌ Error de conexión";
+        message.textContent = LOGIN_I18N.connectionError;
 
     }
 });

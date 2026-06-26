@@ -1,12 +1,18 @@
 <?php
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 header("Content-Type: application/json; charset=utf-8");
-
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../badges/evaluate_badges.php';
+require_once __DIR__ . '/../../config/adaptive_difficulty_schema.php';
+require_once __DIR__ . '/result_calculation_helpers.php';
+
+require_csrf_token();
+
+ensure_adaptive_difficulty_columns($conn);
 
 if (!is_logged_in()) {
     echo json_encode([
@@ -30,31 +36,27 @@ if (!$data) {
     exit;
 }
 
-$score = (int)($data["score"] ?? 0);
-$correct = (int)($data["correct_answers"] ?? 0);
 $total = (int)($data["total_questions"] ?? 0);
 $lives = (int)($data["lives_remaining"] ?? 0);
-$final_difficulty = (float)($data["final_difficulty"] ?? 1.0);
+$calculated = calculate_recent_result_from_answers($conn, [
+    "user_id" => $user_id,
+    "room_id" => null
+], $total);
 
-if ($final_difficulty < 1.0) {
-    $final_difficulty = 1.0;
-}
+$score = $calculated["score"];
+$correct = $calculated["correct_answers"];
+$total = $calculated["total_questions"] > 0 ? $calculated["total_questions"] : $total;
+$final_difficulty = $calculated["final_difficulty"];
 
-if ($final_difficulty > 5.0) {
-    $final_difficulty = 5.0;
-}
-
-$final_difficulty = round($final_difficulty, 1);
-
-$sql = "INSERT INTO game_results 
+$sql = "INSERT INTO game_results
         (
-            user_id, 
+            user_id,
             room_id,
             player_name,
-            score, 
-            correct_answers, 
-            total_questions, 
-            lives_remaining, 
+            score,
+            correct_answers,
+            total_questions,
+            lives_remaining,
             final_difficulty
         )
         VALUES (?, NULL, NULL, ?, ?, ?, ?, ?)";
@@ -81,11 +83,21 @@ $stmt->bind_param(
 );
 
 if ($stmt->execute()) {
+
+    if (isset($_SESSION["user_id"])) {
+        $newBadges = [];
+
+        if (isset($_SESSION["user_id"])) {
+            $newBadges = evaluateBadges($conn, (int)$_SESSION["user_id"]);
+        }
+    }
     echo json_encode([
         "success" => true,
         "message" => "Resultado guardado correctamente",
-        "final_difficulty" => $final_difficulty
+        "final_difficulty" => $final_difficulty,
+        "new_badges" => $newBadges
     ], JSON_UNESCAPED_UNICODE);
+
 } else {
     echo json_encode([
         "success" => false,

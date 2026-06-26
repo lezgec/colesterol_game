@@ -1,18 +1,13 @@
 <?php
-session_start();
-
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../badges/evaluate_badges.php';
 
-if (
-    !isset($_SESSION["user_id"]) ||
-    !isset($_SESSION["user_role"]) ||
-    !in_array($_SESSION["user_role"], ["teacher", "super_admin"], true)
-) {
+require_csrf_token();
+
+if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
         "success" => false,
         "message" => "No autorizado"
@@ -22,15 +17,21 @@ if (
 
 $data = json_decode(file_get_contents("php://input"), true);
 
+if (!is_array($data)) {
+    echo json_encode([
+        "success" => false,
+        "message" => "JSON no valido"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 $name = trim($data["name"] ?? "");
 $language = trim($data["language"] ?? "es");
-$question_count = (int)($data["question_count"] ?? 10);
-$time_limit = (int)($data["time_limit"] ?? 20);
-$question_mode = trim($data["question_mode"] ?? "random");
-$selected_questions = $data["selected_questions"] ?? [];
-
-$initialDifficulty = 1.0;
+$questionCount = (int)($data["question_count"] ?? 10);
+$timeLimit = (int)($data["time_limit"] ?? 20);
+$questionMode = trim($data["question_mode"] ?? "random");
 $createdBy = (int)$_SESSION["user_id"];
+$initialDifficulty = 1.0;
 
 if ($name === "") {
     echo json_encode([
@@ -44,24 +45,24 @@ if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
 }
 
-if ($question_count < 1) {
-    $question_count = 10;
+if ($questionCount < 1) {
+    $questionCount = 10;
 }
 
-if ($question_count > 50) {
-    $question_count = 50;
+if ($questionCount > 50) {
+    $questionCount = 50;
 }
 
-if ($time_limit < 5) {
-    $time_limit = 20;
+if ($timeLimit < 5) {
+    $timeLimit = 20;
 }
 
-if ($time_limit > 120) {
-    $time_limit = 120;
+if ($timeLimit > 120) {
+    $timeLimit = 120;
 }
 
-if (!in_array($question_mode, ["random", "selected"], true)) {
-    $question_mode = "random";
+if (!in_array($questionMode, ["configured", "random", "selected"], true)) {
+    $questionMode = "random";
 }
 
 function generateRoomCode($length = 6): string {
@@ -76,173 +77,85 @@ function generateRoomCode($length = 6): string {
 }
 
 try {
-    $conn->begin_transaction();
-
-    $room_code = "";
+    $roomCode = "";
     $roomId = 0;
     $created = false;
 
     for ($attempt = 0; $attempt < 10; $attempt++) {
-        $room_code = generateRoomCode();
+        $roomCode = generateRoomCode();
 
-        $stmtRoom = $conn->prepare("
+        $stmt = $conn->prepare("
             INSERT INTO game_rooms
-            (
-                room_code,
-                name,
-                initial_difficulty,
-                language,
-                question_count,
-                time_limit,
-                question_mode,
-                status,
-                current_question_index,
-                created_by
-            )
+                (
+                    room_code,
+                    name,
+                    initial_difficulty,
+                    language,
+                    question_count,
+                    time_limit,
+                    question_mode,
+                    status,
+                    current_question_index,
+                    created_by
+                )
             VALUES
-            (?, ?, ?, ?, ?, ?, ?, 'waiting', 0, ?)
+                (?, ?, ?, ?, ?, ?, ?, 'waiting', 0, ?)
         ");
 
-        if (!$stmtRoom) {
+        if (!$stmt) {
             throw new Exception($conn->error);
         }
 
-        $stmtRoom->bind_param(
-            "ssdsiiii",
-            $room_code,
+        $stmt->bind_param(
+            "ssdsiisi",
+            $roomCode,
             $name,
             $initialDifficulty,
             $language,
-            $question_count,
-            $time_limit,
-            $question_mode,
+            $questionCount,
+            $timeLimit,
+            $questionMode,
             $createdBy
         );
 
-        if ($stmtRoom->execute()) {
-            $roomId = (int)$stmtRoom->insert_id;
+        if ($stmt->execute()) {
+            $roomId = (int)$stmt->insert_id;
             $created = true;
-            $stmtRoom->close();
+            $stmt->close();
             break;
         }
 
-        $stmtRoom->close();
+        $lastError = $stmt->error;
+        $stmt->close();
+
+        if (stripos($lastError, "duplicate") === false) {
+            throw new Exception($lastError);
+        }
     }
 
     if (!$created) {
-        throw new Exception("No se pudo generar un código único para la sala");
+        throw new Exception("No se pudo generar un codigo unico para la sala");
     }
 
-    $roomQuestionIds = [];
+    $newTeacherBadges = [];
 
-    if ($question_mode === "selected") {
-        if (!is_array($selected_questions) || count($selected_questions) === 0) {
-            throw new Exception("Debe seleccionar preguntas");
-        }
-
-        $roomQuestionIds = array_values(array_unique(array_map("intval", $selected_questions)));
-    } else {
-        $stmtQuestions = $conn->prepare("
-            SELECT id
-            FROM questions
-            WHERE 
-                language = ?
-                AND status = 'verified'
-                AND is_active = 1
-            ORDER BY ABS(difficulty_level - ?) ASC, RAND()
-            LIMIT ?
-        ");
-
-        if (!$stmtQuestions) {
-            throw new Exception($conn->error);
-        }
-
-        $stmtQuestions->bind_param(
-            "sdi",
-            $language,
-            $initialDifficulty,
-            $question_count
-        );
-
-        if (!$stmtQuestions->execute()) {
-            throw new Exception($stmtQuestions->error);
-        }
-
-        $resultQuestions = $stmtQuestions->get_result();
-
-        while ($row = $resultQuestions->fetch_assoc()) {
-            $roomQuestionIds[] = (int)$row["id"];
-        }
-
-        $stmtQuestions->close();
+    try {
+        $newTeacherBadges = evaluateTeacherBadges($conn, $createdBy);
+    } catch (Throwable $badgeError) {
+        $newTeacherBadges = [];
     }
-
-    if (count($roomQuestionIds) === 0) {
-        throw new Exception("No se encontraron preguntas verificadas y activas para este idioma");
-    }
-
-    $stmtInsertQuestion = $conn->prepare("
-        INSERT INTO room_questions
-            (room_id, question_id)
-        VALUES
-            (?, ?)
-    ");
-
-    if (!$stmtInsertQuestion) {
-        throw new Exception($conn->error);
-    }
-
-    foreach ($roomQuestionIds as $questionId) {
-        $stmtInsertQuestion->bind_param(
-            "ii",
-            $roomId,
-            $questionId
-        );
-
-        if (!$stmtInsertQuestion->execute()) {
-            throw new Exception($stmtInsertQuestion->error);
-        }
-    }
-
-    $stmtInsertQuestion->close();
-
-    $realQuestionCount = count($roomQuestionIds);
-
-    $stmtUpdateCount = $conn->prepare("
-        UPDATE game_rooms
-        SET question_count = ?
-        WHERE id = ?
-    ");
-
-    if (!$stmtUpdateCount) {
-        throw new Exception($conn->error);
-    }
-
-    $stmtUpdateCount->bind_param(
-        "ii",
-        $realQuestionCount,
-        $roomId
-    );
-
-    if (!$stmtUpdateCount->execute()) {
-        throw new Exception($stmtUpdateCount->error);
-    }
-
-    $stmtUpdateCount->close();
-
-    $conn->commit();
 
     echo json_encode([
         "success" => true,
         "message" => "Sala creada correctamente",
-        "room_code" => $room_code,
+        "room_code" => $roomCode,
         "room_id" => $roomId,
-        "question_count" => $realQuestionCount
+        "question_count" => $questionCount,
+        "assigned_question_count" => 0,
+        "missing_question_count" => $questionCount,
+        "new_teacher_badges" => $newTeacherBadges
     ], JSON_UNESCAPED_UNICODE);
-
-} catch (Exception $e) {
-    $conn->rollback();
-
+} catch (Throwable $e) {
     echo json_encode([
         "success" => false,
         "message" => "Error al crear la sala",

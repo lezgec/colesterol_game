@@ -1,8 +1,15 @@
 <?php
 require_once __DIR__ . '/../lang/translate.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/ui_icons.php';
 
 require_login();
+
+$styleVersion = filemtime(__DIR__ . '/../assets/css/style.css');
+$soundVersion = filemtime(__DIR__ . '/../assets/js/sound_fx.js');
+$appVersion = filemtime(__DIR__ . '/../assets/js/app.js');
+$uiIconsJsVersion = filemtime(__DIR__ . '/../assets/js/ui_icons.js');
+$themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
@@ -22,16 +29,18 @@ header("Pragma: no-cache");
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;800&display=swap"
           rel="stylesheet">
 
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>?m=<?php echo $styleVersion; ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 
 <body>
 
-<div class="game-container">
+<div class="game-container game-page-container">
 
     <div class="top-actions">
 
-        <div class="language-pill">
+        <div class="language-pill" id="language-selector">
             <a href="?lang=es">ES</a>
             <span>|</span>
             <a href="?lang=en">EN</a>
@@ -39,24 +48,24 @@ header("Pragma: no-cache");
 
         <div class="top-links">
 
-            <a href="/colesterol_game/pages/history.php"
+            <a href="<?php echo app_path('pages/history.php'); ?>"
                class="logout-btn secondary-btn">
                 <?php echo t("history"); ?>
             </a>
 
-            <a href="/colesterol_game/pages/ranking.php"
+            <a href="<?php echo app_path('pages/ranking.php'); ?>"
                class="logout-btn secondary-btn">
                 <?php echo t("ranking"); ?>
             </a>
 
-            <a href="/colesterol_game/pages/dashboard.php"
+            <a href="<?php echo app_path('pages/dashboard.php'); ?>"
                class="logout-btn secondary-btn">
                 <?php echo t("dashboard"); ?>
             </a>
 
             <?php if (in_array(current_user_role(), ["teacher", "super_admin"], true)): ?>
 
-                <a href="/colesterol_game/pages/admin_questions.php"
+                <a href="<?php echo app_path('pages/admin_questions.php'); ?>"
                    class="logout-btn"
                    style="margin-left:10px; background:#0d6efd;">
 
@@ -66,12 +75,12 @@ header("Pragma: no-cache");
 
             <?php endif; ?>
 
-            <a href="/colesterol_game/pages/rooms/index.php"
+            <a href="<?php echo app_path('pages/rooms/index.php'); ?>"
                class="logout-btn secondary-btn">
                 <?php echo t("rooms_title"); ?>
             </a>
 
-            <a href="/colesterol_game/pages/logout.php"
+            <a href="<?php echo app_path('pages/logout.php'); ?>"
                class="logout-btn">
                 <?php echo t("logout"); ?>
             </a>
@@ -86,25 +95,44 @@ header("Pragma: no-cache");
 
         <div class="hud">
 
-            <p>
-                <strong><?php echo t("score"); ?>:</strong>
-                <span id="score">0</span>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("score"); ?></span>
+                <strong id="score">0</strong>
+            </div>
 
-            <p>
-                <strong><?php echo t("lives"); ?>:</strong>
-                <span id="lives">❤️❤️❤️</span>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("lives"); ?></span>
+                <strong id="lives" class="lives-icons" aria-label="<?php echo t("lives"); ?>"></strong>
+            </div>
 
-            <p>
-                <strong><?php echo t("difficulty"); ?>:</strong>
-                <span id="selected-difficulty">1.0 / 5</span>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("difficulty"); ?></span>
+                <strong id="selected-difficulty">1 / 5</strong>
+            </div>
 
-            <p id="progress">
-                <?php echo t("loading_questions"); ?>
-            </p>
+            <div class="hud-stat">
+                <span><?php echo t("time_limit"); ?></span>
+                <strong id="question-timer">20s</strong>
+            </div>
 
+        </div>
+
+        <div class="game-progress-panel">
+            <div class="progress-meta">
+                <span><?php echo t("question_progress"); ?></span>
+                <strong id="progress">
+                    <?php echo t("loading_questions"); ?>
+                </strong>
+            </div>
+
+            <div class="progress-track"
+                 role="progressbar"
+                 aria-valuemin="0"
+                 aria-valuemax="100"
+                 aria-valuenow="0">
+                <div id="game-progress-fill"
+                     class="progress-fill"></div>
+            </div>
         </div>
 
         <div class="question-box">
@@ -124,7 +152,12 @@ header("Pragma: no-cache");
 </div>
 
 <script>
+window.CSRF_TOKEN = "<?php echo htmlspecialchars(csrf_token(), ENT_QUOTES, 'UTF-8'); ?>";
+window.APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 'UTF-8'); ?>";
+
 const CURRENT_LANG = "<?php echo current_lang(); ?>";
+const USER_ID = <?php echo (int)$_SESSION["user_id"]; ?>;
+const PLAYER_NAME = "<?php echo htmlspecialchars($_SESSION["user_name"] ?? ""); ?>";
 
 const I18N = {
 
@@ -143,44 +176,37 @@ const I18N = {
     resultSaved: "<?php echo t('result_saved'); ?>",
     resultNotSaved: "<?php echo t('result_not_saved'); ?>",
 
-    noQuestions:
-        "<?php echo current_lang() === 'en'
-            ? 'No questions available'
-            : 'No hay preguntas disponibles'; ?>",
+    noQuestions: "<?php echo t('no_questions_available'); ?>",
 
-    gameFinished:
-        "<?php echo current_lang() === 'en'
-            ? 'Game finished'
-            : 'Juego terminado'; ?>",
+    gameFinished: "<?php echo t('game_finished'); ?>",
 
-    question:
-        "<?php echo current_lang() === 'en'
-            ? 'Question'
-            : 'Pregunta'; ?>",
+    question: "<?php echo t('question'); ?>",
 
-    of:
-        "<?php echo current_lang() === 'en'
-            ? 'of'
-            : 'de'; ?>",
+    of: "<?php echo t('of'); ?>",
 
-    newDifficulty:
-        "<?php echo current_lang() === 'en'
-            ? 'New difficulty'
-            : 'Nueva dificultad'; ?>",
+    newDifficulty: "<?php echo t('new_difficulty'); ?>",
 
-    finalDifficulty:
-        "<?php echo current_lang() === 'en'
-            ? 'Final difficulty'
-            : 'Dificultad final'; ?>",
+    finalDifficulty: "<?php echo t('final_difficulty'); ?>",
 
-    correctAnswer:
-        "<?php echo current_lang() === 'en'
-            ? 'Correct answer'
-            : 'Respuesta correcta'; ?>"
+    correctAnswer: "<?php echo t('correct_answer'); ?>",
+
+    selectedAnswer: "<?php echo t('selected_answer'); ?>",
+    feedback: "<?php echo t('feedback'); ?>",
+    continue: "<?php echo t('continue'); ?>",
+    submitAnswer: "<?php echo t('submit_answer'); ?>",
+    chooseAnswer: "<?php echo t('choose_answer'); ?>",
+    timeOut: "<?php echo t('time_out'); ?>",
+    playAgain: "<?php echo t('play_again'); ?>",
+    newBadgeUnlocked: "<?php echo current_lang() === "en" ? "New achievement unlocked" : "Nuevo logro desbloqueado"; ?>",
+    close: "<?php echo t('close'); ?>"
 };
 </script>
 
-<script src="/colesterol_game/assets/js/app.js"></script>
+<script src="<?php echo asset_path('js/ui_icons.js'); ?>?m=<?php echo $uiIconsJsVersion; ?>"></script>
+<script src="<?php echo asset_path('js/http.js'); ?>?m=<?php echo filemtime(__DIR__ . '/../assets/js/http.js'); ?>"></script>
+<script src="<?php echo asset_path('js/sound_fx.js'); ?>?m=<?php echo $soundVersion; ?>"></script>
+<script src="<?php echo asset_path('js/app.js'); ?>?m=<?php echo $appVersion; ?>"></script>
 
+<script src="<?php echo asset_path('js/theme.js'); ?>?m=<?php echo $themeVersion; ?>"></script>
 </body>
 </html>

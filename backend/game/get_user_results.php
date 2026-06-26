@@ -9,14 +9,14 @@ require_login();
 $user_id = (int)$_SESSION["user_id"];
 
 $sql = "
-    SELECT 
+    SELECT
         score,
         correct_answers,
         total_questions,
         lives_remaining,
-        difficulty,
         final_difficulty,
         room_id,
+        game_mode,
         player_name,
         played_at
     FROM game_results
@@ -59,9 +59,9 @@ while ($row = $result->fetch_assoc()) {
         "total_questions" => $total,
         "precision" => $precision,
         "lives_remaining" => (int)$row["lives_remaining"],
-        "difficulty" => $row["difficulty"],
-        "final_difficulty" => (float)$row["final_difficulty"],
+        "final_difficulty" => round((float)$row["final_difficulty"], 1),
         "room_id" => $row["room_id"] !== null ? (int)$row["room_id"] : null,
+        "game_mode" => $row["game_mode"] ?? "solo",
         "player_name" => $row["player_name"],
         "played_at" => $row["played_at"]
     ];

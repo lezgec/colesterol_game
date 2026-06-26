@@ -1,179 +1,190 @@
 <?php
-session_start();
-
 header("Content-Type: application/json; charset=utf-8");
+ini_set("serialize_precision", "-1");
 
 require_once __DIR__ . '/../../config/db.php';
-if (
-     !has_role(["teacher", "super_admin"])
-) {
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../lang/translate.php';
+
+if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
         "success" => false,
         "message" => "No autorizado"
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-$data = [];
+$userId = (int)$_SESSION["user_id"];
+$isSuperAdmin = is_super_admin();
 
-/*
-|--------------------------------------------------------------------------
-| Precisión general
-|--------------------------------------------------------------------------
-*/
+$answerScopeJoin = "";
+$answerScopeWhere = "";
+$answerScopeTypes = "";
+$answerScopeParams = [];
 
-$sqlAccuracy = "
-    SELECT 
-        SUM(correct_answers) AS total_correct,
-        SUM(total_questions) AS total_answered
-    FROM game_results
-";
-
-$resAccuracy = $conn->query($sqlAccuracy);
-
-$accuracy = [
-    "total_correct" => 0,
-    "total_answered" => 0,
-    "percentage" => 0
-];
-
-if ($resAccuracy && $row = $resAccuracy->fetch_assoc()) {
-
-    $totalCorrect = (int)($row["total_correct"] ?? 0);
-    $totalAnswered = (int)($row["total_answered"] ?? 0);
-
-    $percentage = 0;
-
-    if ($totalAnswered > 0) {
-        $percentage = round(($totalCorrect / $totalAnswered) * 100, 2);
-    }
-
-    $accuracy = [
-        "total_correct" => $totalCorrect,
-        "total_answered" => $totalAnswered,
-        "percentage" => $percentage
-    ];
+if (!$isSuperAdmin) {
+    $answerScopeJoin = "LEFT JOIN game_rooms gr ON ga.room_id = gr.id";
+    $answerScopeWhere = "WHERE gr.created_by = ?";
+    $answerScopeTypes = "i";
+    $answerScopeParams = [$userId];
 }
 
-$data["accuracy"] = $accuracy;
+function fetchOne($conn, $sql, $types = "", $params = []) {
+    $stmt = $conn->prepare($sql);
 
-/*
-|--------------------------------------------------------------------------
-| Rendimiento por dificultad
-|--------------------------------------------------------------------------
-*/
+    if (!$stmt) {
+        return null;
+    }
 
-$sqlDifficulty = "
-    SELECT 
-        difficulty,
-        SUM(correct_answers) AS total_correct,
-        SUM(total_questions) AS total_questions
-    FROM game_results
-    GROUP BY difficulty
+    if ($types !== "" && !empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    return $row;
+}
+
+function fetchAll($conn, $sql, $types = "", $params = []) {
+    $stmt = $conn->prepare($sql);
+
+    if (!$stmt) {
+        return [];
+    }
+
+    if ($types !== "" && !empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $rows = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+
+    $stmt->close();
+
+    return $rows;
+}
+
+$summarySql = "
+    SELECT
+        COUNT(*) AS total_answered,
+        COALESCE(SUM(is_correct), 0) AS total_correct
+    FROM game_answers ga
+    {$answerScopeJoin}
+    {$answerScopeWhere}
 ";
 
-$resDifficulty = $conn->query($sqlDifficulty);
+$summary = fetchOne(
+    $conn,
+    $summarySql,
+    $answerScopeTypes,
+    $answerScopeParams
+) ?? [];
+
+$totalAnswered = (int)($summary["total_answered"] ?? 0);
+$totalCorrect = (int)($summary["total_correct"] ?? 0);
+
+$accuracy = [
+    "total_correct" => $totalCorrect,
+    "total_answered" => $totalAnswered,
+    "percentage" => $totalAnswered > 0
+        ? round(($totalCorrect / $totalAnswered) * 100, 2)
+        : 0
+];
+
+$difficultyRows = fetchAll(
+    $conn,
+    "
+        SELECT
+            ROUND(COALESCE(ga.difficulty_level, 1)) AS difficulty,
+            COUNT(*) AS total_questions,
+            COALESCE(SUM(ga.is_correct), 0) AS total_correct
+        FROM game_answers ga
+        {$answerScopeJoin}
+        {$answerScopeWhere}
+        GROUP BY ROUND(COALESCE(ga.difficulty_level, 1))
+        ORDER BY difficulty ASC
+    ",
+    $answerScopeTypes,
+    $answerScopeParams
+);
 
 $difficultyStats = [];
 
-if ($resDifficulty) {
+foreach ($difficultyRows as $row) {
+    $questions = (int)$row["total_questions"];
+    $correct = (int)$row["total_correct"];
 
-    while ($row = $resDifficulty->fetch_assoc()) {
-
-        $correct = (int)$row["total_correct"];
-        $questions = (int)$row["total_questions"];
-
-        $percentage = 0;
-
-        if ($questions > 0) {
-            $percentage = round(($correct / $questions) * 100, 2);
-        }
-
-        $difficultyStats[] = [
-            "difficulty" => $row["difficulty"],
-            "correct" => $correct,
-            "questions" => $questions,
-            "percentage" => $percentage
-        ];
-    }
+    $difficultyStats[] = [
+        "difficulty" => (int)round((float)$row["difficulty"]) . " / 5",
+        "correct" => $correct,
+        "questions" => $questions,
+        "percentage" => $questions > 0
+            ? round(($correct / $questions) * 100, 2)
+            : 0
+    ];
 }
 
-$data["difficulty_stats"] = $difficultyStats;
+if ($isSuperAdmin) {
+    $topPlayersSql = "
+        SELECT
+            COALESCE(NULLIF(ga.player_name, ''), u.name, CONCAT('Usuario #', ga.user_id), ?) AS player_name,
+            COALESCE(SUM(ga.score_earned), 0) AS best_score,
+            COALESCE(SUM(ga.is_correct), 0) AS total_correct
+        FROM game_answers ga
+        LEFT JOIN users u ON ga.user_id = u.id
+        GROUP BY COALESCE(NULLIF(ga.player_name, ''), u.name, CONCAT('Usuario #', ga.user_id))
+        ORDER BY best_score DESC, total_correct DESC
+        LIMIT 10
+    ";
+    $topPlayers = fetchAll($conn, $topPlayersSql, "s", [t("unnamed_player")]);
+} else {
+    $topPlayersSql = "
+        SELECT
+            COALESCE(NULLIF(ga.player_name, ''), u.name, CONCAT('Usuario #', ga.user_id), ?) AS player_name,
+            COALESCE(SUM(ga.score_earned), 0) AS best_score,
+            COALESCE(SUM(ga.is_correct), 0) AS total_correct
+        FROM game_answers ga
+        LEFT JOIN users u ON ga.user_id = u.id
+        LEFT JOIN game_rooms gr ON ga.room_id = gr.id
+        WHERE gr.created_by = ?
+        GROUP BY COALESCE(NULLIF(ga.player_name, ''), u.name, CONCAT('Usuario #', ga.user_id), ?)
+        ORDER BY best_score DESC, total_correct DESC
+        LIMIT 10
+    ";
+    $topPlayers = fetchAll(
+        $conn,
+        $topPlayersSql,
+        "sis",
+        [t("unnamed_player"), $userId, t("unnamed_player")]
+    );
+}
 
-/*
-|--------------------------------------------------------------------------
-| Top jugadores
-|--------------------------------------------------------------------------
-*/
-
-$sqlTopPlayers = "
-    SELECT 
-        player_name,
-        MAX(score) AS best_score,
-        SUM(correct_answers) AS total_correct
-    FROM game_results
-    GROUP BY player_name
-    ORDER BY best_score DESC
-    LIMIT 10
-";
-
-$resPlayers = $conn->query($sqlTopPlayers);
-
-$topPlayers = [];
-
-if ($resPlayers) {
-
-    while ($row = $resPlayers->fetch_assoc()) {
-
-        $topPlayers[] = [
+$topPlayers = array_map(
+    static function ($row) {
+        return [
             "player_name" => $row["player_name"],
             "best_score" => (int)$row["best_score"],
             "total_correct" => (int)$row["total_correct"]
         ];
-    }
-}
-
-$data["top_players"] = $topPlayers;
-
-/*
-|--------------------------------------------------------------------------
-| Salas más activas
-|--------------------------------------------------------------------------
-*/
-
-$sqlRooms = "
-    SELECT 
-        gr.name,
-        gr.room_code,
-        COUNT(gres.id) AS total_results
-    FROM game_rooms gr
-    LEFT JOIN game_results gres ON gr.id = gres.room_id
-    GROUP BY gr.id
-    ORDER BY total_results DESC
-    LIMIT 10
-";
-
-$resRooms = $conn->query($sqlRooms);
-
-$topRooms = [];
-
-if ($resRooms) {
-
-    while ($row = $resRooms->fetch_assoc()) {
-
-        $topRooms[] = [
-            "name" => $row["name"],
-            "room_code" => $row["room_code"],
-            "total_results" => (int)$row["total_results"]
-        ];
-    }
-}
-
-$data["top_rooms"] = $topRooms;
+    },
+    $topPlayers
+);
 
 echo json_encode([
     "success" => true,
-    "data" => $data
+    "data" => [
+        "accuracy" => $accuracy,
+        "difficulty_stats" => $difficultyStats,
+        "top_players" => $topPlayers,
+        "no_data_message" => t("no_data_available")
+    ]
 ], JSON_UNESCAPED_UNICODE);
 
 $conn->close();

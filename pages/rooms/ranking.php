@@ -12,13 +12,13 @@ $isAdmin = in_array($role, ["teacher", "super_admin"], true);
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 
 if ($roomCode === "") {
-    header("Location: /colesterol_game/pages/rooms/join.php");
+    header("Location: " . app_path("pages/rooms/join.php"));
     exit;
 }
 
 $stmtRoom = $conn->prepare("
     SELECT id, name, status
-    FROM game_rooms 
+    FROM game_rooms
     WHERE room_code = ?
 ");
 
@@ -39,8 +39,11 @@ $conn->close();
 <html lang="<?php echo current_lang(); ?>">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo t("room_ranking"); ?></title>
-    <link rel="stylesheet" href="/colesterol_game/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo asset_path('css/style.css'); ?>">
+    <link rel="icon" type="image/svg+xml" href="<?php echo asset_path('icons/icon.svg'); ?>">
+
 </head>
 <body>
 
@@ -48,22 +51,23 @@ $conn->close();
 
     <div class="top-actions">
         <div class="language-pill">
-            <a href="?code=<?php echo urlencode($roomCode); ?>&lang=es">ES</a> |
+            <a href="?code=<?php echo urlencode($roomCode); ?>&lang=es">ES</a>
+            <span>|</span>
             <a href="?code=<?php echo urlencode($roomCode); ?>&lang=en">EN</a>
         </div>
     </div>
 
     <h1><?php echo t("room_ranking"); ?></h1>
 
-    <p>
+    <p class="room-meta">
         <strong><?php echo t("room_name"); ?>:</strong>
         <?php echo htmlspecialchars($room["name"]); ?><br>
 
         <strong><?php echo t("room_code"); ?>:</strong>
         <?php echo htmlspecialchars($roomCode); ?><br>
 
-        <strong>Estado:</strong>
-        <span id="room-status"><?php echo htmlspecialchars($room["status"]); ?></span>
+        <strong><?php echo t("status"); ?>:</strong>
+        <span id="room-status"><?php echo htmlspecialchars(room_status_label($room["status"])); ?></span>
     </p>
 
     <section id="podium-section" class="podium-section" style="display:none;">
@@ -74,7 +78,7 @@ $conn->close();
     <section class="admin-section">
         <h2><?php echo t("full_ranking"); ?></h2>
 
-        <table class="admin-table">
+        <table class="admin-table ranking-table">
             <thead>
                 <tr>
                     <th>#</th>
@@ -98,15 +102,20 @@ $conn->close();
 
     <?php if ($isAdmin): ?>
 
-        <a href="/colesterol_game/pages/rooms/index.php"
+        <a href="<?php echo app_path('pages/rooms/index.php'); ?>"
            class="primary-btn"
            style="display:block; text-align:center; text-decoration:none;">
-            <?php echo t("back"); ?>
+            <?php echo t("back_to_rooms"); ?>
+        </a>
+        <a href="<?php echo app_path('pages/rooms/room_report.php?code=' . urlencode($roomCode)); ?>"
+        class="primary-btn"
+        style="display:block; text-align:center; text-decoration:none; margin-bottom:10px;">
+            <?php echo t("room_report"); ?>
         </a>
 
     <?php else: ?>
 
-        <a href="/colesterol_game/pages/rooms/join.php"
+        <a href="<?php echo app_path('pages/rooms/join.php'); ?>"
            class="primary-btn"
            style="display:block; text-align:center; text-decoration:none;">
             <?php echo t("join_room"); ?>
@@ -116,7 +125,10 @@ $conn->close();
 
 </div>
 
+<script src="<?php echo asset_path('js/ui_icons.js'); ?>"></script>
 <script>
+const APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 'UTF-8'); ?>";
+const appUrl = path => `${APP_BASE_PATH}/${String(path || "").replace(/^\//, "")}`;
 const ROOM_CODE = "<?php echo htmlspecialchars($roomCode); ?>";
 const CURRENT_PLAYER = "<?php echo htmlspecialchars($_GET["name"] ?? ""); ?>";
 
@@ -125,9 +137,20 @@ let rankingInterval = null;
 let stateInterval = null;
 
 const RANKING_I18N = {
-    noResults: "<?php echo current_lang() === 'en' ? 'No results yet' : 'No hay resultados todavía'; ?>",
-    error: "<?php echo t('error'); ?>"
+    noResults: "<?php echo t('no_results_yet'); ?>",
+    error: "<?php echo t('error'); ?>",
+    unknownStatus: "<?php echo t('room_status_unknown'); ?>",
+    statuses: {
+        waiting: "<?php echo t('room_status_waiting'); ?>",
+        started: "<?php echo t('room_status_started'); ?>",
+        paused: "<?php echo t('room_status_paused'); ?>",
+        finished: "<?php echo t('room_status_finished'); ?>"
+    }
 };
+
+function formatRoomStatus(status) {
+    return RANKING_I18N.statuses[status] || RANKING_I18N.unknownStatus;
+}
 
 function renderPodium(data) {
     const section = document.getElementById("podium-section");
@@ -142,7 +165,6 @@ function renderPodium(data) {
     container.innerHTML = "";
 
     const topThree = data.slice(0, 3);
-    const medals = ["🥇", "🥈", "🥉"];
     const classes = ["first-place", "second-place", "third-place"];
 
     topThree.forEach((player, index) => {
@@ -154,13 +176,13 @@ function renderPodium(data) {
         }
 
         card.innerHTML = `
-            <div class="podium-medal">${medals[index]}</div>
+            <div class="podium-medal">${window.uiIcon ? window.uiIcon("medal", `ui-icon podium-medal-svg podium-medal-${index + 1}`) : index + 1}</div>
             <h3>${player.player_name}</h3>
             <p>${player.best_score}</p>
             <small>
                 ${player.best_correct} / ${player.total_questions}
                 <br>
-                ${player.precision}% • ${player.final_difficulty}/5
+                ${player.precision}% - ${player.final_difficulty}/5
             </small>
         `;
 
@@ -182,8 +204,7 @@ function renderTable(data) {
         const row = document.createElement("tr");
 
         if (CURRENT_PLAYER && player.player_name === CURRENT_PLAYER) {
-            row.style.background = "#d4edda";
-            row.style.fontWeight = "bold";
+            row.classList.add("current-player-rank");
         }
 
         row.innerHTML = `
@@ -202,7 +223,7 @@ function renderTable(data) {
 async function loadRoomRanking(force = false) {
     try {
         const res = await fetch(
-            `/colesterol_game/backend/rooms/get_room_ranking.php?code=${encodeURIComponent(ROOM_CODE)}`
+            appUrl(`backend/rooms/get_room_ranking.php?code=${encodeURIComponent(ROOM_CODE)}`)
         );
 
         const data = await res.json();
@@ -229,7 +250,7 @@ async function loadRoomRanking(force = false) {
 async function checkRoomStatus() {
     try {
         const res = await fetch(
-            `/colesterol_game/backend/rooms/get_room_status.php?code=${encodeURIComponent(ROOM_CODE)}`
+            appUrl(`backend/rooms/get_room_status.php?code=${encodeURIComponent(ROOM_CODE)}`)
         );
 
         const state = await res.json();
@@ -239,7 +260,7 @@ async function checkRoomStatus() {
         }
 
         const statusEl = document.getElementById("room-status");
-        statusEl.textContent = state.status;
+        statusEl.textContent = formatRoomStatus(state.status);
 
         if (state.status === "finished") {
             clearInterval(stateInterval);
@@ -259,5 +280,8 @@ rankingInterval = setInterval(() => loadRoomRanking(false), 3000);
 stateInterval = setInterval(checkRoomStatus, 3000);
 </script>
 
+
+<script src="<?php echo asset_path('js/responsive_tables.js'); ?>"></script>
+<script src="<?php echo asset_path('js/theme.js'); ?>"></script>
 </body>
 </html>

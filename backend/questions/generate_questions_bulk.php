@@ -3,7 +3,12 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/gemini.php';
+require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/question_option_helpers.php';
+require_once __DIR__ . '/question_workflow_helpers.php';
+
+require_csrf_token();
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
@@ -16,14 +21,16 @@ if (!has_role(["teacher", "super_admin"])) {
 $data = json_decode(file_get_contents("php://input"), true);
 
 $topic = trim($data["topic"] ?? "");
+$category = trim($data["category"] ?? "");
 $quantity = (int)($data["quantity"] ?? 5);
-$difficulty_level = (float)($data["difficulty_level"] ?? 1.0);
+$difficulty_level = (int)round((float)($data["difficulty_level"] ?? 1));
 $language = trim($data["language"] ?? "es");
 
-if ($topic === "") {
+if (!ensure_question_workflow_columns($conn)) {
     echo json_encode([
         "success" => false,
-        "message" => "El tema es obligatorio"
+        "message" => "No se pudo preparar el flujo de preguntas",
+        "error" => $conn->error
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -31,19 +38,26 @@ if ($topic === "") {
 if ($quantity < 1) $quantity = 1;
 if ($quantity > 20) $quantity = 20;
 
-if ($difficulty_level < 1.0) {
-    $difficulty_level = 1.0;
+if ($difficulty_level < 1) {
+    $difficulty_level = 1;
 }
 
-if ($difficulty_level > 5.0) {
-    $difficulty_level = 5.0;
+if ($difficulty_level > 5) {
+    $difficulty_level = 5;
 }
-
-$difficulty_level = round($difficulty_level, 1);
 
 if (!in_array($language, ["es", "en"], true)) {
     $language = "es";
 }
+
+$category = normalize_question_category($category, $language);
+$topicFocus = $topic !== "" ? $topic : $category;
+$requestedCategory = $category;
+$allowedCategoryList = array_values(array_unique(array_merge(
+    question_categories($language),
+    [$category]
+)));
+$allowedCategories = implode(", ", $allowedCategoryList);
 
 $langInstruction = $language === "en"
     ? "Generate all questions in English."
@@ -52,16 +66,19 @@ $langInstruction = $language === "en"
 $prompt = "
 You are an educational content generator for a serious game about high cholesterol and cardiovascular prevention.
 
-Create exactly {$quantity} multiple-choice questions about: {$topic}.
+Create exactly {$quantity} multiple-choice questions.
+Content focus: {$topicFocus}.
+Use this category exactly for every question: {$category}.
 
 Difficulty level: {$difficulty_level} out of 5.
 Language: {$language}. {$langInstruction}
 
 Difficulty guide:
-- 1.0 to 1.9 = basic concepts and simple prevention.
-- 2.0 to 2.9 = intermediate understanding.
-- 3.0 to 3.9 = applied reasoning.
-- 4.0 to 5.0 = advanced clinical/public health reasoning.
+- 1 = basic concepts and simple prevention.
+- 2 = intermediate understanding.
+- 3 = applied reasoning.
+- 4 = advanced reasoning.
+- 5 = advanced clinical/public health reasoning.
 
 Rules:
 - Each question must be educational and medically safe.
@@ -70,9 +87,14 @@ Rules:
 - Each question must have exactly four options.
 - Only one option must be correct.
 - correct_option must be A, B, C, or D.
+- Distribute correct_option as evenly as possible across A, B, C, and D.
+- Avoid acronyms or abbreviations in the questions and answer options whenever possible.
+- Do not write standalone abbreviations such as LDL, HDL, VLDL, TG, IMC, BMI, ECV, or CVD.
+- If an abbreviation is truly necessary, write the full meaning first and the abbreviation in parentheses in the same sentence, using the selected language. Example in Spanish: lipoproteína de alta densidad (HDL). Example in English: high-density lipoprotein (HDL).
+- Do not use an abbreviation later by itself unless its full meaning appeared earlier in that same question or option.
 - explanation must briefly explain why the correct answer is correct.
-- category must be short.
-- difficulty_level must be a number between 1.0 and 5.0.
+- category must be exactly one of: {$allowedCategories}.
+- difficulty_level must be the integer {$difficulty_level}.
 - language must be {$language}.
 - Return only valid JSON.
 ";
@@ -109,7 +131,7 @@ $payload = [
                             ],
                             "explanation" => ["type" => "string"],
                             "category" => ["type" => "string"],
-                            "difficulty_level" => ["type" => "number"],
+                            "difficulty_level" => ["type" => "integer"],
                             "language" => [
                                 "type" => "string",
                                 "enum" => ["es", "en"]
@@ -184,23 +206,39 @@ if (!$generated || !isset($generated["questions"]) || !is_array($generated["ques
     exit;
 }
 
-$sql = "INSERT INTO questions 
+$workflow = question_workflow_for_create(
+    array_merge($data, ["requires_review" => true]),
+    "pending",
+    0
+);
+$createdBy = current_user_id() ?: null;
+$visibility = $workflow["visibility"];
+$globalRequestStatus = $workflow["global_request_status"];
+$insertStatus = $workflow["status"];
+$insertActive = $workflow["is_active"];
+$globalRequestedAt = $workflow["global_requested_at"];
+
+$sql = "INSERT INTO questions
         (
-            question, 
-            option_a, 
-            option_b, 
-            option_c, 
-            option_d, 
-            correct_option, 
-            explanation, 
-            category, 
-            difficulty_level, 
+            question,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_option,
+            explanation,
+            category,
+            difficulty_level,
             language,
             status,
             origin,
-            is_active
+            is_active,
+            created_by_user_id,
+            visibility,
+            global_request_status,
+            global_requested_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'ai', 0)";
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ai', ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 
@@ -215,8 +253,16 @@ if (!$stmt) {
 
 $inserted = 0;
 $skipped = 0;
+$generatedIds = [];
+$targetLetters = question_option_letters();
+$targetOffset = random_int(0, count($targetLetters) - 1);
 
-foreach ($generated["questions"] as $q) {
+foreach ($generated["questions"] as $index => $q) {
+    $q = normalize_correct_option_position(
+        $q,
+        $targetLetters[($index + $targetOffset) % count($targetLetters)]
+    );
+
     $question = trim($q["question"] ?? "");
     $option_a = trim($q["option_a"] ?? "");
     $option_b = trim($q["option_b"] ?? "");
@@ -224,8 +270,8 @@ foreach ($generated["questions"] as $q) {
     $option_d = trim($q["option_d"] ?? "");
     $correct_option = strtoupper(trim($q["correct_option"] ?? ""));
     $explanation = trim($q["explanation"] ?? "");
-    $category = trim($q["category"] ?? $topic);
-    $qDifficultyLevel = (float)($q["difficulty_level"] ?? $difficulty_level);
+    $category = normalize_question_category(trim($q["category"] ?? $requestedCategory), $language);
+    $qDifficultyLevel = (int)round((float)($q["difficulty_level"] ?? $difficulty_level));
     $qLanguage = trim($q["language"] ?? $language);
 
     if (
@@ -241,22 +287,20 @@ foreach ($generated["questions"] as $q) {
         continue;
     }
 
-    if ($qDifficultyLevel < 1.0) {
-        $qDifficultyLevel = 1.0;
+    if ($qDifficultyLevel < 1) {
+        $qDifficultyLevel = 1;
     }
 
-    if ($qDifficultyLevel > 5.0) {
-        $qDifficultyLevel = 5.0;
+    if ($qDifficultyLevel > 5) {
+        $qDifficultyLevel = 5;
     }
-
-    $qDifficultyLevel = round($qDifficultyLevel, 1);
 
     if (!in_array($qLanguage, ["es", "en"], true)) {
         $qLanguage = $language;
     }
 
     $stmt->bind_param(
-        "sssssssdss",
+        "ssssssssdssiisss",
         $question,
         $option_a,
         $option_b,
@@ -266,11 +310,26 @@ foreach ($generated["questions"] as $q) {
         $explanation,
         $category,
         $qDifficultyLevel,
-        $qLanguage
+        $qLanguage,
+        $insertStatus,
+        $insertActive,
+        $createdBy,
+        $visibility,
+        $globalRequestStatus,
+        $globalRequestedAt
     );
 
     if ($stmt->execute()) {
         $inserted++;
+        $generatedIds[] = (int)$stmt->insert_id;
+        if ($globalRequestStatus === "pending" && $inserted === 1) {
+            notify_super_admins_about_global_question_request(
+                $conn,
+                (int)$stmt->insert_id,
+                $_SESSION["user_name"] ?? "Docente",
+                $question
+            );
+        }
     } else {
         $skipped++;
     }
@@ -283,6 +342,9 @@ echo json_encode([
     "success" => true,
     "message" => "Generación masiva finalizada",
     "inserted" => $inserted,
-    "skipped" => $skipped
+    "skipped" => $skipped,
+    "generated_ids" => $generatedIds,
+    "visibility" => $visibility,
+    "global_request_status" => $globalRequestStatus
 ], JSON_UNESCAPED_UNICODE);
 ?>

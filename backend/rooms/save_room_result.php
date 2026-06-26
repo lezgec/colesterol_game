@@ -2,23 +2,18 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/adaptive_difficulty_schema.php';
+require_once __DIR__ . '/../game/result_calculation_helpers.php';
+
+require_csrf_token();
+
+ensure_adaptive_difficulty_columns($conn);
 
 $data = json_decode(file_get_contents("php://input"), true);
 
 $room_code = strtoupper(trim($data["room_code"] ?? ""));
 $player_name = trim($data["player_name"] ?? "");
-$score = (int)($data["score"] ?? 0);
-$correct_answers = (int)($data["correct_answers"] ?? 0);
 $total_questions = (int)($data["total_questions"] ?? 0);
-$final_difficulty = (float)($data["final_difficulty"] ?? 1.0);
-
-if ($final_difficulty < 1.0) {
-    $final_difficulty = 1.0;
-}
-
-if ($final_difficulty > 5.0) {
-    $final_difficulty = 5.0;
-}
 
 if ($room_code === "" || $player_name === "") {
     echo json_encode([
@@ -29,8 +24,8 @@ if ($room_code === "" || $player_name === "") {
 }
 
 $stmtRoom = $conn->prepare("
-    SELECT id 
-    FROM game_rooms 
+    SELECT id
+    FROM game_rooms
     WHERE room_code = ?
 ");
 
@@ -58,10 +53,20 @@ if ($roomResult->num_rows === 0) {
 $room = $roomResult->fetch_assoc();
 $room_id = (int)$room["id"];
 
+$calculated = calculate_recent_result_from_answers($conn, [
+    "room_id" => $room_id,
+    "player_name" => $player_name
+], $total_questions);
+
+$score = $calculated["score"];
+$correct_answers = $calculated["correct_answers"];
+$total_questions = $calculated["total_questions"] > 0 ? $calculated["total_questions"] : $total_questions;
+$final_difficulty = $calculated["final_difficulty"];
+
 $check = $conn->prepare("
-    SELECT id 
-    FROM game_results 
-    WHERE room_id = ? 
+    SELECT id
+    FROM game_results
+    WHERE room_id = ?
       AND player_name = ?
 ");
 
@@ -84,10 +89,10 @@ if ($checkResult->num_rows > 0) {
 
     $stmt = $conn->prepare("
         UPDATE game_results
-        SET 
-            score = ?, 
-            correct_answers = ?, 
-            total_questions = ?, 
+        SET
+            score = ?,
+            correct_answers = ?,
+            total_questions = ?,
             lives_remaining = 0,
             final_difficulty = ?
         WHERE id = ?
@@ -112,26 +117,26 @@ if ($checkResult->num_rows > 0) {
     );
 } else {
     $stmt = $conn->prepare("
-        INSERT INTO game_results 
+        INSERT INTO game_results
             (
-                user_id, 
-                room_id, 
-                player_name, 
-                score, 
-                correct_answers, 
-                total_questions, 
-                lives_remaining, 
+                user_id,
+                room_id,
+                player_name,
+                score,
+                correct_answers,
+                total_questions,
+                lives_remaining,
                 final_difficulty
             )
-        VALUES 
+        VALUES
             (
-                NULL, 
-                ?, 
-                ?, 
-                ?, 
-                ?, 
-                ?, 
-                0, 
+                NULL,
+                ?,
+                ?,
+                ?,
+                ?,
+                ?,
+                0,
                 ?
             )
     ");

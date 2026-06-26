@@ -3,11 +3,24 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../config/question_categories.php';
+require_once __DIR__ . '/question_workflow_helpers.php';
+
+require_csrf_token();
 
 if (!has_role(["teacher", "super_admin"])) {
     echo json_encode([
         "success" => false,
         "message" => "No autorizado"
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+if (!ensure_question_workflow_columns($conn)) {
+    echo json_encode([
+        "success" => false,
+        "message" => "No se pudo preparar el flujo de preguntas",
+        "error" => $conn->error
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -63,6 +76,12 @@ $requiredHeaders = [
     "language"
 ];
 
+$optionalHeaders = [
+    "status",
+    "origin",
+    "is_active"
+];
+
 $headers = fgetcsv($handle);
 
 if (!$headers) {
@@ -91,23 +110,27 @@ if (!empty($missingHeaders)) {
 
 $headerIndexes = array_flip($headers);
 
-$sql = "INSERT INTO questions 
+$sql = "INSERT INTO questions
         (
-            question, 
-            option_a, 
-            option_b, 
-            option_c, 
-            option_d, 
-            correct_option, 
-            explanation, 
-            category, 
-            difficulty_level, 
+            question,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_option,
+            explanation,
+            category,
+            difficulty_level,
             language,
             status,
             origin,
-            is_active
+            is_active,
+            created_by_user_id,
+            visibility,
+            global_request_status,
+            global_requested_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'verified', 'csv', 1)";
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $conn->prepare($sql);
 
@@ -134,8 +157,17 @@ while (($row = fgetcsv($handle)) !== false) {
     $correct_option = strtoupper(trim($row[$headerIndexes["correct_option"]] ?? ""));
     $explanation = trim($row[$headerIndexes["explanation"]] ?? "");
     $category = trim($row[$headerIndexes["category"]] ?? "");
-    $difficulty_level = (float)($row[$headerIndexes["difficulty_level"]] ?? 1.0);
+    $difficulty_level = (int)round((float)($row[$headerIndexes["difficulty_level"]] ?? 1));
     $language = trim($row[$headerIndexes["language"]] ?? "es");
+    $status = isset($headerIndexes["status"])
+        ? strtolower(trim($row[$headerIndexes["status"]] ?? "verified"))
+        : "verified";
+    $origin = isset($headerIndexes["origin"])
+        ? strtolower(trim($row[$headerIndexes["origin"]] ?? "csv"))
+        : "csv";
+    $is_active = isset($headerIndexes["is_active"])
+        ? (int)($row[$headerIndexes["is_active"]] ?? 1)
+        : 1;
 
     if (
         $question === "" ||
@@ -156,22 +188,48 @@ while (($row = fgetcsv($handle)) !== false) {
         continue;
     }
 
-    if ($difficulty_level < 1.0) {
-        $difficulty_level = 1.0;
+    if ($difficulty_level < 1) {
+        $difficulty_level = 1;
     }
 
-    if ($difficulty_level > 5.0) {
-        $difficulty_level = 5.0;
+    if ($difficulty_level > 5) {
+        $difficulty_level = 5;
     }
-
-    $difficulty_level = round($difficulty_level, 1);
 
     if (!in_array($language, ["es", "en"], true)) {
         $language = "es";
     }
 
+    if (!in_array($status, ["pending", "verified", "rejected"], true)) {
+        $status = "verified";
+    }
+
+    if (!in_array($origin, ["manual", "ai", "csv"], true)) {
+        $origin = "csv";
+    }
+
+    $is_active = $is_active === 1 ? 1 : 0;
+
+    if ($is_active === 1 && $status !== "verified") {
+        $is_active = 0;
+    }
+
+    $category = normalize_question_category($category, $language);
+    $workflow = question_workflow_for_create(["question_scope" => is_super_admin() ? "global" : "private"], $status, $is_active);
+    $createdBy = current_user_id() ?: null;
+    $visibility = $workflow["visibility"];
+    $globalRequestStatus = $workflow["global_request_status"];
+    $status = $workflow["status"];
+    $is_active = $workflow["is_active"];
+
+    if ($is_active === 1 && $status !== "verified") {
+        $is_active = 0;
+    }
+
+    $globalRequestedAt = $workflow["global_requested_at"];
+
     $stmt->bind_param(
-        "sssssssdss",
+        "ssssssssisssiisss",
         $question,
         $option_a,
         $option_b,
@@ -181,7 +239,14 @@ while (($row = fgetcsv($handle)) !== false) {
         $explanation,
         $category,
         $difficulty_level,
-        $language
+        $language,
+        $status,
+        $origin,
+        $is_active,
+        $createdBy,
+        $visibility,
+        $globalRequestStatus,
+        $globalRequestedAt
     );
 
     if ($stmt->execute()) {

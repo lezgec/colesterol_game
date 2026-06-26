@@ -14,7 +14,7 @@ if ($room_code === "") {
 }
 
 $stmt = $conn->prepare("
-    SELECT 
+    SELECT
         id,
         status,
         started_at,
@@ -93,46 +93,7 @@ if ($status === "started" && $questionStartedAt) {
 
     $elapsedStmt->close();
 
-    if ($elapsed >= $timeLimit) {
-        $steps = (int)floor($elapsed / $timeLimit);
-        $currentQuestionIndex += $steps;
-
-        if ($currentQuestionIndex >= $questionCount) {
-            $currentQuestionIndex = max(0, $questionCount - 1);
-            $status = "finished";
-
-            $update = $conn->prepare("
-                UPDATE game_rooms
-                SET 
-                    status = 'finished',
-                    finished_at = NOW(),
-                    current_question_index = ?
-                WHERE id = ?
-            ");
-
-            $update->bind_param("ii", $currentQuestionIndex, $roomId);
-            $update->execute();
-            $update->close();
-
-            $timeLeft = 0;
-        } else {
-            $update = $conn->prepare("
-                UPDATE game_rooms
-                SET 
-                    current_question_index = ?,
-                    question_started_at = NOW()
-                WHERE id = ?
-            ");
-
-            $update->bind_param("ii", $currentQuestionIndex, $roomId);
-            $update->execute();
-            $update->close();
-
-            $timeLeft = $timeLimit;
-        }
-    } else {
-        $timeLeft = $timeLimit - $elapsed;
-    }
+    $timeLeft = max(0, $timeLimit - $elapsed);
 }
 
 echo json_encode([

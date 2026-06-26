@@ -7,42 +7,220 @@ let score = 0;
 let lives = 3;
 let correctAnswers = 0;
 
-let currentDifficulty = 1.0;
+let currentDifficulty = 1;
+
+let questionStartTime = null;
+let feedbackCountdownInterval = null;
+let feedbackAdvanceLocked = false;
+let selectedOptionIndex = null;
+let answerSubmitted = false;
+let questionTimerInterval = null;
+let questionTimeout = null;
+let questionTimeLeft = 20;
+
+const SOLO_QUESTION_LIMIT = 12;
+const SOLO_TIME_LIMIT = 20;
 
 const gameScreen = document.getElementById("game-screen");
 
-const questionText = document.getElementById("question-text");
-const optionsContainer = document.getElementById("options-container");
+const questionText =
+    document.getElementById("question-text");
 
-const scoreText = document.getElementById("score");
-const livesText = document.getElementById("lives");
-const progressText = document.getElementById("progress");
-const feedback = document.getElementById("feedback");
+const optionsContainer =
+    document.getElementById("options-container");
+
+const scoreText =
+    document.getElementById("score");
+
+const livesText =
+    document.getElementById("lives");
+
+const progressText =
+    document.getElementById("progress");
+
+const progressFill =
+    document.getElementById("game-progress-fill");
+
+const feedback =
+    document.getElementById("feedback");
 
 const selectedDifficultyText =
     document.getElementById("selected-difficulty");
+
+const questionTimerText =
+    document.getElementById("question-timer");
+
+const languageSelector =
+    document.getElementById("language-selector");
+
+function normalizeAdaptiveDifficulty(value) {
+    const parsed = Number(value) || 1;
+    return Number(Math.min(5, Math.max(1, parsed)).toFixed(1));
+}
+
+function getTargetQuestionLevel(value = currentDifficulty) {
+    const adaptive = normalizeAdaptiveDifficulty(value);
+
+    if (adaptive < 1.5) return 1;
+    if (adaptive < 2.5) return 2;
+    if (adaptive < 3.5) return 3;
+    if (adaptive < 4.5) return 4;
+
+    return 5;
+}
+
+function formatDifficulty(value = currentDifficulty) {
+    return normalizeAdaptiveDifficulty(value).toFixed(1);
+}
+
+function normalizeQuestionDifficultyLevel(value) {
+    const parsed = Math.round(Number(value) || 1);
+    return Math.min(5, Math.max(1, parsed));
+}
+
+function setLanguageSwitchDisabled(isDisabled) {
+
+    if (!languageSelector) {
+        return;
+    }
+
+    languageSelector.classList.toggle(
+        "is-disabled",
+        isDisabled
+    );
+
+    languageSelector
+        .querySelectorAll("a")
+        .forEach(link => {
+            link.setAttribute(
+                "aria-disabled",
+                isDisabled ? "true" : "false"
+            );
+        });
+}
+
+function clearFeedbackTimers() {
+    if (feedbackCountdownInterval) {
+        clearInterval(feedbackCountdownInterval);
+        feedbackCountdownInterval = null;
+    }
+}
+
+function clearQuestionTimers() {
+    if (questionTimerInterval) {
+        clearInterval(questionTimerInterval);
+        questionTimerInterval = null;
+    }
+
+    if (questionTimeout) {
+        clearTimeout(questionTimeout);
+        questionTimeout = null;
+    }
+}
 
 function updateHUD() {
 
     scoreText.textContent = score;
 
-    livesText.textContent =
-        "❤️".repeat(lives) +
-        "🖤".repeat(3 - lives);
+    if (livesText) {
+        const fullLife = window.uiIcon
+            ? window.uiIcon("heart", "ui-icon life-icon is-full")
+            : "";
+        const emptyLife = window.uiIcon
+            ? window.uiIcon("heart", "ui-icon life-icon is-empty")
+            : "";
+
+        livesText.innerHTML =
+            fullLife.repeat(lives) +
+            emptyLife.repeat(3 - lives);
+    }
 
     selectedDifficultyText.textContent =
-        `${currentDifficulty.toFixed(1)} / 5`;
+        `${formatDifficulty()} / 5`;
 
     progressText.textContent =
         questions.length > 0
             ? `${I18N.question} ${current + 1} ${I18N.of} ${questions.length}`
             : I18N.loadingQuestions;
+
+    if (progressFill) {
+        const totalQuestions =
+            questions.length || SOLO_QUESTION_LIMIT;
+
+        const progressValue =
+            questions.length > 0
+                ? Math.min(
+                    100,
+                    Math.max(
+                        0,
+                        ((current + 1) / totalQuestions) * 100
+                    )
+                )
+                : 0;
+
+        progressFill.style.width =
+            `${progressValue}%`;
+
+        progressFill.classList.toggle(
+            "is-active",
+            progressValue > 0
+        );
+
+        progressFill.setAttribute(
+            "aria-valuenow",
+            Math.round(progressValue).toString()
+        );
+
+        progressFill.parentElement?.setAttribute(
+            "aria-valuenow",
+            Math.round(progressValue).toString()
+        );
+    }
+}
+
+function startQuestionTimer() {
+    questionStartTime = Date.now();
+    questionTimeLeft = SOLO_TIME_LIMIT;
+
+    if (questionTimerText) {
+        questionTimerText.textContent = `${questionTimeLeft}s`;
+    }
+
+    clearQuestionTimers();
+
+    questionTimerInterval = setInterval(() => {
+        questionTimeLeft--;
+
+        if (questionTimerText) {
+            questionTimerText.textContent = `${Math.max(questionTimeLeft, 0)}s`;
+        }
+
+        window.GameSounds?.timerTick(questionTimeLeft, SOLO_TIME_LIMIT);
+    }, 1000);
+
+    questionTimeout = setTimeout(() => {
+        submitSelectedAnswer(null, true);
+    }, SOLO_TIME_LIMIT * 1000);
+}
+
+function getResponseTime() {
+
+    if (!questionStartTime) {
+        return 0;
+    }
+
+    const seconds =
+        (Date.now() - questionStartTime) / 1000;
+
+    return parseFloat(seconds.toFixed(2));
 }
 
 function selectQuestionByDifficulty() {
 
     const availableQuestions =
-        questions.filter(q => !usedQuestionIds.includes(q.id));
+        questions.filter(
+            q => !usedQuestionIds.includes(q.id)
+        );
 
     if (availableQuestions.length === 0) {
         return null;
@@ -52,14 +230,14 @@ function selectQuestionByDifficulty() {
 
         const diffA =
             Math.abs(
-                parseFloat(a.difficulty_level || 1.0) -
-                currentDifficulty
+                normalizeQuestionDifficultyLevel(a.difficulty_level) -
+                getTargetQuestionLevel()
             );
 
         const diffB =
             Math.abs(
-                parseFloat(b.difficulty_level || 1.0) -
-                currentDifficulty
+                normalizeQuestionDifficultyLevel(b.difficulty_level) -
+                getTargetQuestionLevel()
             );
 
         return diffA - diffB;
@@ -70,20 +248,33 @@ function selectQuestionByDifficulty() {
 
 function loadQuestion() {
 
+    clearFeedbackTimers();
+    clearQuestionTimers();
+    feedbackAdvanceLocked = false;
+    selectedOptionIndex = null;
+    answerSubmitted = false;
+
     if (lives <= 0) {
-        endGame("💀 " + I18N.gameOver);
+
+        endGame(I18N.gameOver);
+
         return;
     }
 
     if (current >= questions.length) {
-        endGame("🎉 " + I18N.gameCompleted);
+
+        endGame(I18N.gameCompleted);
+
         return;
     }
 
-    currentQuestion = selectQuestionByDifficulty();
+    currentQuestion =
+        selectQuestionByDifficulty();
 
     if (!currentQuestion) {
-        endGame("🎉 " + I18N.gameCompleted);
+
+        endGame(I18N.gameCompleted);
+
         return;
     }
 
@@ -93,11 +284,13 @@ function loadQuestion() {
         currentQuestion.question;
 
     optionsContainer.innerHTML = "";
+
     feedback.textContent = "";
 
     currentQuestion.options.forEach((opt, i) => {
 
-        const btn = document.createElement("button");
+        const btn =
+            document.createElement("button");
 
         btn.innerHTML = `
             <span class="option-radio"></span>
@@ -106,49 +299,237 @@ function loadQuestion() {
 
         btn.classList.add("option-btn");
 
-        btn.onclick = () => checkAnswer(i);
+        btn.onclick = () => selectAnswer(i);
 
         optionsContainer.appendChild(btn);
     });
 
+    const submitButton =
+        document.createElement("button");
+
+    submitButton.type = "button";
+    submitButton.id = "submit-answer-btn";
+    submitButton.className = "primary-btn submit-answer-btn";
+    submitButton.textContent = I18N.submitAnswer;
+    submitButton.disabled = true;
+    submitButton.addEventListener("click", () => {
+        submitSelectedAnswer(selectedOptionIndex, false);
+    });
+
+    optionsContainer.appendChild(submitButton);
+
+    startQuestionTimer();
+
     updateHUD();
 }
 
-function calculatePoints(isCorrect) {
+function selectAnswer(index) {
+    if (answerSubmitted || !currentQuestion) {
+        return;
+    }
+
+    window.GameSounds?.play("select");
+
+    selectedOptionIndex = index;
+
+    document
+        .querySelectorAll(".option-btn")
+        .forEach((btn, buttonIndex) => {
+            btn.classList.toggle("is-selected", buttonIndex === index);
+            btn.setAttribute(
+                "aria-pressed",
+                buttonIndex === index ? "true" : "false"
+            );
+        });
+
+    const submitButton =
+        document.getElementById("submit-answer-btn");
+
+    if (submitButton) {
+        submitButton.disabled = false;
+    }
+
+    feedback.textContent = "";
+}
+
+function getOptionLabel(index) {
+    return ["A", "B", "C", "D"][index] || "";
+}
+
+function getOriginalOptionLabel(index) {
+    return currentQuestion?.option_letters?.[index] || getOptionLabel(index);
+}
+
+function formatDisplayOption(index) {
+    if (index === null || index === undefined || index < 0) {
+        return "";
+    }
+
+    const label = getOptionLabel(index);
+    const text = currentQuestion?.options?.[index] || "";
+
+    return text ? `${label}. ${text}` : label;
+}
+
+function getCorrectOptionIndex() {
+    if (!currentQuestion) {
+        return -1;
+    }
+
+    if (Number.isInteger(currentQuestion.correct)) {
+        return currentQuestion.correct;
+    }
+
+    const displayLabel = currentQuestion.display_correct_option;
+
+    if (displayLabel) {
+        const displayIndex = ["A", "B", "C", "D"].indexOf(displayLabel);
+
+        if (displayIndex >= 0) {
+            return displayIndex;
+        }
+    }
+
+    const originalLabel = currentQuestion.correct_option;
+
+    if (Array.isArray(currentQuestion.option_letters)) {
+        const mappedIndex = currentQuestion.option_letters.indexOf(originalLabel);
+
+        if (mappedIndex >= 0) {
+            return mappedIndex;
+        }
+    }
+
+    return ["A", "B", "C", "D"].indexOf(originalLabel);
+}
+
+function renderFeedbackCard({
+    isCorrect,
+    selectedOption,
+    correctOption,
+    earnedPoints,
+    responseTime,
+    isTimeout = false
+}) {
+
+    const statusText =
+        isTimeout
+            ? I18N.timeOut
+            : isCorrect
+            ? `${I18N.correct}. +${earnedPoints}`
+            : I18N.incorrect;
+
+    const statusIcon =
+        isTimeout ? "clock" : isCorrect ? "check" : "x";
+
+    const selectedText =
+        selectedOption
+            ? `<p><strong>${I18N.selectedAnswer}:</strong> ${selectedOption}</p>`
+            : "";
+
+    const correctText =
+        !isCorrect
+            ? `<p><strong>${I18N.correctAnswer}:</strong> ${correctOption}</p>`
+            : "";
+
+    optionsContainer.innerHTML = `
+        <div class="feedback-card ${isCorrect ? "correct" : "incorrect"}">
+            <div class="feedback-card-header">
+                <span class="feedback-status-icon">${window.uiIcon ? window.uiIcon(statusIcon, "ui-icon feedback-svg") : ""}</span>
+                <div>
+                    <span class="feedback-eyebrow">${I18N.feedback}</span>
+                    <h3>${statusText}</h3>
+                </div>
+            </div>
+
+            ${selectedText}
+            ${correctText}
+
+            <p><strong>${window.uiIcon ? window.uiIcon("clock", "ui-icon feedback-inline-icon") : ""}</strong> ${responseTime}s</p>
+
+            <p>${currentQuestion.explanation}</p>
+
+            <p>
+                <strong>${I18N.newDifficulty}:</strong>
+                ${formatDifficulty()} / 5
+            </p>
+
+            <div class="feedback-actions">
+                <span id="feedback-countdown" class="feedback-reading-note">
+                    ${I18N.continue}
+                </span>
+
+                <button
+                    type="button"
+                    id="continue-question-btn"
+                    class="primary-btn feedback-continue-btn"
+                >
+                    ${I18N.continue}
+                </button>
+            </div>
+        </div>
+    `;
+
+    feedback.textContent = "";
+
+    const continueButton =
+        document.getElementById("continue-question-btn");
+
+    if (continueButton) {
+        continueButton.addEventListener(
+            "click",
+            advanceAfterFeedback
+        );
+    }
+}
+
+function advanceAfterFeedback() {
+
+    if (feedbackAdvanceLocked) {
+        return;
+    }
+
+    feedbackAdvanceLocked = true;
+    clearFeedbackTimers();
+    window.GameSounds?.play("continue");
+
+    current++;
+    loadQuestion();
+}
+
+function calculatePoints(isCorrect, responseTime) {
 
     if (!isCorrect) {
         return 0;
     }
 
-    const basePoints = 10;
+    if (responseTime <= 3) {
+        return 20;
+    }
 
-    const difficultyBonus =
-        Math.round(currentDifficulty * 2);
+    if (responseTime <= 6) {
+        return 15;
+    }
 
-    return basePoints + difficultyBonus;
+    return 10;
 }
 
-function updateDifficulty(isCorrect) {
+function updateDifficulty(isCorrect, responseTime) {
+    let delta = 0;
 
     if (isCorrect) {
-
-        currentDifficulty += 0.25;
-
+        if (responseTime <= 4) {
+            delta = 0.3;
+        } else if (responseTime <= 8) {
+            delta = 0.2;
+        } else {
+            delta = 0.1;
+        }
     } else {
-
-        currentDifficulty -= 0.25;
+        delta = responseTime >= SOLO_TIME_LIMIT ? -0.4 : -0.3;
     }
 
-    if (currentDifficulty < 1.0) {
-        currentDifficulty = 1.0;
-    }
-
-    if (currentDifficulty > 5.0) {
-        currentDifficulty = 5.0;
-    }
-
-    currentDifficulty =
-        Math.round(currentDifficulty * 10) / 10;
+    currentDifficulty = normalizeAdaptiveDifficulty(currentDifficulty + delta);
 }
 
 function disableOptions() {
@@ -158,113 +539,237 @@ function disableOptions() {
         .forEach(btn => {
             btn.disabled = true;
         });
+
+    const submitButton =
+        document.getElementById("submit-answer-btn");
+
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
 }
 
-function checkAnswer(index) {
+async function submitSelectedAnswer(index, isTimeout = false) {
 
-    if (!currentQuestion) {
+    if (!currentQuestion || answerSubmitted) {
         return;
     }
 
+    if (index === null && !isTimeout) {
+        feedback.textContent = I18N.chooseAnswer;
+        window.GameSounds?.play("incorrect");
+        return;
+    }
+
+    answerSubmitted = true;
+    clearQuestionTimers();
     disableOptions();
 
-    const isCorrect =
-        index === currentQuestion.correct;
+    const responseTime =
+        isTimeout ? SOLO_TIME_LIMIT : getResponseTime();
+
+    const selectedOption =
+        isTimeout ? null : formatDisplayOption(index);
+
+    const selectedOriginalOption =
+        isTimeout ? "" : getOriginalOptionLabel(index);
+
+    const answerResult = await saveAnswer({
+        question_id: currentQuestion.id,
+        selected_option: selectedOriginalOption,
+        response_time: responseTime,
+        difficulty_level: currentDifficulty
+    });
+
+    if (!answerResult || !answerResult.success) {
+        feedback.textContent = answerResult?.message || I18N.resultNotSaved;
+        answerSubmitted = false;
+        return;
+    }
+
+    const isCorrect = Boolean(answerResult.is_correct);
+    const earnedPoints = Number(answerResult.score_earned || 0);
+    const correctOption = answerResult.correct_answer || "";
+    currentQuestion.explanation = answerResult.explanation || "";
+
+    window.GameSounds?.play(
+        isTimeout ? "timeout" : (isCorrect ? "correct" : "incorrect")
+    );
 
     if (isCorrect) {
-
-        const earnedPoints =
-            calculatePoints(true);
 
         score += earnedPoints;
 
         correctAnswers++;
 
-        updateDifficulty(true);
-
-        feedback.innerHTML = `
-            ✅ ${I18N.correct}. +${earnedPoints}<br>
-            ${currentQuestion.explanation}<br>
-            ${I18N.newDifficulty}: ${currentDifficulty.toFixed(1)} / 5
-        `;
+        updateDifficulty(
+            true,
+            responseTime
+        );
 
     } else {
 
         lives--;
 
-        updateDifficulty(false);
+        updateDifficulty(
+            false,
+            responseTime
+        );
 
-        feedback.innerHTML = `
-            ❌ ${I18N.incorrect}<br>
-            ${I18N.correctAnswer}: ${currentQuestion.correct_option}<br>
-            ${currentQuestion.explanation}<br>
-            ${I18N.newDifficulty}: ${currentDifficulty.toFixed(1)} / 5
-        `;
     }
+
+    renderFeedbackCard({
+        isCorrect,
+        selectedOption,
+        correctOption,
+        earnedPoints,
+        responseTime,
+        isTimeout
+    });
 
     updateHUD();
 
-    setTimeout(() => {
-
-        current++;
-
-        loadQuestion();
-
-    }, 1800);
 }
 
 async function endGame(message) {
 
-    questionText.textContent = message;
+    clearFeedbackTimers();
+    clearQuestionTimers();
+    feedbackAdvanceLocked = false;
+    setLanguageSwitchDisabled(false);
+
+    if (message.includes(I18N.gameCompleted)) {
+        window.GameSounds?.play("finish");
+        window.GameSounds?.confetti({ count: 120, mode: "side" });
+    } else {
+        window.GameSounds?.play("gameOver");
+    }
+
+    questionText.innerHTML = `
+        <span class="game-over-title">
+            ${message}
+        </span>
+    `;
 
     optionsContainer.innerHTML = "";
 
     progressText.textContent =
         I18N.gameFinished;
 
+    if (progressFill) {
+        progressFill.style.width = "100%";
+        progressFill.classList.add("is-active");
+        progressFill.setAttribute("aria-valuenow", "100");
+        progressFill.parentElement?.setAttribute("aria-valuenow", "100");
+    }
+
     feedback.innerHTML = `
-        ${I18N.finalScore}: ${score}<br>
-        ${I18N.correctAnswers}: ${correctAnswers} ${I18N.of} ${questions.length}<br>
-        ${I18N.remainingLives}: ${lives}<br>
-        ${I18N.finalDifficulty}: ${currentDifficulty.toFixed(1)} / 5<br>
-        <span id="save-status">${I18N.savingResult}</span>
+        <div class="game-over-card">
+            <div class="game-over-stats">
+                <div class="game-over-stat">
+                    <span>${I18N.finalScore}</span>
+                    <strong>${score}</strong>
+                </div>
+
+                <div class="game-over-stat">
+                    <span>${I18N.correctAnswers}</span>
+                    <strong>${correctAnswers} ${I18N.of} ${questions.length}</strong>
+                </div>
+
+                <div class="game-over-stat">
+                    <span>${I18N.remainingLives}</span>
+                    <strong>${lives}</strong>
+                </div>
+
+                <div class="game-over-stat">
+                    <span>${I18N.finalDifficulty}</span>
+                    <strong>${formatDifficulty()} / 5</strong>
+                </div>
+            </div>
+
+            <div id="save-status"
+                 class="save-status-pill is-saving">
+                ${I18N.savingResult}
+            </div>
+        </div>
     `;
+
+    optionsContainer.innerHTML = `
+        <div class="game-over-actions">
+            <button
+                type="button"
+                id="play-again-btn"
+                class="primary-btn play-again-btn"
+            >
+                ${I18N.playAgain}
+            </button>
+        </div>
+    `;
+
+    const playAgainButton =
+        document.getElementById("play-again-btn");
+
+    if (playAgainButton) {
+        playAgainButton.addEventListener("click", () => {
+            fetchQuestions(1);
+        });
+    }
 
     try {
 
         const response = await fetch(
-            "/colesterol_game/backend/game/save_result.php",
+            appUrl("backend/game/save_result.php"),
             {
                 method: "POST",
 
-                headers: {
-                    "Content-Type": "application/json"
-                },
+                headers: csrfHeaders({
+                    "Content-Type":
+                        "application/json"
+                }),
 
                 body: JSON.stringify({
                     score: score,
-                    correct_answers: correctAnswers,
-                    total_questions: questions.length,
-                    lives_remaining: lives,
-                    final_difficulty: currentDifficulty
+
+                    correct_answers:
+                        correctAnswers,
+
+                    total_questions:
+                        questions.length,
+
+                    lives_remaining:
+                        lives,
+
+                    final_difficulty:
+                        currentDifficulty
                 })
             }
         );
 
-        const result = await response.json();
+        const result =
+            await response.json();
+            if (result.new_badges && result.new_badges.length > 0) {
+                showBadgePopup(result.new_badges);
+            }
 
         const saveStatus =
-            document.getElementById("save-status");
+            document.getElementById(
+                "save-status"
+            );
 
         if (result.success) {
 
+            saveStatus.className =
+                "save-status-pill is-saved";
+
             saveStatus.textContent =
-                "✅ " + I18N.resultSaved;
+                I18N.resultSaved;
 
         } else {
 
+            saveStatus.className =
+                "save-status-pill is-error";
+
             saveStatus.textContent =
-                "❌ " + I18N.resultNotSaved;
+                I18N.resultNotSaved;
 
             console.error(result);
         }
@@ -272,12 +777,17 @@ async function endGame(message) {
     } catch (error) {
 
         const saveStatus =
-            document.getElementById("save-status");
+            document.getElementById(
+                "save-status"
+            );
 
         if (saveStatus) {
 
+            saveStatus.className =
+                "save-status-pill is-error";
+
             saveStatus.textContent =
-                "❌ " + I18N.resultNotSaved;
+                I18N.resultNotSaved;
         }
 
         console.error(
@@ -287,14 +797,68 @@ async function endGame(message) {
     }
 }
 
+async function saveAnswer(answerData) {
+
+    try {
+
+        const response = await fetch(
+            appUrl("backend/game/save_answer.php"),
+            {
+                method: "POST",
+
+                headers: csrfHeaders({
+                    "Content-Type":
+                        "application/json"
+                }),
+
+                body: JSON.stringify({
+
+                    user_id:
+                        typeof USER_ID !== "undefined"
+                            ? USER_ID
+                            : null,
+
+                    room_id: null,
+
+                    player_name:
+                        typeof PLAYER_NAME !== "undefined"
+                            ? PLAYER_NAME
+                            : null,
+
+                    game_mode: "solo",
+
+                    ...answerData
+                })
+            }
+        );
+
+        return await response.json();
+
+    } catch (error) {
+
+        console.error(
+            "Save answer error:",
+            error
+        );
+
+        return {
+            success: false,
+            message: "No se pudo guardar la respuesta"
+        };
+    }
+}
+
 async function fetchQuestions(
-    difficultyLevel = 1.0
+    difficultyLevel = 1
 ) {
 
     try {
 
-        currentDifficulty =
-            parseFloat(difficultyLevel || 1.0);
+        clearFeedbackTimers();
+        feedbackAdvanceLocked = false;
+        setLanguageSwitchDisabled(true);
+
+        currentDifficulty = normalizeAdaptiveDifficulty(difficultyLevel);
 
         questionText.textContent =
             I18N.loadingQuestions;
@@ -304,10 +868,11 @@ async function fetchQuestions(
         optionsContainer.innerHTML = "";
 
         const response = await fetch(
-            `/colesterol_game/backend/questions/get_questions.php?difficulty_level=${currentDifficulty}&lang=${CURRENT_LANG}&limit=15`
+            appUrl(`backend/questions/get_questions.php?difficulty_level=${getTargetQuestionLevel()}&lang=${CURRENT_LANG}&limit=${SOLO_QUESTION_LIMIT}`)
         );
 
-        const data = await response.json();
+        const data =
+            await response.json();
 
         if (!Array.isArray(data)) {
 
@@ -322,6 +887,8 @@ async function fetchQuestions(
             feedback.textContent =
                 data.message || "Error";
 
+            setLanguageSwitchDisabled(false);
+
             return;
         }
 
@@ -332,6 +899,8 @@ async function fetchQuestions(
 
             feedback.textContent =
                 I18N.noQuestions;
+
+            setLanguageSwitchDisabled(false);
 
             return;
         }
@@ -345,7 +914,8 @@ async function fetchQuestions(
         lives = 3;
         correctAnswers = 0;
 
-        gameScreen.style.display = "block";
+        gameScreen.style.display =
+            "block";
 
         loadQuestion();
 
@@ -357,7 +927,40 @@ async function fetchQuestions(
             I18N.resultNotSaved;
 
         feedback.textContent = "Error";
+
+        setLanguageSwitchDisabled(false);
     }
 }
+function showBadgePopup(badges) {
+    window.GameSounds?.play("badge");
+    const popup = document.createElement("div");
 
-fetchQuestions(1.0);
+    popup.classList.add("badge-popup");
+
+    popup.innerHTML = `
+        <div class="badge-popup-content">
+            <h2>${window.uiIcon ? window.uiIcon("trophy", "ui-icon badge-popup-icon") : ""} ${I18N.newBadgeUnlocked || "Nuevo logro desbloqueado"}</h2>
+
+            ${badges.map(badge => `
+                <div class="badge-popup-item">
+                    <strong>${badge.badge_name}</strong>
+                    <p>${badge.badge_description}</p>
+                </div>
+            `).join("")}
+
+            <button class="primary-btn" id="close-badge-popup">
+                ${I18N.close || "OK"}
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(popup);
+
+    document
+        .getElementById("close-badge-popup")
+        .addEventListener("click", () => {
+            popup.remove();
+        });
+}
+
+fetchQuestions(1);
