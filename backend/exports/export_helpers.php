@@ -135,14 +135,32 @@ function export_csv_open($filename) {
 }
 
 function export_csv_title($output, $title) {
-    fputcsv($output, [$title]);
-    fputcsv($output, [export_label("generated_at"), date("Y-m-d H:i:s")]);
-    fputcsv($output, []);
+    export_csv_write($output, [$title]);
+    export_csv_write($output, [export_label("generated_at"), date("Y-m-d H:i:s")]);
+    export_csv_write($output, []);
 }
 
 function export_csv_section($output, $title) {
-    fputcsv($output, []);
-    fputcsv($output, [$title]);
+    export_csv_write($output, []);
+    export_csv_write($output, [$title]);
+}
+
+function export_csv_safe_cell($value) {
+    if (!is_string($value)) {
+        return $value;
+    }
+
+    $trimmed = ltrim($value);
+
+    if ($trimmed !== "" && in_array($trimmed[0], ["=", "+", "-", "@"], true)) {
+        return "'" . $value;
+    }
+
+    return $value;
+}
+
+function export_csv_write($output, array $row): void {
+    fputcsv($output, array_map("export_csv_safe_cell", $row));
 }
 
 function export_logo_data_uri() {

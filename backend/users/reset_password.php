@@ -2,6 +2,8 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . "/../../config/db.php";
+require_once __DIR__ . "/../../includes/auth.php";
+require_once __DIR__ . "/../../includes/rate_limit.php";
 require_once __DIR__ . "/password_reset_helpers.php";
 require_once __DIR__ . "/password_policy.php";
 require_once __DIR__ . "/session_guard.php";
@@ -18,6 +20,8 @@ $data = json_decode(file_get_contents("php://input"), true);
 if (!is_array($data)) {
     $data = [];
 }
+
+require_rate_limit($conn, "password-update", 6, 900);
 
 $token = trim($data["token"] ?? "");
 $password = $data["password"] ?? "";

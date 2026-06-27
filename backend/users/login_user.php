@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/rate_limit.php';
 require_once __DIR__ . '/session_guard.php';
 require_once __DIR__ . '/../../includes/mail_helpers.php';
 
@@ -13,6 +14,8 @@ $data = json_decode($input, true);
 
 $email = trim($data["email"] ?? "");
 $password = $data["password"] ?? "";
+
+require_rate_limit($conn, "login:" . strtolower($email), 8, 900);
 
 if ($email === "" || $password === "") {
     echo json_encode([

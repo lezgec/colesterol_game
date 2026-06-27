@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/room_auth_helpers.php';
 
 require_csrf_token();
 
@@ -36,37 +37,9 @@ if ($roomCode === "" || count($questionIds) === 0) {
     exit;
 }
 
-$stmtRoom = $conn->prepare("
-    SELECT id, status
-    FROM game_rooms
-    WHERE room_code = ?
-");
-
-if (!$stmtRoom) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Error al preparar consulta",
-        "error" => $conn->error
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$stmtRoom->bind_param("s", $roomCode);
-$stmtRoom->execute();
-$roomResult = $stmtRoom->get_result();
-
-if ($roomResult->num_rows === 0) {
-    echo json_encode([
-        "success" => false,
-        "message" => "Sala no encontrada"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-$room = $roomResult->fetch_assoc();
+$room = require_room_owner_or_super_admin($conn, $roomCode);
 $roomId = (int)$room["id"];
 $status = $room["status"];
-$stmtRoom->close();
 
 if ($status === "finished") {
     echo json_encode([

@@ -26,6 +26,7 @@ CREATE DATABASE colesterol_game_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode
 
 ```bash
 mysql -u usuario -p colesterol_game_db < database/schema.sql
+mysql -u usuario -p colesterol_game_db < database/seed.sql
 ```
 
 4. Crear el archivo `.env` desde `.env.example`.
@@ -67,7 +68,7 @@ https://tu-dominio.com/colesterol_game/
 
 ## Credenciales iniciales
 
-El SQL debe incluir un superadministrador generico para primera instalacion:
+El seed inicial crea un superadministrador generico para primera instalacion:
 
 ```text
 Correo: superadmin@example.com

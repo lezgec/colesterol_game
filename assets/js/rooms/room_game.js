@@ -18,6 +18,15 @@ let currentAnswerSavePromise = null;
 let continueInProgress = false;
 let localQuestionTimer = null;
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 function normalizeAdaptiveDifficulty(value) {
     const parsed = Number(value) || 1;
     return Number(Math.min(5, Math.max(1, parsed)).toFixed(1));
@@ -293,7 +302,7 @@ function renderAdaptiveQuestion() {
         const btn = document.createElement("button");
         btn.innerHTML = `
             <span class="option-radio"></span>
-            <span>${opt}</span>
+            <span>${escapeHtml(opt)}</span>
         `;
         btn.classList.add("option-btn");
         btn.onclick = () => selectAnswer(i);
@@ -427,11 +436,11 @@ function renderRoomFeedbackCard({
             : "x";
 
     const selectedText = selectedOption
-        ? `<p><strong>${ROOM_I18N.selectedAnswer || "Tu respuesta"}:</strong> ${selectedOption}</p>`
+        ? `<p><strong>${escapeHtml(ROOM_I18N.selectedAnswer || "Tu respuesta")}:</strong> ${escapeHtml(selectedOption)}</p>`
         : "";
 
     const correctText = !isCorrect && currentQuestion
-        ? `<p><strong>${ROOM_I18N.correctAnswer || "Respuesta correcta"}:</strong> ${correctOption}</p>`
+        ? `<p><strong>${escapeHtml(ROOM_I18N.correctAnswer || "Respuesta correcta")}:</strong> ${escapeHtml(correctOption)}</p>`
         : "";
 
     const continueAction = `
@@ -454,8 +463,8 @@ function renderRoomFeedbackCard({
             <div class="feedback-card-header">
                 <span class="feedback-status-icon">${window.uiIcon ? window.uiIcon(statusIcon, "ui-icon feedback-svg") : ""}</span>
                 <div>
-                    <span class="feedback-eyebrow">${ROOM_I18N.feedback || "Retroalimentacion"}</span>
-                    <h3>${statusText}</h3>
+                    <span class="feedback-eyebrow">${escapeHtml(ROOM_I18N.feedback || "Retroalimentacion")}</span>
+                    <h3>${escapeHtml(statusText)}</h3>
                 </div>
             </div>
 
@@ -465,11 +474,11 @@ function renderRoomFeedbackCard({
             <p><strong>${window.uiIcon ? window.uiIcon("clock", "ui-icon feedback-inline-icon") : ""}</strong> ${responseTime}s</p>
 
             ${currentQuestion && currentQuestion.explanation
-                ? `<p>${currentQuestion.explanation}</p>`
+                ? `<p>${escapeHtml(currentQuestion.explanation)}</p>`
                 : ""}
 
             <p>
-                <strong>${ROOM_I18N.newDifficulty || "Nueva dificultad"}:</strong>
+                <strong>${escapeHtml(ROOM_I18N.newDifficulty || "Nueva dificultad")}:</strong>
                 ${formatDifficulty()} / 5
             </p>
 
@@ -711,8 +720,8 @@ async function showInterQuestionLeaderboard() {
                 }
                 item.innerHTML = `
                     <strong>#${index + 1}</strong>
-                    <span>${player.player_name}</span>
-                    <strong>${player.best_score}</strong>
+                    <span>${escapeHtml(player.player_name)}</span>
+                    <strong>${escapeHtml(player.best_score)}</strong>
                 `;
                 list.appendChild(item);
             });

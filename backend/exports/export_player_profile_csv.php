@@ -30,8 +30,8 @@ $filename = "player_profile_report_" . date("Y-m-d_H-i-s") . ".csv";
 $output = export_csv_open($filename);
 
 export_csv_title($output, export_label("player_report"));
-fputcsv($output, [export_label("player"), $userName]);
-fputcsv($output, []);
+export_csv_write($output, [export_label("player"), $userName]);
+export_csv_write($output, []);
 
 export_csv_section($output, export_label("summary"));
 
@@ -57,16 +57,16 @@ $totalAnswers = (int)$summary["total_answers"];
 $correctAnswers = (int)$summary["correct_answers"];
 $precision = $totalAnswers > 0 ? round(($correctAnswers / $totalAnswers) * 100, 2) : 0;
 
-fputcsv($output, [export_label("total_answers"), $totalAnswers]);
-fputcsv($output, [export_label("correct_answers"), $correctAnswers]);
-fputcsv($output, [export_label("precision"), $precision . "%"]);
-fputcsv($output, [export_label("average_response_time"), round((float)$summary["avg_response_time"], 2) . "s"]);
-fputcsv($output, [export_label("average_difficulty"), round((float)$summary["avg_difficulty"], 1) . " / 5"]);
-fputcsv($output, [export_label("max_difficulty"), round((float)$summary["max_difficulty"], 1) . " / 5"]);
-fputcsv($output, [export_label("total_points"), (int)$summary["total_points"]]);
+export_csv_write($output, [export_label("total_answers"), $totalAnswers]);
+export_csv_write($output, [export_label("correct_answers"), $correctAnswers]);
+export_csv_write($output, [export_label("precision"), $precision . "%"]);
+export_csv_write($output, [export_label("average_response_time"), round((float)$summary["avg_response_time"], 2) . "s"]);
+export_csv_write($output, [export_label("average_difficulty"), round((float)$summary["avg_difficulty"], 1) . " / 5"]);
+export_csv_write($output, [export_label("max_difficulty"), round((float)$summary["max_difficulty"], 1) . " / 5"]);
+export_csv_write($output, [export_label("total_points"), (int)$summary["total_points"]]);
 
 export_csv_section($output, export_label("performance_by_category"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("category"),
     export_label("total_answers"),
     export_label("correct_answers"),
@@ -99,7 +99,7 @@ while ($row = $result->fetch_assoc()) {
     $correct = (int)$row["correct_answers"];
     $catPrecision = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["category"],
         $total,
         $correct,
@@ -112,7 +112,7 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 export_csv_section($output, export_label("mistakes"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("date"),
     export_label("question"),
     export_label("category"),
@@ -165,7 +165,7 @@ while ($row = $result->fetch_assoc()) {
     $selectedOption = strtoupper(trim($row["selected_option"] ?? ""));
     $correctOption = strtoupper(trim($row["correct_option"] ?? ""));
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["answered_at"],
         $row["question"],
         $row["category"],

@@ -43,10 +43,6 @@ function ensure_question_workflow_columns($conn) {
     return true;
 }
 
-function current_user_id() {
-    return (int)($_SESSION["user_id"] ?? 0);
-}
-
 function requested_question_scope($data) {
     $scope = trim($data["question_scope"] ?? $data["visibility"] ?? "private");
 

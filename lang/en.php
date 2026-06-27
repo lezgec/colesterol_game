@@ -102,6 +102,7 @@ return [
     "register_role_question" => "How do you want to register?",
     "register_role_player_hint" => "Play, compete, and review your progress.",
     "register_role_teacher_hint" => "Create rooms, questions, and review reports.",
+    "register_role_public_note" => "Public registration creates player accounts. Teacher accounts must be created or approved by a super admin.",
     "register_password_policy_error" => "Password must be at least 10 characters and include uppercase, lowercase, number, and symbol.",
     "register_password_mismatch" => "Passwords do not match.",
     "register_loading" => "Registering user...",

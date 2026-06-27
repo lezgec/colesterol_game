@@ -139,8 +139,7 @@ CREATE TABLE `password_resets` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_password_resets_user_id` (`user_id`),
-  KEY `idx_password_resets_token_hash` (`token_hash`),
-  CONSTRAINT `fk_password_resets_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  KEY `idx_password_resets_token_hash` (`token_hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `questions`;
@@ -217,6 +216,17 @@ CREATE TABLE `room_questions` (
   UNIQUE KEY `unique_room_question` (`room_id`,`question_id`),
   KEY `idx_room_questions_room` (`room_id`),
   KEY `idx_room_questions_question` (`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `rate_limits`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `rate_limits` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `rate_key` varchar(128) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_rate_limits_key_time` (`rate_key`,`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `user_badges`;

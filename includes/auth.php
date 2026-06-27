@@ -3,6 +3,20 @@
 require_once __DIR__ . '/../app/bootstrap.php';
 
 if (session_status() === PHP_SESSION_NONE) {
+    $cookieSecure = env_bool(
+        "SESSION_COOKIE_SECURE",
+        (!empty($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== "off")
+    );
+
+    session_set_cookie_params([
+        "lifetime" => 0,
+        "path" => app_base_path() ?: "/",
+        "domain" => "",
+        "secure" => $cookieSecure,
+        "httponly" => true,
+        "samesite" => "Lax"
+    ]);
+
     session_start();
 }
 
@@ -82,6 +96,10 @@ function current_session_is_active() {
 
 function current_user_role() {
     return $_SESSION["user_role"] ?? "guest";
+}
+
+function current_user_id() {
+    return (int)($_SESSION["user_id"] ?? 0);
 }
 
 function is_player() {

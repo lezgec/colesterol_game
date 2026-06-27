@@ -61,6 +61,12 @@ header("Pragma: no-cache");
 <script>
 const APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 'UTF-8'); ?>";
 const appUrl = path => `${APP_BASE_PATH}/${String(path || "").replace(/^\//, "")}`;
+const escapeHtml = value => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 const RANKING_I18N = {
     noData: "<?php echo t('no_ranking_data'); ?>",
     error: "<?php echo t('error'); ?>"
@@ -89,14 +95,14 @@ fetch(appUrl("backend/game/get_ranking.php?lang=<?php echo current_lang(); ?>"))
 
             row.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${player.name}</td>
-                <td>${location}</td>
-                <td>${player.best_score}</td>
-                <td>${player.total_games}</td>
-                <td>${player.best_correct_streak || 0}</td>
-                <td>${player.current_daily_streak || 0}</td>
-                <td>${player.precision}%</td>
-                <td>${player.avg_difficulty} / 5</td>
+                <td>${escapeHtml(player.name)}</td>
+                <td>${escapeHtml(location)}</td>
+                <td>${escapeHtml(player.best_score)}</td>
+                <td>${escapeHtml(player.total_games)}</td>
+                <td>${escapeHtml(player.best_correct_streak || 0)}</td>
+                <td>${escapeHtml(player.current_daily_streak || 0)}</td>
+                <td>${escapeHtml(player.precision)}%</td>
+                <td>${escapeHtml(player.avg_difficulty)} / 5</td>
             `;
 
             tbody.appendChild(row);

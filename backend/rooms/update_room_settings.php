@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/room_auth_helpers.php';
 require_once __DIR__ . '/../../config/room_question_requirements.php';
 require_once __DIR__ . '/../../config/question_categories.php';
 
@@ -71,29 +72,7 @@ foreach ($requirements as $requirement) {
 }
 
 try {
-    $stmtRoom = $conn->prepare("
-        SELECT id, status, current_question_index, question_count
-        FROM game_rooms
-        WHERE room_code = ?
-        LIMIT 1
-    ");
-
-    if (!$stmtRoom) {
-        throw new Exception($conn->error);
-    }
-
-    $stmtRoom->bind_param("s", $roomCode);
-    $stmtRoom->execute();
-    $room = $stmtRoom->get_result()->fetch_assoc();
-    $stmtRoom->close();
-
-    if (!$room) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Sala no encontrada"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
+    $room = require_room_owner_or_super_admin($conn, $roomCode);
 
     if ($room["status"] === "finished") {
         echo json_encode([

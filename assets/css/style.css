@@ -501,6 +501,18 @@ textarea {
     border-color: #8b5cf6;
 }
 
+.register-role-note {
+    margin: -4px 0 16px;
+    padding: 12px 14px;
+    border: 1px solid rgba(20, 184, 166, 0.28);
+    border-radius: 12px;
+    background: rgba(20, 184, 166, 0.1);
+    color: #d1fae5;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
 :root[data-theme="light"] .register-panel {
     background: rgba(248, 250, 252, 0.94);
     border-color: rgba(203, 213, 225, 0.95);
@@ -532,6 +544,12 @@ textarea {
 :root[data-theme="light"] .role-choice:has(input:checked) {
     background: linear-gradient(135deg, rgba(238, 242, 255, 0.98), rgba(240, 253, 250, 0.98));
     border-color: #5b5ce2;
+}
+
+:root[data-theme="light"] .register-role-note {
+    background: #ecfdf5;
+    border-color: #99f6e4;
+    color: #065f46;
 }
 
 @media (max-width: 640px) {

@@ -131,6 +131,12 @@ const APP_BASE_PATH = "<?php echo htmlspecialchars(app_base_path(), ENT_QUOTES, 
 const appUrl = path => `${APP_BASE_PATH}/${String(path || "").replace(/^\//, "")}`;
 const ROOM_CODE = "<?php echo htmlspecialchars($roomCode); ?>";
 const CURRENT_PLAYER = "<?php echo htmlspecialchars($_GET["name"] ?? ""); ?>";
+const escapeHtml = value => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 let lastRankingJSON = "";
 let rankingInterval = null;
@@ -177,12 +183,12 @@ function renderPodium(data) {
 
         card.innerHTML = `
             <div class="podium-medal">${window.uiIcon ? window.uiIcon("medal", `ui-icon podium-medal-svg podium-medal-${index + 1}`) : index + 1}</div>
-            <h3>${player.player_name}</h3>
-            <p>${player.best_score}</p>
+            <h3>${escapeHtml(player.player_name)}</h3>
+            <p>${escapeHtml(player.best_score)}</p>
             <small>
-                ${player.best_correct} / ${player.total_questions}
+                ${escapeHtml(player.best_correct)} / ${escapeHtml(player.total_questions)}
                 <br>
-                ${player.precision}% - ${player.final_difficulty}/5
+                ${escapeHtml(player.precision)}% - ${escapeHtml(player.final_difficulty)}/5
             </small>
         `;
 
@@ -209,11 +215,11 @@ function renderTable(data) {
 
         row.innerHTML = `
             <td>${index + 1}</td>
-            <td>${player.player_name}</td>
-            <td>${player.best_score}</td>
-            <td>${player.best_correct} / ${player.total_questions}</td>
-            <td>${player.precision}%</td>
-            <td>${player.final_difficulty} / 5</td>
+            <td>${escapeHtml(player.player_name)}</td>
+            <td>${escapeHtml(player.best_score)}</td>
+            <td>${escapeHtml(player.best_correct)} / ${escapeHtml(player.total_questions)}</td>
+            <td>${escapeHtml(player.precision)}%</td>
+            <td>${escapeHtml(player.final_difficulty)} / 5</td>
         `;
 
         tbody.appendChild(row);

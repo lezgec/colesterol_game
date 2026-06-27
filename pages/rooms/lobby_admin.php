@@ -518,8 +518,8 @@ async function loadPlayers() {
             const initial = name.trim().charAt(0).toUpperCase() || "?";
 
             li.innerHTML = `
-                <span class="player-pill-avatar">${initial}</span>
-                <span class="player-pill-name">${name}</span>
+                <span class="player-pill-avatar">${escapeHtml(initial)}</span>
+                <span class="player-pill-name">${escapeHtml(name)}</span>
             `;
 
             list.appendChild(li);
@@ -889,17 +889,17 @@ function renderRoomQuestionSetup(setup) {
                         ${isChecked ? "checked" : ""}
                     >
                     <span class="room-question-id-badge">#${question.id}</span>
-                    <strong>${question.question}</strong>
+                    <strong>${escapeHtml(question.question)}</strong>
                     <em class="room-question-state-pills">
-                        <span>${formatQuestionStatus(question.status)}</span>
-                        <span>${activeLabel}</span>
+                        <span>${escapeHtml(formatQuestionStatus(question.status))}</span>
+                        <span>${escapeHtml(activeLabel)}</span>
                     </em>
                 </summary>
                 <div class="room-question-detail-body">
                     <p>
-                        <strong>${LOBBY_I18N.category}:</strong> ${question.category}
+                        <strong>${escapeHtml(LOBBY_I18N.category)}:</strong> ${escapeHtml(question.category)}
                         | <strong>${LOBBY_I18N.difficulty}:</strong> ${Math.min(5, Math.max(1, Math.round(Number(question.difficulty_level || 1))))} / 5
-                        | <strong><?php echo t("correct_option"); ?>:</strong> ${question.correct_option}
+                        | <strong><?php echo t("correct_option"); ?>:</strong> ${escapeHtml(question.correct_option)}
                     </p>
                     <button
                         type="button"

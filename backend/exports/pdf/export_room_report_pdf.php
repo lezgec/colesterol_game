@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../../config/db.php';
 require_once __DIR__ . '/../../../includes/auth.php';
 require_once __DIR__ . '/../../../lang/translate.php';
 require_once __DIR__ . '/../export_helpers.php';
+require_once __DIR__ . '/../../rooms/room_auth_helpers.php';
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use Dompdf\Dompdf;
@@ -20,24 +21,9 @@ if ($roomCode === "") {
     die("Código de sala vacío");
 }
 
-$stmtRoom = $conn->prepare("
-    SELECT id, room_code, name, status, question_count, time_limit, initial_difficulty, created_at, started_at, finished_at
-    FROM game_rooms
-    WHERE room_code = ?
-");
-
-$stmtRoom->bind_param("s", $roomCode);
-$stmtRoom->execute();
-$roomResult = $stmtRoom->get_result();
-
-if ($roomResult->num_rows === 0) {
-    die("Sala no encontrada");
-}
-
-$room = $roomResult->fetch_assoc();
+$room = require_room_owner_or_super_admin($conn, $roomCode);
 $roomId = (int)$room["id"];
 $roomStatusLabel = room_status_label($room["status"]);
-$stmtRoom->close();
 
 $rankingRows = "";
 

@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/room_auth_helpers.php';
 require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
@@ -25,27 +26,8 @@ $accessSql = playable_question_access_sql("");
 $roomId = 0;
 
 if ($roomCode !== "") {
-    $stmtRoom = $conn->prepare("
-        SELECT id
-        FROM game_rooms
-        WHERE room_code = ?
-        LIMIT 1
-    ");
-
-    if (!$stmtRoom) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Error al preparar sala",
-            "error" => $conn->error
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $stmtRoom->bind_param("s", $roomCode);
-    $stmtRoom->execute();
-    $roomData = $stmtRoom->get_result()->fetch_assoc();
-    $stmtRoom->close();
-    $roomId = (int)($roomData["id"] ?? 0);
+    $roomData = require_room_owner_or_super_admin($conn, $roomCode);
+    $roomId = (int)$roomData["id"];
 }
 
 $sql = "SELECT

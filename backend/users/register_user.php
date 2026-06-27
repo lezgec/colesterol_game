@@ -6,6 +6,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/rate_limit.php';
 require_once __DIR__ . '/password_policy.php';
 require_once __DIR__ . '/session_guard.php';
 require_once __DIR__ . '/profile_helpers.php';
@@ -46,10 +47,11 @@ $age = sanitize_profile_age($data["age"] ?? null);
 $career = sanitize_profile_text($data["career"] ?? "", 140);
 $educationLevel = sanitize_profile_text($data["education_level"] ?? "", 80);
 $bio = sanitize_profile_text($data["bio"] ?? "", 500);
-$requestedRole = strtolower(trim((string)($data["role"] ?? "player")));
-$role = in_array($requestedRole, ["player", "teacher"], true) ? $requestedRole : "player";
+$role = "player";
 $customAvatarPath = "";
 $uploadedAvatarPath = "";
+
+require_rate_limit($conn, "register:" . strtolower($email), 5, 3600);
 
 if ($firstName === "" || $lastName === "" || $name === "" || $email === "" || $password === "") {
     register_json_response([

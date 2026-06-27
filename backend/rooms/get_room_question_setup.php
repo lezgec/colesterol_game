@@ -3,6 +3,7 @@ header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/room_auth_helpers.php';
 require_once __DIR__ . '/../../config/room_question_requirements.php';
 require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
@@ -29,34 +30,11 @@ try {
     ensure_question_workflow_columns($conn);
     $accessSql = playable_question_access_sql("q");
 
-    $stmtRoom = $conn->prepare("
-        SELECT id, room_code, name, status, language, question_count, time_limit, question_mode
-        FROM game_rooms
-        WHERE room_code = ?
-    ");
-
-    if (!$stmtRoom) {
-        throw new Exception($conn->error);
-    }
-
-    $stmtRoom->bind_param("s", $roomCode);
-    $stmtRoom->execute();
-    $roomResult = $stmtRoom->get_result();
-
-    if ($roomResult->num_rows === 0) {
-        echo json_encode([
-            "success" => false,
-            "message" => "Sala no encontrada"
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $room = $roomResult->fetch_assoc();
+    $room = require_room_owner_or_super_admin($conn, $roomCode);
     $roomId = (int)$room["id"];
     $language = $room["language"] ?: "es";
     $requiredTotal = (int)$room["question_count"];
 
-    $stmtRoom->close();
 
     $stmtReady = $conn->prepare("
         SELECT COUNT(DISTINCT q.id) AS total

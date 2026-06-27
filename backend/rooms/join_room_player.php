@@ -2,6 +2,8 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/rate_limit.php';
 require_once __DIR__ . '/../../lang/translate.php';
 
 require_csrf_token();
@@ -10,6 +12,8 @@ $data = json_decode(file_get_contents("php://input"), true);
 
 $room_code = strtoupper(trim($data["room_code"] ?? ""));
 $player_name = preg_replace('/\s+/u', ' ', trim($data["player_name"] ?? ""));
+
+require_rate_limit($conn, "join-room:" . $room_code, 20, 300);
 
 if ($room_code === "" || $player_name === "") {
     echo json_encode([

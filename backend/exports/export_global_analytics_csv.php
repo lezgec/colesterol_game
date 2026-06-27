@@ -10,26 +10,35 @@ if (!has_role(["teacher", "super_admin"])) {
     die("No autorizado");
 }
 
+$isSuperAdmin = is_super_admin();
+$userId = current_user_id();
+$answerJoin = $isSuperAdmin ? "" : "INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id";
+$answerWhere = $isSuperAdmin ? "1 = 1" : "ga.game_mode = 'room' AND gr_scope.created_by = {$userId}";
+$roomWhere = $isSuperAdmin ? "1 = 1" : "created_by = {$userId}";
+$roomWhereWithAlias = $isSuperAdmin ? "1 = 1" : "gr.created_by = {$userId}";
+
 $filename = "global_analytics_report_" . date("Y-m-d_H-i-s") . ".csv";
 
 $output = export_csv_open($filename);
 
 export_csv_title($output, export_label("analytics_report"));
-fputcsv($output, []);
+export_csv_write($output, []);
 
 export_csv_section($output, export_label("summary"));
 
 $summarySql = "
     SELECT
-        (SELECT COUNT(*) FROM users) AS total_users,
-        (SELECT COUNT(*) FROM game_results) AS total_games,
-        (SELECT COUNT(*) FROM game_rooms) AS total_rooms,
+        (SELECT COUNT(DISTINCT ga.user_id) FROM game_answers ga {$answerJoin} WHERE {$answerWhere} AND ga.user_id IS NOT NULL) AS total_users,
+        (SELECT COUNT(*) FROM game_results grs INNER JOIN game_rooms gr ON grs.room_id = gr.id WHERE {$roomWhereWithAlias}) AS total_games,
+        (SELECT COUNT(*) FROM game_rooms WHERE {$roomWhere}) AS total_rooms,
         (SELECT COUNT(*) FROM questions) AS total_questions,
-        (SELECT COUNT(*) FROM game_answers) AS total_answers,
+        (SELECT COUNT(*) FROM game_answers ga {$answerJoin} WHERE {$answerWhere}) AS total_answers,
         COALESCE(SUM(is_correct), 0) AS correct_answers,
         COALESCE(AVG(response_time), 0) AS avg_response_time,
         COALESCE(AVG(difficulty_level), 0) AS avg_difficulty
-    FROM game_answers
+    FROM game_answers ga
+    {$answerJoin}
+    WHERE {$answerWhere}
 ";
 
 $result = $conn->query($summarySql);
@@ -39,18 +48,18 @@ $totalAnswers = (int)$summary["total_answers"];
 $correctAnswers = (int)$summary["correct_answers"];
 $precision = $totalAnswers > 0 ? round(($correctAnswers / $totalAnswers) * 100, 2) : 0;
 
-fputcsv($output, [export_label("total_users"), (int)$summary["total_users"]]);
-fputcsv($output, [export_label("total_games"), (int)$summary["total_games"]]);
-fputcsv($output, [export_label("total_rooms"), (int)$summary["total_rooms"]]);
-fputcsv($output, [export_label("total_questions"), (int)$summary["total_questions"]]);
-fputcsv($output, [export_label("total_answers"), $totalAnswers]);
-fputcsv($output, [export_label("correct_answers"), $correctAnswers]);
-fputcsv($output, [export_label("global_precision"), $precision . "%"]);
-fputcsv($output, [export_label("average_response_time"), round((float)$summary["avg_response_time"], 2) . "s"]);
-fputcsv($output, [export_label("average_difficulty"), round((float)$summary["avg_difficulty"], 1) . " / 5"]);
+export_csv_write($output, [export_label("total_users"), (int)$summary["total_users"]]);
+export_csv_write($output, [export_label("total_games"), (int)$summary["total_games"]]);
+export_csv_write($output, [export_label("total_rooms"), (int)$summary["total_rooms"]]);
+export_csv_write($output, [export_label("total_questions"), (int)$summary["total_questions"]]);
+export_csv_write($output, [export_label("total_answers"), $totalAnswers]);
+export_csv_write($output, [export_label("correct_answers"), $correctAnswers]);
+export_csv_write($output, [export_label("global_precision"), $precision . "%"]);
+export_csv_write($output, [export_label("average_response_time"), round((float)$summary["avg_response_time"], 2) . "s"]);
+export_csv_write($output, [export_label("average_difficulty"), round((float)$summary["avg_difficulty"], 1) . " / 5"]);
 
 export_csv_section($output, export_label("top_players"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("player"),
     export_label("total_answers"),
     export_label("correct_answers"),
@@ -71,7 +80,9 @@ $playersSql = "
         COALESCE(AVG(ga.difficulty_level), 0) AS avg_difficulty,
         COALESCE(MAX(ga.difficulty_level), 0) AS max_difficulty
     FROM game_answers ga
+    {$answerJoin}
     LEFT JOIN users u ON ga.user_id = u.id
+    WHERE {$answerWhere}
     GROUP BY COALESCE(u.name, ga.player_name, 'Guest')
     ORDER BY total_score DESC, correct_answers DESC
     LIMIT 20
@@ -84,7 +95,7 @@ while ($row = $result->fetch_assoc()) {
     $correct = (int)$row["correct_answers"];
     $rowPrecision = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["player_name"],
         $total,
         $correct,
@@ -97,7 +108,7 @@ while ($row = $result->fetch_assoc()) {
 }
 
 export_csv_section($output, export_label("top_rooms"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("room_code"),
     export_label("room_name"),
     export_label("status"),
@@ -123,6 +134,7 @@ $roomsSql = "
     LEFT JOIN game_answers ga
         ON ga.room_id = gr.id
         AND ga.game_mode = 'room'
+    WHERE {$roomWhereWithAlias}
     GROUP BY gr.id, gr.room_code, gr.name, gr.status
     ORDER BY total_players DESC, total_answers DESC
 ";
@@ -134,7 +146,7 @@ while ($row = $result->fetch_assoc()) {
     $correct = (int)$row["correct_answers"];
     $rowPrecision = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["room_code"],
         $row["name"],
         room_status_label($row["status"]),
@@ -148,7 +160,7 @@ while ($row = $result->fetch_assoc()) {
 }
 
 export_csv_section($output, export_label("performance_by_category"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("category"),
     export_label("total_answers"),
     export_label("correct_answers"),
@@ -165,7 +177,9 @@ $categorySql = "
         COALESCE(AVG(ga.response_time), 0) AS avg_response_time,
         COALESCE(AVG(ga.difficulty_level), 0) AS avg_difficulty
     FROM game_answers ga
+    {$answerJoin}
     INNER JOIN questions q ON ga.question_id = q.id
+    WHERE {$answerWhere}
     GROUP BY q.category
     ORDER BY q.category ASC
 ";
@@ -177,7 +191,7 @@ while ($row = $result->fetch_assoc()) {
     $correct = (int)$row["correct_answers"];
     $rowPrecision = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["category"],
         $total,
         $correct,
@@ -188,7 +202,7 @@ while ($row = $result->fetch_assoc()) {
 }
 
 export_csv_section($output, export_label("most_failed_questions"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("question_id"),
     export_label("question"),
     export_label("category"),
@@ -210,7 +224,9 @@ $failedSql = "
         COALESCE(AVG(ga.response_time), 0) AS avg_response_time,
         COALESCE(AVG(ga.difficulty_level), 0) AS avg_difficulty
     FROM game_answers ga
+    {$answerJoin}
     INNER JOIN questions q ON ga.question_id = q.id
+    WHERE {$answerWhere}
     GROUP BY q.id, q.question, q.category
     ORDER BY (1 - (COALESCE(SUM(ga.is_correct), 0) / COUNT(*))) DESC, COUNT(*) DESC
     LIMIT 20
@@ -224,7 +240,7 @@ while ($row = $result->fetch_assoc()) {
     $incorrect = $total - $correct;
     $failureRate = $total > 0 ? round(($incorrect / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         (int)$row["id"],
         $row["question"],
         $row["category"],

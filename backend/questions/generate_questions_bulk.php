@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/gemini.php';
 require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/rate_limit.php';
 require_once __DIR__ . '/question_option_helpers.php';
 require_once __DIR__ . '/question_workflow_helpers.php';
 
@@ -17,6 +18,8 @@ if (!has_role(["teacher", "super_admin"])) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+require_rate_limit($conn, "gemini-bulk:" . current_user_id(), 8, 900);
 
 $data = json_decode(file_get_contents("php://input"), true);
 

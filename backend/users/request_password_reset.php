@@ -2,6 +2,8 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . "/../../config/db.php";
+require_once __DIR__ . "/../../includes/auth.php";
+require_once __DIR__ . "/../../includes/rate_limit.php";
 require_once __DIR__ . "/password_reset_helpers.php";
 
 require_csrf_token();
@@ -18,6 +20,7 @@ if (!is_array($data)) {
 }
 
 $email = strtolower(trim($data["email"] ?? ""));
+require_rate_limit($conn, "password-reset:" . $email, 4, 3600);
 $genericMessage = "Si el correo está registrado, enviaremos instrucciones para recuperar la contraseña.";
 
 if ($email === "" || !filter_var($email, FILTER_VALIDATE_EMAIL)) {

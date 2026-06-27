@@ -41,7 +41,6 @@ form.addEventListener("submit", async function (e) {
     const email = document.getElementById("email").value.trim();
     const password = passwordInput.value;
     const password_confirmation = passwordConfirmationInput.value;
-    const role = document.querySelector("input[name='role']:checked")?.value || "player";
     const avatar_key =
         document.querySelector("input[name='avatar_key']:checked")?.value || "pulse";
     const avatar_file = document.getElementById("avatar_file")?.files?.[0] || null;
@@ -79,7 +78,6 @@ form.addEventListener("submit", async function (e) {
         payload.append("email", email);
         payload.append("password", password);
         payload.append("password_confirmation", password_confirmation);
-        payload.append("role", role);
         payload.append("avatar_key", avatar_file ? "custom" : avatar_key);
         payload.append("country", country);
         payload.append("city", city);

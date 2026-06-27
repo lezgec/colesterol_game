@@ -94,6 +94,7 @@ return [
     "register_role_question" => "¿Cómo quieres registrarte?",
     "register_role_player_hint" => "Para jugar, competir y revisar tu progreso.",
     "register_role_teacher_hint" => "Para crear salas, preguntas y revisar reportes.",
+    "register_role_public_note" => "El registro público crea cuentas de jugador. Las cuentas docentes deben ser creadas o aprobadas por un superadministrador.",
     "register_password_policy_error" => "La contraseña debe tener mínimo 10 caracteres e incluir mayúscula, minúscula, número y símbolo.",
     "register_password_mismatch" => "Las contraseñas no coinciden.",
     "register_loading" => "Registrando usuario...",

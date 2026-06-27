@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../lang/translate.php';
 require_once __DIR__ . '/export_helpers.php';
+require_once __DIR__ . '/../rooms/room_auth_helpers.php';
 
 if (!has_role(["teacher", "super_admin"])) {
     die("No autorizado");
@@ -13,39 +14,24 @@ if (!has_role(["teacher", "super_admin"])) {
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 
 if ($roomCode === "") {
-    die("Código de sala vacío");
+    die("CÃ³digo de sala vacÃ­o");
 }
 
-$stmtRoom = $conn->prepare("
-    SELECT id, room_code, name, status
-    FROM game_rooms
-    WHERE room_code = ?
-");
-
-$stmtRoom->bind_param("s", $roomCode);
-$stmtRoom->execute();
-$roomResult = $stmtRoom->get_result();
-
-if ($roomResult->num_rows === 0) {
-    die("Sala no encontrada");
-}
-
-$room = $roomResult->fetch_assoc();
+$room = require_room_owner_or_super_admin($conn, $roomCode);
 $roomId = (int)$room["id"];
-$stmtRoom->close();
 
 $filename = "room_report_" . $roomCode . "_" . date("Y-m-d_H-i-s") . ".csv";
 
 $output = export_csv_open($filename);
 
 export_csv_title($output, export_label("room_report"));
-fputcsv($output, [export_label("room"), $room["name"]]);
-fputcsv($output, [export_label("code"), $room["room_code"]]);
-fputcsv($output, [export_label("status"), room_status_label($room["status"])]);
-fputcsv($output, []);
+export_csv_write($output, [export_label("room"), $room["name"]]);
+export_csv_write($output, [export_label("code"), $room["room_code"]]);
+export_csv_write($output, [export_label("status"), room_status_label($room["status"])]);
+export_csv_write($output, []);
 
 export_csv_section($output, export_label("ranking"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("player"),
     export_label("total_answers"),
     export_label("correct_answers"),
@@ -82,7 +68,7 @@ while ($row = $result->fetch_assoc()) {
     $correct = (int)$row["correct_answers"];
     $precision = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["player_name"],
         $total,
         $correct,
@@ -97,7 +83,7 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 export_csv_section($output, export_label("performance_by_category"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("category"),
     export_label("total_answers"),
     export_label("correct_answers"),
@@ -131,7 +117,7 @@ while ($row = $result->fetch_assoc()) {
     $correct = (int)$row["correct_answers"];
     $precision = $total > 0 ? round(($correct / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["category"],
         $total,
         $correct,
@@ -144,7 +130,7 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 export_csv_section($output, export_label("most_failed_questions"));
-fputcsv($output, [
+export_csv_write($output, [
     export_label("question"),
     export_label("category"),
     export_label("total_answers"),
@@ -180,7 +166,7 @@ while ($row = $result->fetch_assoc()) {
     $incorrect = $total - $correct;
     $failureRate = $total > 0 ? round(($incorrect / $total) * 100, 2) : 0;
 
-    fputcsv($output, [
+    export_csv_write($output, [
         $row["question"],
         $row["category"],
         $total,

@@ -13,17 +13,26 @@ if (!has_role(["teacher", "super_admin"])) {
     die("No autorizado");
 }
 
+$isSuperAdmin = is_super_admin();
+$userId = current_user_id();
+$answerJoin = $isSuperAdmin ? "" : "INNER JOIN game_rooms gr_scope ON ga.room_id = gr_scope.id";
+$answerWhere = $isSuperAdmin ? "1 = 1" : "ga.game_mode = 'room' AND gr_scope.created_by = {$userId}";
+$roomWhere = $isSuperAdmin ? "1 = 1" : "created_by = {$userId}";
+$roomWhereWithAlias = $isSuperAdmin ? "1 = 1" : "gr.created_by = {$userId}";
+
 $summarySql = "
     SELECT
-        (SELECT COUNT(*) FROM users) AS total_users,
-        (SELECT COUNT(*) FROM game_results) AS total_games,
-        (SELECT COUNT(*) FROM game_rooms) AS total_rooms,
+        (SELECT COUNT(DISTINCT ga.user_id) FROM game_answers ga {$answerJoin} WHERE {$answerWhere} AND ga.user_id IS NOT NULL) AS total_users,
+        (SELECT COUNT(*) FROM game_results grs INNER JOIN game_rooms gr ON grs.room_id = gr.id WHERE {$roomWhereWithAlias}) AS total_games,
+        (SELECT COUNT(*) FROM game_rooms WHERE {$roomWhere}) AS total_rooms,
         (SELECT COUNT(*) FROM questions) AS total_questions,
-        (SELECT COUNT(*) FROM game_answers) AS total_answers,
+        (SELECT COUNT(*) FROM game_answers ga {$answerJoin} WHERE {$answerWhere}) AS total_answers,
         COALESCE(SUM(is_correct), 0) AS correct_answers,
         COALESCE(AVG(response_time), 0) AS avg_response_time,
         COALESCE(AVG(difficulty_level), 0) AS avg_difficulty
-    FROM game_answers
+    FROM game_answers ga
+    {$answerJoin}
+    WHERE {$answerWhere}
 ";
 
 $result = $conn->query($summarySql);
@@ -48,7 +57,9 @@ $playersSql = "
         COALESCE(AVG(ga.difficulty_level), 0) AS avg_difficulty,
         COALESCE(MAX(ga.difficulty_level), 0) AS max_difficulty
     FROM game_answers ga
+    {$answerJoin}
     LEFT JOIN users u ON ga.user_id = u.id
+    WHERE {$answerWhere}
     GROUP BY COALESCE(u.name, ga.player_name, 'Guest')
     ORDER BY total_score DESC, correct_answers DESC
     LIMIT 10
@@ -97,6 +108,7 @@ $roomsSql = "
     LEFT JOIN game_answers ga
         ON ga.room_id = gr.id
         AND ga.game_mode = 'room'
+    WHERE {$roomWhereWithAlias}
     GROUP BY gr.id, gr.room_code, gr.name, gr.status
     ORDER BY total_players DESC, total_answers DESC
     LIMIT 10
@@ -134,7 +146,9 @@ $categorySql = "
         COALESCE(AVG(ga.response_time), 0) AS avg_response_time,
         COALESCE(AVG(ga.difficulty_level), 0) AS avg_difficulty
     FROM game_answers ga
+    {$answerJoin}
     INNER JOIN questions q ON ga.question_id = q.id
+    WHERE {$answerWhere}
     GROUP BY q.category
     ORDER BY q.category ASC
 ";
@@ -172,7 +186,9 @@ $failedSql = "
         COALESCE(SUM(ga.is_correct), 0) AS correct_answers,
         COALESCE(AVG(ga.response_time), 0) AS avg_response_time
     FROM game_answers ga
+    {$answerJoin}
     INNER JOIN questions q ON ga.question_id = q.id
+    WHERE {$answerWhere}
     GROUP BY q.id, q.question, q.category
     ORDER BY (1 - (COALESCE(SUM(ga.is_correct), 0) / COUNT(*))) DESC, COUNT(*) DESC
     LIMIT 10

@@ -2,6 +2,7 @@
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/adaptive_difficulty_schema.php';
 require_once __DIR__ . '/streak_helpers.php';
 require_once __DIR__ . '/result_calculation_helpers.php';
@@ -20,7 +21,6 @@ if (!is_array($data)) {
     exit;
 }
 
-$user_id = isset($data["user_id"]) && $data["user_id"] !== null ? (int)$data["user_id"] : null;
 $room_id = isset($data["room_id"]) && $data["room_id"] !== null ? (int)$data["room_id"] : null;
 $player_name = trim($data["player_name"] ?? "");
 $question_id = (int)($data["question_id"] ?? 0);
@@ -28,6 +28,21 @@ $selected_option = strtoupper(trim($data["selected_option"] ?? ""));
 $response_time = max(0, (int)($data["response_time"] ?? 0));
 $difficulty_level = normalize_game_difficulty($data["difficulty_level"] ?? 1);
 $game_mode = trim($data["game_mode"] ?? "solo");
+$user_id = null;
+
+if ($game_mode === "solo") {
+    $user_id = current_session_is_active() ? current_user_id() : null;
+
+    if (!$user_id) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Sesion requerida"
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+} elseif (current_session_is_active()) {
+    $user_id = current_user_id();
+}
 
 if ($question_id <= 0) {
     echo json_encode([
