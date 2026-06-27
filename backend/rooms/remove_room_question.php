@@ -44,7 +44,7 @@ $status = $room["status"];
 if ($status === "finished") {
     echo json_encode([
         "success" => false,
-        "message" => "La sala ya finalizo y no se pueden quitar preguntas"
+        "message" => "La sala ya finalizó y no se pueden quitar preguntas"
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

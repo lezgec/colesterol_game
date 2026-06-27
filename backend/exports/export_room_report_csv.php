@@ -14,7 +14,7 @@ if (!has_role(["teacher", "super_admin"])) {
 $roomCode = strtoupper(trim($_GET["code"] ?? ""));
 
 if ($roomCode === "") {
-    die("CÃ³digo de sala vacÃ­o");
+    die("Código de sala vacío");
 }
 
 $room = require_room_owner_or_super_admin($conn, $roomCode);

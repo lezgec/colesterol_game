@@ -43,7 +43,7 @@ try {
     if ($status === "finished") {
         echo json_encode([
             "success" => false,
-            "message" => "La sala ya finalizo y no se pueden agregar preguntas"
+            "message" => "La sala ya finalizó y no se pueden agregar preguntas"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

@@ -167,14 +167,14 @@ function evaluateTeacherBadges(mysqli $conn, int $teacherId) {
             "condition" => $totalRooms >= 1,
             "key" => "teacher_first_room",
             "name" => "Primera sala docente",
-            "description" => "Creo su primera sala de aprendizaje.",
+            "description" => "Creó su primera sala de aprendizaje.",
             "icon" => "school"
         ],
         [
             "condition" => $totalRooms >= 5,
             "key" => "teacher_room_builder_5",
             "name" => "Constructor de aulas",
-            "description" => "Creo 5 salas para sus estudiantes.",
+            "description" => "Creó 5 salas para sus estudiantes.",
             "icon" => "home"
         ],
         [
@@ -188,35 +188,35 @@ function evaluateTeacherBadges(mysqli $conn, int $teacherId) {
             "condition" => $launchedRooms >= 1,
             "key" => "teacher_launched_room",
             "name" => "Clase en marcha",
-            "description" => "Inicio una sala con estudiantes.",
+            "description" => "Inició una sala con estudiantes.",
             "icon" => "rocket"
         ],
         [
             "condition" => $finishedRooms >= 1,
             "key" => "teacher_finished_room",
             "name" => "Cierre completo",
-            "description" => "Finalizo una sala y dejo resultados listos para analizar.",
+            "description" => "Finalizó una sala y dejó resultados listos para analizar.",
             "icon" => "check"
         ],
         [
             "condition" => $curatedRooms >= 1,
             "key" => "teacher_curated_room",
             "name" => "Curador de retos",
-            "description" => "Diseno una sala con preguntas configuradas o seleccionadas.",
+            "description" => "Diseñó una sala con preguntas configuradas o seleccionadas.",
             "icon" => "target"
         ],
         [
             "condition" => $extendedRooms >= 1,
             "key" => "teacher_extended_room",
-            "name" => "Sesion profunda",
-            "description" => "Creo una sala de 20 preguntas o mas.",
+            "name" => "Sesión profunda",
+            "description" => "Creó una sala de 20 preguntas o más.",
             "icon" => "file"
         ],
         [
             "condition" => $totalParticipants >= 10,
             "key" => "teacher_engagement_10",
             "name" => "Comunidad activa",
-            "description" => "Reunio 10 participaciones en sus salas.",
+            "description" => "Reunió 10 participaciones en sus salas.",
             "icon" => "users"
         ],
         [
@@ -229,15 +229,15 @@ function evaluateTeacherBadges(mysqli $conn, int $teacherId) {
         [
             "condition" => $accuracy >= 80 && $totalAnswers >= 20,
             "key" => "teacher_accuracy_80",
-            "name" => "Guia de precision",
-            "description" => "Sus estudiantes alcanzaron 80% de precision global con al menos 20 respuestas.",
+            "name" => "Guía de precisión",
+            "description" => "Sus estudiantes alcanzaron 80% de precisión global con al menos 20 respuestas.",
             "icon" => "target"
         ],
         [
             "condition" => $totalHighAccuracyRooms >= 1,
             "key" => "teacher_high_accuracy_room",
             "name" => "Sala destacada",
-            "description" => "Una de sus salas alcanzo 80% de precision con al menos 10 respuestas.",
+            "description" => "Una de sus salas alcanzó 80% de precisión con al menos 10 respuestas.",
             "icon" => "star"
         ]
     ];

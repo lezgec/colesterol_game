@@ -77,7 +77,7 @@ try {
     if ($room["status"] === "finished") {
         echo json_encode([
             "success" => false,
-            "message" => "La sala ya finalizo y no se puede modificar"
+            "message" => "La sala ya finalizó y no se puede modificar"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

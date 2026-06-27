@@ -1,6 +1,6 @@
 # Colesterol Game
 
-Serious game educativo sobre colesterol con modo individual, salas docentes, banco de preguntas, generacion con IA, reportes, perfiles, insignias, rachas, correos y paneles por rol.
+Serious game educativo sobre colesterol con modo individual, salas docentes, banco de preguntas, generación con IA, reportes, perfiles, insignias, rachas, correos y paneles por rol.
 
 ## Requisitos
 
@@ -10,7 +10,7 @@ Serious game educativo sobre colesterol con modo individual, salas docentes, ban
 - Composer si se desea reinstalar dependencias.
 - Extensiones PHP comunes: mysqli, curl, mbstring, openssl y gd.
 
-## Instalacion
+## Instalación
 
 1. Copiar el proyecto en el servidor web.
    - XAMPP: `C:\xampp\htdocs\colesterol_game`
@@ -60,7 +60,7 @@ GEMINI_API_KEY=tu_api_key
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
-6. Abrir la aplicacion.
+6. Abrir la aplicación.
 
 ```text
 https://tu-dominio.com/colesterol_game/
@@ -68,24 +68,29 @@ https://tu-dominio.com/colesterol_game/
 
 ## Credenciales iniciales
 
-El seed inicial crea un superadministrador generico para primera instalacion:
+El seed inicial crea un superadministrador genérico para primera instalación:
 
 ```text
 Correo: superadmin@example.com
-Contrasena: Admin2026@
+Contraseña: Admin2026@
 Rol: super_admin
 ```
 
-Cambia esta contrasena despues del primer inicio de sesion.
+Cambia esta contraseña después del primer inicio de sesión.
 
-## Seguridad y configuracion
+## Seguridad y configuración
 
 - No subas `.env` al repositorio.
-- `.env.example` si debe subirse, pero solo con datos ficticios.
+- `.env.example` sí debe subirse, pero solo con datos ficticios.
 - Las credenciales SMTP y Gemini se leen desde `.env`.
 - Las respuestas correctas de las preguntas no deben enviarse al navegador antes de responder.
 - El backend calcula si una respuesta es correcta y los puntos obtenidos.
-- Cambia el superadmin generico al desplegar en produccion.
+- Cambia el superadmin genérico al desplegar en producción.
+
+Documentación técnica:
+
+- `docs/ARCHITECTURE.md`
+- `docs/SECURITY_CHECKLIST.md`
 
 ## Flujo de despliegue recomendado
 

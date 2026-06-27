@@ -44,7 +44,7 @@ try {
     if (($room["status"] ?? "") === "finished") {
         echo json_encode([
             "success" => false,
-            "message" => "La sala ya finalizo y no se pueden agregar preguntas"
+            "message" => "La sala ya finalizó y no se pueden agregar preguntas"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -81,7 +81,7 @@ try {
     if (count($allowedIds) === 0) {
         echo json_encode([
             "success" => false,
-            "message" => "No hay preguntas validas para agregar"
+            "message" => "No hay preguntas válidas para agregar"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

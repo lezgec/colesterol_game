@@ -205,7 +205,7 @@ try {
     $sessionToken = create_user_session_token();
 
     if (!store_user_session_token($conn, $newUserId, $sessionToken)) {
-        throw new RuntimeException("No se pudo iniciar la sesion segura");
+        throw new RuntimeException("No se pudo iniciar la sesión segura");
     }
 
     send_welcome_email($email, $name, $role, $_SESSION["lang"] ?? "es");

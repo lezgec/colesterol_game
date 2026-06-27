@@ -36,7 +36,7 @@ if ($game_mode === "solo") {
     if (!$user_id) {
         echo json_encode([
             "success" => false,
-            "message" => "Sesion requerida"
+            "message" => "Sesión requerida"
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

@@ -294,7 +294,7 @@ VALUES
         'Guayaquil',
         'Demo Institution',
         'Administrador',
-        'Usuario superadministrador generico para instalacion inicial.'
+        'Usuario superadministrador genérico para instalación inicial.'
     );
 
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
