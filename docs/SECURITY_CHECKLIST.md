@@ -18,6 +18,7 @@
 - Todo endpoint de sala administrable debe validar propietario o superadmin.
 - Todo endpoint con sesión debe cargar `includes/auth.php`.
 - Los endpoints JSON no deben imprimir warnings, notices ni HTML.
+- Los endpoints nuevos deben responder mediante `backend/support/api_response.php`.
 - El backend debe calcular puntajes, aciertos y permisos; el cliente solo envía acciones.
 
 ## Usuarios

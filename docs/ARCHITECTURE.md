@@ -4,7 +4,9 @@ El proyecto mantiene una separación por responsabilidad sin cambiar las rutas p
 
 - `pages/`: vistas PHP renderizadas por el servidor. Actúan como capa de presentación.
 - `assets/`: CSS, JavaScript, sonidos, iconos y recursos estáticos del frontend.
+- `frontend/components/`: componentes PHP de presentación reutilizables, como iconos inline y menú de usuario.
 - `backend/`: endpoints JSON, exportaciones y lógica de aplicación invocada por el frontend.
+- `backend/support/`: helpers propios del backend, como respuestas JSON estandarizadas.
 - `includes/`: helpers compartidos de autenticación, correo, menús, rate limit e iconos.
 - `config/`: configuración de base de datos, correo, Gemini, países, categorías y reglas.
 - `app/`: bootstrap y soporte transversal de entorno, HTTP y CSRF.
@@ -17,6 +19,8 @@ El proyecto mantiene una separación por responsabilidad sin cambiar las rutas p
 Las páginas en `pages/` cargan estilos desde `assets/css` y scripts desde `assets/js`.
 Los scripts llaman endpoints de `backend/` usando `fetch` y enviando `X-CSRF-Token` cuando modifican datos.
 
+Los archivos antiguos `includes/ui_icons.php` e `includes/user_menu.php` se mantienen como wrappers de compatibilidad y cargan la implementación real desde `frontend/components/`.
+
 ## Flujo Backend
 
 Los endpoints de `backend/` deben:
@@ -26,6 +30,12 @@ Los endpoints de `backend/` deben:
 3. Validar rol y propiedad del recurso antes de modificar datos.
 4. Devolver JSON en endpoints AJAX.
 5. No confiar en identificadores sensibles enviados por el cliente.
+
+Para respuestas JSON nuevas se debe usar `backend/support/api_response.php`:
+
+- `api_success([...])`
+- `api_error("Mensaje", 400)`
+- `api_response([...], 200)`
 
 ## Salas
 

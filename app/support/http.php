@@ -14,7 +14,7 @@ function request_json() {
     if (!is_array($data)) {
         json_response([
             'success' => false,
-            'message' => 'JSON invalido'
+            'message' => 'JSON inválido'
         ], 400);
     }
 
@@ -46,10 +46,19 @@ function verify_csrf_token($token) {
 function require_csrf_token() {
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
 
+    if ($token === '' && str_contains((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')) {
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw, true);
+
+        if (is_array($data)) {
+            $token = $data['csrf_token'] ?? '';
+        }
+    }
+
     if (!verify_csrf_token($token)) {
         json_response([
             'success' => false,
-            'message' => 'Token CSRF invalido'
+            'message' => 'Token CSRF inválido'
         ], 403);
     }
 }

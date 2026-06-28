@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../backend/support/api_response.php';
+
 function ensure_rate_limits_table(mysqli $conn): bool {
     return (bool)$conn->query("
         CREATE TABLE IF NOT EXISTS rate_limits (
@@ -50,12 +52,7 @@ function require_rate_limit(mysqli $conn, string $scope, int $maxAttempts, int $
     }
 
     if ($count >= $maxAttempts) {
-        http_response_code(429);
-        echo json_encode([
-            "success" => false,
-            "message" => "Demasiados intentos. Espera un momento antes de volver a intentar."
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        api_error("Demasiados intentos. Espera un momento antes de volver a intentar.", 429);
     }
 
     $insert = $conn->prepare("INSERT INTO rate_limits (rate_key) VALUES (?)");

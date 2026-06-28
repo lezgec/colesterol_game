@@ -8,4 +8,4 @@ Options -Indexes
     Require all denied
 </FilesMatch>
 
-RedirectMatch 403 ^/(.+/)?(app|config|database|includes|vendor)(/|$)
+RedirectMatch 403 ^/(.+/)?(app|config|database|frontend|includes|vendor)(/|$)

@@ -1,8 +1,9 @@
 <?php
 
+require_once __DIR__ . '/../support/api_response.php';
+
 function room_json_response(array $payload): void {
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
-    exit;
+    api_response($payload);
 }
 
 function require_room_owner_or_super_admin(mysqli $conn, string $roomCode): array {
