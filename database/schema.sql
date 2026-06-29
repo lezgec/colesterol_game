@@ -280,23 +280,6 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-INSERT INTO `users`
-    (`name`, `email`, `password`, `role`, `status`, `avatar_key`, `country`, `city`, `institution`, `occupation`, `bio`)
-VALUES
-    (
-        'Super Admin Demo',
-        'superadmin@example.com',
-        '$2y$10$O1SOOc82MGVIE3JqkExikeWI7T72f/DgN.U.N/oapQ/EEsWaDGHdO',
-        'super_admin',
-        'active',
-        'star',
-        'EC',
-        'Guayaquil',
-        'Demo Institution',
-        'Administrador',
-        'Usuario superadministrador genérico para instalación inicial.'
-    );
-
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;

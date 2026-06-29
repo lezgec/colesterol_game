@@ -1,6 +1,7 @@
--- Datos iniciales para una instalación nueva.
+-- Datos iniciales para una instalacion nueva.
 -- Usuario: superadmin@example.com
--- Contraseña: Admin2026@
+-- Contrasena: Admin2026@
+-- Cambia este correo y contrasena despues del primer inicio de sesion.
 
 INSERT INTO `users`
     (`name`, `email`, `password`, `role`, `status`, `avatar_key`, `country`, `city`, `institution`, `occupation`, `bio`)
@@ -16,7 +17,7 @@ VALUES
         'Guayaquil',
         'Demo Institution',
         'Administrador',
-        'Usuario superadministrador genérico para instalación inicial.'
+        'Usuario superadministrador generico para instalacion inicial.'
     )
 ON DUPLICATE KEY UPDATE
     `name` = VALUES(`name`),
