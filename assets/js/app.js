@@ -53,6 +53,10 @@ const questionTimerText =
 const languageSelector =
     document.getElementById("language-selector");
 
+function safeText(value) {
+    return window.escapeHtml ? window.escapeHtml(value) : String(value ?? "");
+}
+
 function normalizeAdaptiveDifficulty(value) {
     const parsed = Number(value) || 1;
     return Number(Math.min(5, Math.max(1, parsed)).toFixed(1));
@@ -292,12 +296,18 @@ function loadQuestion() {
         const btn =
             document.createElement("button");
 
-        btn.innerHTML = `
-            <span class="option-radio"></span>
-            <span>${opt}</span>
-        `;
-
         btn.classList.add("option-btn");
+
+        const radio =
+            document.createElement("span");
+        radio.className = "option-radio";
+
+        const label =
+            document.createElement("span");
+        label.textContent = opt;
+
+        btn.appendChild(radio);
+        btn.appendChild(label);
 
         btn.onclick = () => selectAnswer(i);
 
@@ -424,12 +434,12 @@ function renderFeedbackCard({
 
     const selectedText =
         selectedOption
-            ? `<p><strong>${I18N.selectedAnswer}:</strong> ${selectedOption}</p>`
+            ? `<p><strong>${safeText(I18N.selectedAnswer)}:</strong> ${safeText(selectedOption)}</p>`
             : "";
 
     const correctText =
         !isCorrect
-            ? `<p><strong>${I18N.correctAnswer}:</strong> ${correctOption}</p>`
+            ? `<p><strong>${safeText(I18N.correctAnswer)}:</strong> ${safeText(correctOption)}</p>`
             : "";
 
     optionsContainer.innerHTML = `
@@ -437,26 +447,26 @@ function renderFeedbackCard({
             <div class="feedback-card-header">
                 <span class="feedback-status-icon">${window.uiIcon ? window.uiIcon(statusIcon, "ui-icon feedback-svg") : ""}</span>
                 <div>
-                    <span class="feedback-eyebrow">${I18N.feedback}</span>
-                    <h3>${statusText}</h3>
+                    <span class="feedback-eyebrow">${safeText(I18N.feedback)}</span>
+                    <h3>${safeText(statusText)}</h3>
                 </div>
             </div>
 
             ${selectedText}
             ${correctText}
 
-            <p><strong>${window.uiIcon ? window.uiIcon("clock", "ui-icon feedback-inline-icon") : ""}</strong> ${responseTime}s</p>
+            <p><strong>${window.uiIcon ? window.uiIcon("clock", "ui-icon feedback-inline-icon") : ""}</strong> ${safeText(responseTime)}s</p>
 
-            <p>${currentQuestion.explanation}</p>
+            <p>${safeText(currentQuestion.explanation)}</p>
 
             <p>
-                <strong>${I18N.newDifficulty}:</strong>
-                ${formatDifficulty()} / 5
+                <strong>${safeText(I18N.newDifficulty)}:</strong>
+                ${safeText(formatDifficulty())} / 5
             </p>
 
             <div class="feedback-actions">
                 <span id="feedback-countdown" class="feedback-reading-note">
-                    ${I18N.continue}
+                    ${safeText(I18N.continue)}
                 </span>
 
                 <button
@@ -464,7 +474,7 @@ function renderFeedbackCard({
                     id="continue-question-btn"
                     class="primary-btn feedback-continue-btn"
                 >
-                    ${I18N.continue}
+                    ${safeText(I18N.continue)}
                 </button>
             </div>
         </div>
@@ -644,11 +654,13 @@ async function endGame(message) {
         window.GameSounds?.play("gameOver");
     }
 
-    questionText.innerHTML = `
-        <span class="game-over-title">
-            ${message}
-        </span>
-    `;
+    questionText.textContent = "";
+
+    const gameOverTitle =
+        document.createElement("span");
+    gameOverTitle.className = "game-over-title";
+    gameOverTitle.textContent = message;
+    questionText.appendChild(gameOverTitle);
 
     optionsContainer.innerHTML = "";
 
@@ -666,29 +678,29 @@ async function endGame(message) {
         <div class="game-over-card">
             <div class="game-over-stats">
                 <div class="game-over-stat">
-                    <span>${I18N.finalScore}</span>
-                    <strong>${score}</strong>
+                    <span>${safeText(I18N.finalScore)}</span>
+                    <strong>${safeText(score)}</strong>
                 </div>
 
                 <div class="game-over-stat">
-                    <span>${I18N.correctAnswers}</span>
-                    <strong>${correctAnswers} ${I18N.of} ${questions.length}</strong>
+                    <span>${safeText(I18N.correctAnswers)}</span>
+                    <strong>${safeText(correctAnswers)} ${safeText(I18N.of)} ${safeText(questions.length)}</strong>
                 </div>
 
                 <div class="game-over-stat">
-                    <span>${I18N.remainingLives}</span>
-                    <strong>${lives}</strong>
+                    <span>${safeText(I18N.remainingLives)}</span>
+                    <strong>${safeText(lives)}</strong>
                 </div>
 
                 <div class="game-over-stat">
-                    <span>${I18N.finalDifficulty}</span>
-                    <strong>${formatDifficulty()} / 5</strong>
+                    <span>${safeText(I18N.finalDifficulty)}</span>
+                    <strong>${safeText(formatDifficulty())} / 5</strong>
                 </div>
             </div>
 
             <div id="save-status"
                  class="save-status-pill is-saving">
-                ${I18N.savingResult}
+                ${safeText(I18N.savingResult)}
             </div>
         </div>
     `;
@@ -700,7 +712,7 @@ async function endGame(message) {
                 id="play-again-btn"
                 class="primary-btn play-again-btn"
             >
-                ${I18N.playAgain}
+                ${safeText(I18N.playAgain)}
             </button>
         </div>
     `;
@@ -939,17 +951,17 @@ function showBadgePopup(badges) {
 
     popup.innerHTML = `
         <div class="badge-popup-content">
-            <h2>${window.uiIcon ? window.uiIcon("trophy", "ui-icon badge-popup-icon") : ""} ${I18N.newBadgeUnlocked || "Nuevo logro desbloqueado"}</h2>
+            <h2>${window.uiIcon ? window.uiIcon("trophy", "ui-icon badge-popup-icon") : ""} ${safeText(I18N.newBadgeUnlocked || "Nuevo logro desbloqueado")}</h2>
 
             ${badges.map(badge => `
                 <div class="badge-popup-item">
-                    <strong>${badge.badge_name}</strong>
-                    <p>${badge.badge_description}</p>
+                    <strong>${safeText(badge.badge_name)}</strong>
+                    <p>${safeText(badge.badge_description)}</p>
                 </div>
             `).join("")}
 
             <button class="primary-btn" id="close-badge-popup">
-                ${I18N.close || "OK"}
+                ${safeText(I18N.close || "OK")}
             </button>
         </div>
     `;
