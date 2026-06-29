@@ -208,8 +208,6 @@ try {
         throw new RuntimeException("No se pudo iniciar la sesión segura");
     }
 
-    send_welcome_email($email, $name, $role, $_SESSION["lang"] ?? "es");
-
     $conn->commit();
 } catch (Throwable $exception) {
     $conn->rollback();
@@ -238,6 +236,12 @@ try {
 }
 
 $stmt->close();
+
+try {
+    send_welcome_email($email, $name, $role, $_SESSION["lang"] ?? "es");
+} catch (Throwable $exception) {
+    error_log("Welcome email failed for user {$newUserId}: " . $exception->getMessage());
+}
 
 session_regenerate_id(true);
 

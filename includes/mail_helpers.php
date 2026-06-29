@@ -108,6 +108,14 @@ function send_app_email($recipientEmail, $recipientName, $subject, $htmlBody, $t
 
     foreach ($required as $key) {
         if (empty($config[$key]) || $config[$key] === "APP_SPECIFIC_PASSWORD") {
+            log_email_event(
+                $emailType,
+                $recipientEmail,
+                $recipientName,
+                $subject,
+                "failed",
+                "Configuracion SMTP incompleta: {$key}"
+            );
             throw new RuntimeException("Configuracion SMTP incompleta: {$key}");
         }
     }
