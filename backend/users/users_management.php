@@ -9,6 +9,7 @@ header("Content-Type: application/json; charset=utf-8");
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/session_guard.php';
+require_once __DIR__ . '/password_policy.php';
 require_once __DIR__ . '/../../includes/mail_helpers.php';
 
 if (!has_role(["super_admin"])) {
@@ -100,14 +101,20 @@ if ($method === "POST" && $action === "create") {
     if ($name === "" || $email === "" || $password === "") {
         jsonResponse([
             "success" => false,
-            "message" => "Nombre, correo y contraseña son obligatorios"
+            "message" => "Nombre, correo y contrasena son obligatorios"
         ]);
     }
 
+    if (!empty(validate_password_policy($password))) {
+        jsonResponse([
+            "success" => false,
+            "message" => password_policy_message()
+        ]);
+    }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         jsonResponse([
             "success" => false,
-            "message" => "Correo inválido"
+            "message" => "Correo invalido"
         ]);
     }
 
@@ -179,7 +186,7 @@ if ($method === "POST" && $action === "update") {
     if ($id <= 0) {
         jsonResponse([
             "success" => false,
-            "message" => "ID inválido"
+            "message" => "ID invalido"
         ]);
     }
 
@@ -193,7 +200,7 @@ if ($method === "POST" && $action === "update") {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         jsonResponse([
             "success" => false,
-            "message" => "Correo inválido"
+            "message" => "Correo invalido"
         ]);
     }
 
@@ -280,7 +287,14 @@ if ($method === "POST" && $action === "reset_password") {
     if ($id <= 0 || $password === "") {
         jsonResponse([
             "success" => false,
-            "message" => "ID y contraseña son obligatorios"
+            "message" => "ID y contrasena son obligatorios"
+        ]);
+    }
+
+    if (!empty(validate_password_policy($password))) {
+        jsonResponse([
+            "success" => false,
+            "message" => password_policy_message()
         ]);
     }
 
@@ -289,7 +303,7 @@ if ($method === "POST" && $action === "reset_password") {
     if (!ensure_user_session_columns($conn)) {
         jsonResponse([
             "success" => false,
-            "message" => "No se pudo preparar la seguridad de sesión",
+            "message" => "No se pudo preparar la seguridad de sesion",
             "error" => $conn->error
         ]);
     }
@@ -315,7 +329,7 @@ if ($method === "POST" && $action === "reset_password") {
     if (!$stmt->execute()) {
         jsonResponse([
             "success" => false,
-            "message" => "No se pudo resetear contraseña",
+            "message" => "No se pudo resetear contrasena",
             "error" => $stmt->error
         ]);
     }
@@ -324,7 +338,7 @@ if ($method === "POST" && $action === "reset_password") {
 
     jsonResponse([
         "success" => true,
-        "message" => "Contraseña actualizada correctamente"
+        "message" => "Contrasena actualizada correctamente"
     ]);
 }
 
@@ -335,7 +349,7 @@ if ($method === "POST" && $action === "toggle_status") {
     if ($id <= 0) {
         jsonResponse([
             "success" => false,
-            "message" => "ID inválido"
+            "message" => "ID invalido"
         ]);
     }
 
@@ -380,6 +394,6 @@ if ($method === "POST" && $action === "toggle_status") {
 
 jsonResponse([
     "success" => false,
-    "message" => "Acción no válida"
+    "message" => "Accion no valida"
 ]);
 ?>
