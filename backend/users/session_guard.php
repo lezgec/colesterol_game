@@ -1,12 +1,9 @@
 <?php
 
 function ensure_user_session_columns($conn) {
-    $columns = [
-        "session_token" => "ALTER TABLE users ADD COLUMN session_token VARCHAR(64) NULL AFTER status",
-        "session_updated_at" => "ALTER TABLE users ADD COLUMN session_updated_at DATETIME NULL AFTER session_token"
-    ];
+    $columns = ["session_token", "session_updated_at"];
 
-    foreach ($columns as $column => $alterSql) {
+    foreach ($columns as $column) {
         $columnName = $conn->real_escape_string($column);
         $result = $conn->query("SHOW COLUMNS FROM users LIKE '{$columnName}'");
 
@@ -14,9 +11,7 @@ function ensure_user_session_columns($conn) {
             continue;
         }
 
-        if (!$conn->query($alterSql)) {
-            return false;
-        }
+        return false;
     }
 
     return true;

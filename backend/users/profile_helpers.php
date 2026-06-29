@@ -3,16 +3,16 @@ require_once __DIR__ . '/../../config/countries.php';
 
 function ensure_user_profile_columns(mysqli $conn): void {
     $columns = [
-        "avatar_key" => "ALTER TABLE users ADD COLUMN avatar_key VARCHAR(40) NULL AFTER session_updated_at",
-        "custom_avatar_path" => "ALTER TABLE users ADD COLUMN custom_avatar_path VARCHAR(255) NULL AFTER avatar_key",
-        "country" => "ALTER TABLE users ADD COLUMN country VARCHAR(8) NULL AFTER custom_avatar_path",
-        "city" => "ALTER TABLE users ADD COLUMN city VARCHAR(80) NULL AFTER country",
-        "institution" => "ALTER TABLE users ADD COLUMN institution VARCHAR(140) NULL AFTER city",
-        "occupation" => "ALTER TABLE users ADD COLUMN occupation VARCHAR(120) NULL AFTER institution",
-        "age" => "ALTER TABLE users ADD COLUMN age TINYINT UNSIGNED NULL AFTER occupation",
-        "career" => "ALTER TABLE users ADD COLUMN career VARCHAR(140) NULL AFTER age",
-        "education_level" => "ALTER TABLE users ADD COLUMN education_level VARCHAR(80) NULL AFTER career",
-        "bio" => "ALTER TABLE users ADD COLUMN bio VARCHAR(500) NULL AFTER education_level"
+        "avatar_key",
+        "custom_avatar_path",
+        "country",
+        "city",
+        "institution",
+        "occupation",
+        "age",
+        "career",
+        "education_level",
+        "bio"
     ];
 
     $existing = [];
@@ -24,9 +24,9 @@ function ensure_user_profile_columns(mysqli $conn): void {
         }
     }
 
-    foreach ($columns as $column => $sql) {
+    foreach ($columns as $column) {
         if (!isset($existing[$column])) {
-            $conn->query($sql);
+            throw new RuntimeException("Falta aplicar migracion de perfiles: {$column}");
         }
     }
 }

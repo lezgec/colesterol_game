@@ -6,8 +6,11 @@ Orden recomendado para una instalacion limpia:
 
 1. Ejecutar `database/schema.sql`.
 2. Ejecutar `database/migrations/001_add_foreign_keys.sql`.
-3. Ejecutar `database/seed.sql`.
+3. Ejecutar `database/migrations/002_runtime_schema_requirements.sql`.
+4. Ejecutar `database/seed.sql`.
 
 `schema.sql` es destructivo porque contiene `DROP TABLE`; no debe ejecutarse sobre una base de produccion con datos reales.
 
 Antes de aplicar `001_add_foreign_keys.sql` sobre una base existente, valida que no haya registros huerfanos en tablas relacionadas con usuarios, salas, preguntas, respuestas y badges.
+
+Antes de desplegar codigo nuevo en una base ya creada, aplica las migraciones pendientes. El runtime ya no debe crear tablas ni columnas automaticamente.

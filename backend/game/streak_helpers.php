@@ -2,11 +2,11 @@
 
 function ensure_user_streak_columns(mysqli $conn): void {
     $columns = [
-        "current_correct_streak" => "INT NOT NULL DEFAULT 0",
-        "best_correct_streak" => "INT NOT NULL DEFAULT 0",
-        "current_daily_streak" => "INT NOT NULL DEFAULT 0",
-        "best_daily_streak" => "INT NOT NULL DEFAULT 0",
-        "last_played_date" => "DATE NULL"
+        "current_correct_streak",
+        "best_correct_streak",
+        "current_daily_streak",
+        "best_daily_streak",
+        "last_played_date"
     ];
 
     $existing = [];
@@ -18,19 +18,10 @@ function ensure_user_streak_columns(mysqli $conn): void {
         }
     }
 
-    $previousColumn = "bio";
-
-    foreach ($columns as $column => $definition) {
+    foreach ($columns as $column) {
         if (!isset($existing[$column])) {
-            $afterClause = isset($existing[$previousColumn])
-                ? " AFTER {$previousColumn}"
-                : "";
-
-            $conn->query("ALTER TABLE users ADD COLUMN {$column} {$definition}{$afterClause}");
-            $existing[$column] = true;
+            throw new RuntimeException("Falta aplicar migracion de rachas: {$column}");
         }
-
-        $previousColumn = $column;
     }
 }
 

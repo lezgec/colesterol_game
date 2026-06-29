@@ -14,17 +14,17 @@ function ensure_question_workflow_columns($conn) {
         $columns[$row["Field"]] = true;
     }
 
-    $alterations = [
-        "created_by_user_id" => "ALTER TABLE questions ADD COLUMN created_by_user_id INT NULL AFTER is_active",
-        "visibility" => "ALTER TABLE questions ADD COLUMN visibility VARCHAR(20) NOT NULL DEFAULT 'global' AFTER created_by_user_id",
-        "global_request_status" => "ALTER TABLE questions ADD COLUMN global_request_status VARCHAR(20) NOT NULL DEFAULT 'approved' AFTER visibility",
-        "global_requested_at" => "ALTER TABLE questions ADD COLUMN global_requested_at DATETIME NULL AFTER global_request_status",
-        "global_reviewed_by" => "ALTER TABLE questions ADD COLUMN global_reviewed_by INT NULL AFTER global_requested_at",
-        "global_reviewed_at" => "ALTER TABLE questions ADD COLUMN global_reviewed_at DATETIME NULL AFTER global_reviewed_by"
+    $requiredColumns = [
+        "created_by_user_id",
+        "visibility",
+        "global_request_status",
+        "global_requested_at",
+        "global_reviewed_by",
+        "global_reviewed_at"
     ];
 
-    foreach ($alterations as $column => $sql) {
-        if (!isset($columns[$column]) && !$conn->query($sql)) {
+    foreach ($requiredColumns as $column) {
+        if (!isset($columns[$column])) {
             return false;
         }
     }
@@ -142,23 +142,8 @@ function playable_question_access_sql($alias = "q") {
 }
 
 function ensure_app_notifications_table($conn) {
-    return $conn->query("
-        CREATE TABLE IF NOT EXISTS app_notifications (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            target_role VARCHAR(40) NOT NULL,
-            user_id INT NULL,
-            type VARCHAR(80) NOT NULL,
-            title VARCHAR(190) NOT NULL,
-            message TEXT NOT NULL,
-            related_url VARCHAR(255) NULL,
-            read_at DATETIME NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_notifications_role (target_role),
-            INDEX idx_notifications_user (user_id),
-            INDEX idx_notifications_type (type),
-            INDEX idx_notifications_created_at (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    $result = $conn->query("SHOW TABLES LIKE 'app_notifications'");
+    return $result && $result->num_rows > 0;
 }
 
 function create_role_notification($conn, $targetRole, $type, $title, $message, $relatedUrl = null) {

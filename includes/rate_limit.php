@@ -3,14 +3,8 @@
 require_once __DIR__ . '/../backend/support/api_response.php';
 
 function ensure_rate_limits_table(mysqli $conn): bool {
-    return (bool)$conn->query("
-        CREATE TABLE IF NOT EXISTS rate_limits (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            rate_key VARCHAR(128) NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_rate_limits_key_time (rate_key, created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ");
+    $result = $conn->query("SHOW TABLES LIKE 'rate_limits'");
+    return $result && $result->num_rows > 0;
 }
 
 function rate_limit_identity(): string {

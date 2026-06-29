@@ -1,20 +1,9 @@
 <?php
 function ensure_room_question_requirements_table(mysqli $conn): void {
-    $sql = "
-        CREATE TABLE IF NOT EXISTS room_question_requirements (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            room_id INT NOT NULL,
-            category VARCHAR(100) NOT NULL,
-            difficulty_level TINYINT NOT NULL,
-            quantity INT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY room_category_difficulty (room_id, category, difficulty_level),
-            INDEX idx_room_requirements_room (room_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ";
+    $result = $conn->query("SHOW TABLES LIKE 'room_question_requirements'");
 
-    if (!$conn->query($sql)) {
-        throw new Exception($conn->error);
+    if (!$result || $result->num_rows === 0) {
+        throw new Exception("Falta aplicar la migracion de room_question_requirements");
     }
 }
 

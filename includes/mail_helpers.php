@@ -35,25 +35,8 @@ function get_mail_log_connection() {
 }
 
 function ensure_email_logs_table($db) {
-    $sql = "
-        CREATE TABLE IF NOT EXISTS email_logs (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email_type VARCHAR(60) NOT NULL DEFAULT 'general',
-            recipient_email VARCHAR(190) NOT NULL,
-            recipient_name VARCHAR(190) NULL,
-            subject VARCHAR(255) NOT NULL,
-            status ENUM('sent', 'failed') NOT NULL,
-            error_message TEXT NULL,
-            sent_at DATETIME NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_email_logs_type (email_type),
-            INDEX idx_email_logs_recipient (recipient_email),
-            INDEX idx_email_logs_status (status),
-            INDEX idx_email_logs_created_at (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    ";
-
-    return $db->query($sql);
+    $result = $db->query("SHOW TABLES LIKE 'email_logs'");
+    return $result && $result->num_rows > 0;
 }
 
 function log_email_event($emailType, $recipientEmail, $recipientName, $subject, $status, $errorMessage = null) {
