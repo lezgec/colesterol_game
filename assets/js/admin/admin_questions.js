@@ -677,7 +677,9 @@ async function submitQuestionEditModal(event) {
         status: document.getElementById("modal-status").value,
         origin: document.getElementById("modal-origin").value,
         is_active: parseInt(document.getElementById("modal-is-active").value, 10),
-        question_scope: document.getElementById("modal-question-scope")?.value || "private",
+        question_scope: ADMIN_IS_SUPER_ADMIN
+            ? "global"
+            : (document.getElementById("modal-question-scope")?.value || "private"),
         requires_review: questionEditModalForm.dataset.requiresReview === "1"
     };
 
@@ -729,7 +731,9 @@ async function submitGeneratorForm(event) {
     event.preventDefault();
 
     const mode = document.getElementById("generator_mode").value;
-    const questionScope = document.getElementById("generator_question_scope")?.value || "private";
+    const questionScope = ADMIN_IS_SUPER_ADMIN
+        ? "global"
+        : (document.getElementById("generator_question_scope")?.value || "private");
     const payload = {
         category: getCategoryValue("generator_category"),
         topic: document.getElementById("generator_topic").value.trim(),

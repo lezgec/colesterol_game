@@ -151,15 +151,8 @@ $globalReviewedBy = null;
 $globalReviewedAt = null;
 
 if (is_super_admin()) {
-    $requestedVisibility = $data["visibility"] ?? $visibility;
-    $requestedGlobalRequestStatus = $data["global_request_status"] ?? $globalRequestStatus;
-
-    $visibility = in_array($requestedVisibility, ["private", "global"], true)
-        ? $requestedVisibility
-        : $visibility;
-    $globalRequestStatus = in_array($requestedGlobalRequestStatus, ["none", "pending", "approved", "rejected"], true)
-        ? $requestedGlobalRequestStatus
-        : $globalRequestStatus;
+    $visibility = "global";
+    $globalRequestStatus = $status === "rejected" ? "rejected" : "approved";
 
     if ($visibility === "global" && $status === "verified" && $is_active === 1) {
         $globalRequestStatus = "approved";

@@ -270,18 +270,17 @@ $themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="generator_question_scope"><?php echo t("question_scope"); ?></label>
-                        <select id="generator_question_scope">
-                            <?php if ($isSuperAdmin): ?>
-                                <option value="global"><?php echo t("question_scope_global"); ?></option>
-                                <option value="private"><?php echo t("question_scope_private"); ?></option>
-                            <?php else: ?>
+                    <?php if ($isSuperAdmin): ?>
+                        <input type="hidden" id="generator_question_scope" value="global">
+                    <?php else: ?>
+                        <div class="form-group">
+                            <label for="generator_question_scope"><?php echo t("question_scope"); ?></label>
+                            <select id="generator_question_scope">
                                 <option value="private"><?php echo t("question_scope_private"); ?></option>
                                 <option value="global_request"><?php echo t("question_scope_global_request"); ?></option>
-                            <?php endif; ?>
-                        </select>
-                    </div>
+                            </select>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="form-group" id="generator_quantity_group" hidden>
                         <label for="generator_quantity"><?php echo t("quantity"); ?></label>
@@ -525,18 +524,17 @@ $themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
                     </select>
                 </label>
 
-                <label class="modal-field">
-                    <span><?php echo t("question_scope"); ?></span>
-                    <select id="modal-question-scope">
-                        <?php if ($isSuperAdmin): ?>
-                            <option value="global"><?php echo t("question_scope_global"); ?></option>
-                            <option value="private"><?php echo t("question_scope_private"); ?></option>
-                        <?php else: ?>
+                <?php if ($isSuperAdmin): ?>
+                    <input type="hidden" id="modal-question-scope" value="global">
+                <?php else: ?>
+                    <label class="modal-field">
+                        <span><?php echo t("question_scope"); ?></span>
+                        <select id="modal-question-scope">
                             <option value="private"><?php echo t("question_scope_private"); ?></option>
                             <option value="global_request"><?php echo t("question_scope_global_request"); ?></option>
-                        <?php endif; ?>
-                    </select>
-                </label>
+                        </select>
+                    </label>
+                <?php endif; ?>
             </div>
 
             <section class="question-options-editor">

@@ -47,7 +47,7 @@ function requested_question_scope($data) {
     $scope = trim($data["question_scope"] ?? $data["visibility"] ?? "private");
 
     if (is_super_admin()) {
-        return $scope === "private" ? "private" : "global";
+        return "global";
     }
 
     return $scope === "global" || $scope === "global_request"
@@ -63,17 +63,17 @@ function question_workflow_for_create($data, $requestedStatus, $requestedActive)
     if (is_super_admin()) {
         if ($requiresReview) {
             return [
-                "visibility" => $scope === "private" ? "private" : "global",
-                "global_request_status" => $scope === "private" ? "none" : "pending",
+                "visibility" => "global",
+                "global_request_status" => "approved",
                 "status" => "pending",
                 "is_active" => 0,
-                "global_requested_at" => $scope === "private" ? null : $now
+                "global_requested_at" => null
             ];
         }
 
         return [
-            "visibility" => $scope === "private" ? "private" : "global",
-            "global_request_status" => $scope === "private" ? "none" : "approved",
+            "visibility" => "global",
+            "global_request_status" => "approved",
             "status" => $requestedStatus,
             "is_active" => $requestedActive,
             "global_requested_at" => null
