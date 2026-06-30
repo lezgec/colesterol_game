@@ -35,11 +35,25 @@ $themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
             <a href="?lang=en">EN</a>
         </div>
 
-        <?php if ($isLogged): ?>
-            <a href="<?php echo app_path('pages/logout.php'); ?>" class="logout-btn">
-                <?php echo t("logout"); ?>
-            </a>
-        <?php endif; ?>
+        <div class="top-links room-index-top-links">
+            <?php if ($isLogged && in_array($role, ["teacher", "super_admin"])): ?>
+                <a href="<?php echo app_path('pages/admin_dashboard.php'); ?>"
+                   class="logout-btn secondary-btn">
+                    <?php echo t("back_dashboard"); ?>
+                </a>
+            <?php else: ?>
+                <a href="<?php echo app_path('index.php'); ?>"
+                   class="logout-btn secondary-btn">
+                    <?php echo t("back_to_home"); ?>
+                </a>
+            <?php endif; ?>
+
+            <?php if ($isLogged): ?>
+                <a href="<?php echo app_path('pages/logout.php'); ?>" class="logout-btn">
+                    <?php echo t("logout"); ?>
+                </a>
+            <?php endif; ?>
+        </div>
 
     </div>
 
@@ -68,24 +82,6 @@ $themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 
         <?php echo t("join_room"); ?>
     </a>
-
-    <br>
-
-    <?php if ($isLogged && in_array($role, ["teacher", "super_admin"])): ?>
-
-        <a href="<?php echo app_path('pages/admin_dashboard.php'); ?>"
-           class="secondary-link room-back-link">
-            <?php echo t("back_dashboard"); ?>
-        </a>
-
-    <?php else: ?>
-
-        <a href="<?php echo app_path('index.php'); ?>"
-           class="secondary-link room-back-link">
-            <?php echo t("back_to_home"); ?>
-        </a>
-
-    <?php endif; ?>
 
 </div>
 
