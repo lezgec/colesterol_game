@@ -166,6 +166,12 @@ const GA_I18N = {
     players: "<?php echo t('total_players'); ?>"
 };
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 fetch(appUrl("backend/reports/global_analytics_report.php"))
     .then(res => res.json())
     .then(data => {
@@ -203,10 +209,10 @@ function renderCategories(categories) {
     categories.forEach(item => {
         tbody.innerHTML += `
             <tr>
-                <td>${item.category}</td>
-                <td>${item.total_answers}</td>
-                <td>${item.precision}%</td>
-                <td>${item.avg_response_time}s</td>
+                <td>${escapeHtml(item.category)}</td>
+                <td>${escapeHtml(item.total_answers)}</td>
+                <td>${escapeHtml(item.precision)}%</td>
+                <td>${escapeHtml(item.avg_response_time)}s</td>
             </tr>
         `;
     });
@@ -224,11 +230,11 @@ function renderTopPlayers(players) {
     players.forEach((player, index) => {
         tbody.innerHTML += `
             <tr>
-                <td>${index + 1}</td>
-                <td>${player.player_name}</td>
-                <td>${player.total_score}</td>
-                <td>${player.correct_answers} / ${player.total_answers}</td>
-                <td>${player.precision}%</td>
+                <td>${escapeHtml(index + 1)}</td>
+                <td>${escapeHtml(player.player_name)}</td>
+                <td>${escapeHtml(player.total_score)}</td>
+                <td>${escapeHtml(player.correct_answers)} / ${escapeHtml(player.total_answers)}</td>
+                <td>${escapeHtml(player.precision)}%</td>
             </tr>
         `;
     });
@@ -246,11 +252,11 @@ function renderTopRooms(rooms) {
     rooms.forEach(room => {
         tbody.innerHTML += `
             <tr>
-                <td>${room.room_code}</td>
-                <td>${room.name}</td>
-                <td>${room.total_players}</td>
-                <td>${room.precision}%</td>
-                <td>${room.avg_response_time}s</td>
+                <td>${escapeHtml(room.room_code)}</td>
+                <td>${escapeHtml(room.name)}</td>
+                <td>${escapeHtml(room.total_players)}</td>
+                <td>${escapeHtml(room.precision)}%</td>
+                <td>${escapeHtml(room.avg_response_time)}s</td>
             </tr>
         `;
     });

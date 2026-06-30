@@ -138,7 +138,7 @@ if (!$checkStmt) {
     register_json_response([
         "success" => false,
         "message" => "Error al preparar validacion",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -167,7 +167,7 @@ if (!$stmt) {
     register_json_response([
         "success" => false,
         "message" => "Error al preparar registro",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 

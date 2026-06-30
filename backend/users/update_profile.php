@@ -25,6 +25,36 @@ $career = sanitize_profile_text($data["career"] ?? "", 140);
 $educationLevel = sanitize_profile_text($data["education_level"] ?? "", 80);
 $bio = sanitize_profile_text($data["bio"] ?? "", 500);
 $customAvatarPath = null;
+$oldCustomAvatarPath = null;
+
+function avatar_public_path_to_file(?string $publicPath): ?string {
+    if (!$publicPath) {
+        return null;
+    }
+
+    $basePath = app_base_path();
+    $relative = $basePath !== "" && str_starts_with($publicPath, $basePath)
+        ? substr($publicPath, strlen($basePath))
+        : $publicPath;
+
+    $relative = ltrim(str_replace("\\", "/", $relative), "/");
+
+    if (!preg_match('#^assets/uploads/avatars/[A-Za-z0-9_.-]+$#', $relative)) {
+        return null;
+    }
+
+    return __DIR__ . "/../../" . $relative;
+}
+
+$stmtCurrentAvatar = $conn->prepare("SELECT custom_avatar_path FROM users WHERE id = ? LIMIT 1");
+
+if ($stmtCurrentAvatar) {
+    $stmtCurrentAvatar->bind_param("i", $userId);
+    $stmtCurrentAvatar->execute();
+    $currentAvatar = $stmtCurrentAvatar->get_result()->fetch_assoc();
+    $oldCustomAvatarPath = $currentAvatar["custom_avatar_path"] ?? null;
+    $stmtCurrentAvatar->close();
+}
 
 if ($isMultipart && isset($_FILES["avatar_file"]) && $_FILES["avatar_file"]["error"] !== UPLOAD_ERR_NO_FILE) {
     if ($_FILES["avatar_file"]["error"] !== UPLOAD_ERR_OK) {
@@ -42,12 +72,16 @@ if ($isMultipart && isset($_FILES["avatar_file"]) && $_FILES["avatar_file"]["err
     $extensions = [
         "image/jpeg" => "jpg",
         "image/png" => "png",
-        "image/webp" => "webp",
-        "image/gif" => "gif"
+        "image/webp" => "webp"
     ];
 
     if (!isset($extensions[$mime])) {
-        echo json_encode(["success" => false, "message" => "Formato de avatar no permitido"], JSON_UNESCAPED_UNICODE);
+        echo json_encode(["success" => false, "message" => "Formato de avatar no permitido. Usa JPG, PNG o WebP."], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if (!getimagesize($tmpPath)) {
+        echo json_encode(["success" => false, "message" => "El archivo no parece ser una imagen válida"], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -60,7 +94,34 @@ if ($isMultipart && isset($_FILES["avatar_file"]) && $_FILES["avatar_file"]["err
     $filename = "user_" . $userId . "_" . bin2hex(random_bytes(8)) . "." . $extensions[$mime];
     $targetPath = $uploadDir . "/" . $filename;
 
-    if (!move_uploaded_file($tmpPath, $targetPath)) {
+    $image = match ($mime) {
+        "image/jpeg" => imagecreatefromjpeg($tmpPath),
+        "image/png" => imagecreatefrompng($tmpPath),
+        "image/webp" => imagecreatefromwebp($tmpPath),
+        default => false
+    };
+
+    if (!$image) {
+        echo json_encode(["success" => false, "message" => "No se pudo procesar el avatar"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    if (in_array($mime, ["image/png", "image/webp"], true)) {
+        imagepalettetotruecolor($image);
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+    }
+
+    $saved = match ($mime) {
+        "image/jpeg" => imagejpeg($image, $targetPath, 90),
+        "image/png" => imagepng($image, $targetPath, 6),
+        "image/webp" => imagewebp($image, $targetPath, 85),
+        default => false
+    };
+
+    imagedestroy($image);
+
+    if (!$saved) {
         echo json_encode(["success" => false, "message" => "No se pudo guardar el avatar"], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -86,7 +147,11 @@ if ($customAvatarPath !== null) {
     ");
 
     if (!$stmt) {
-        echo json_encode(["success" => false, "message" => $conn->error], JSON_UNESCAPED_UNICODE);
+        echo json_encode([
+            "success" => false,
+            "message" => "No se pudo preparar la actualización del perfil",
+            "error" => app_error_detail($conn->error)
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -120,7 +185,11 @@ if ($customAvatarPath !== null) {
     ");
 
     if (!$stmt) {
-        echo json_encode(["success" => false, "message" => $conn->error], JSON_UNESCAPED_UNICODE);
+        echo json_encode([
+            "success" => false,
+            "message" => "No se pudo preparar la actualización del perfil",
+            "error" => app_error_detail($conn->error)
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
@@ -129,6 +198,15 @@ if ($customAvatarPath !== null) {
 
 $ok = $stmt->execute();
 $stmt->close();
+
+if ($ok && $customAvatarPath !== null) {
+    $oldAvatarFile = avatar_public_path_to_file($oldCustomAvatarPath);
+    $newAvatarFile = avatar_public_path_to_file($customAvatarPath);
+
+    if ($oldAvatarFile && $newAvatarFile && $oldAvatarFile !== $newAvatarFile && is_file($oldAvatarFile)) {
+        @unlink($oldAvatarFile);
+    }
+}
 
 echo json_encode([
     "success" => $ok,

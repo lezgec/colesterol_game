@@ -54,7 +54,7 @@ if (!ensure_password_resets_table($conn)) {
     jsonResponse([
         "success" => false,
         "message" => "No se pudo preparar la recuperación de contraseña.",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -62,7 +62,7 @@ if (!ensure_user_session_columns($conn)) {
     jsonResponse([
         "success" => false,
         "message" => "No se pudo preparar la seguridad de sesión.",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -83,7 +83,7 @@ if (!$stmt) {
     jsonResponse([
         "success" => false,
         "message" => "Error al validar el token.",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -139,7 +139,7 @@ try {
     jsonResponse([
         "success" => false,
         "message" => "No se pudo actualizar la contraseña.",
-        "error" => $exception->getMessage()
+        "error" => app_error_detail($exception)
     ]);
 }
 

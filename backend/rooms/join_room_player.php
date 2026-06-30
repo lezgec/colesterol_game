@@ -33,7 +33,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar sala",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -77,7 +77,7 @@ if (!$check) {
     echo json_encode([
         "success" => false,
         "message" => "Error al validar jugador",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -99,7 +99,7 @@ if ($checkResult->num_rows === 0) {
         echo json_encode([
             "success" => false,
             "message" => "Error al insertar jugador",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }

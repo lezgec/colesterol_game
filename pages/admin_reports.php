@@ -121,6 +121,12 @@ function formatNumber(value, digits = 2) {
     return Number(number.toFixed(digits)).toString();
 }
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 function formatRoomStatus(status) {
     return REPORTS_I18N.statuses[status] || REPORTS_I18N.unknownStatus;
 }
@@ -166,19 +172,19 @@ fetch(appUrl("backend/reports/list_room_reports.php"))
                 document.createElement("tr");
 
             row.innerHTML = `
-                <td>${room.room_code}</td>
+                <td>${escapeHtml(room.room_code)}</td>
 
-                <td>${room.name}</td>
+                <td>${escapeHtml(room.name)}</td>
 
-                <td>${formatRoomStatus(room.status)}</td>
+                <td>${escapeHtml(formatRoomStatus(room.status))}</td>
 
-                <td>${room.total_players}</td>
+                <td>${escapeHtml(room.total_players)}</td>
 
-                <td>${formatNumber(room.precision)}%</td>
+                <td>${escapeHtml(formatNumber(room.precision))}%</td>
 
-                <td>${formatNumber(room.avg_response_time)}s</td>
+                <td>${escapeHtml(formatNumber(room.avg_response_time))}s</td>
 
-                <td>${formatNumber(room.avg_difficulty, 1)} / 5</td>
+                <td>${escapeHtml(formatNumber(room.avg_difficulty, 1))} / 5</td>
 
                 <td>
                     <div class="report-row-actions">

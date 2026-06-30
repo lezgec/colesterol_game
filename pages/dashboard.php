@@ -98,6 +98,12 @@ const DASHBOARD_I18N = {
     error: "<?php echo t('error'); ?>"
 };
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 fetch(appUrl(`backend/dashboard/get_dashboard.php?lang=${encodeURIComponent(DASHBOARD_I18N.lang)}`))
     .then(res => res.json())
     .then(data => {
@@ -125,10 +131,10 @@ fetch(appUrl(`backend/dashboard/get_dashboard.php?lang=${encodeURIComponent(DASH
             const row = document.createElement("tr");
 
             row.innerHTML = `
-                <td>${game.played_at}</td>
-                <td>${game.score}</td>
-                <td>${game.correct_answers} / ${game.total_questions}</td>
-                <td>${game.final_difficulty} / 5</td>
+                <td>${escapeHtml(game.played_at)}</td>
+                <td>${escapeHtml(game.score)}</td>
+                <td>${escapeHtml(game.correct_answers)} / ${escapeHtml(game.total_questions)}</td>
+                <td>${escapeHtml(game.final_difficulty)} / 5</td>
             `;
 
             tbody.appendChild(row);

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
@@ -30,7 +30,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar consulta",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

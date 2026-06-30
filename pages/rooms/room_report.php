@@ -335,13 +335,13 @@ function renderRanking(ranking) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${index + 1}</td>
-            <td>${player.player_name}</td>
-            <td>${player.total_score}</td>
-            <td>${player.correct_answers} / ${player.total_answers}</td>
-            <td>${formatNumber(player.precision)}%</td>
-            <td>${formatNumber(player.avg_response_time)}s</td>
-            <td>${formatNumber(player.avg_difficulty, 1)} / 5</td>
+            <td>${escapeHtml(index + 1)}</td>
+            <td>${escapeHtml(player.player_name)}</td>
+            <td>${escapeHtml(player.total_score)}</td>
+            <td>${escapeHtml(player.correct_answers)} / ${escapeHtml(player.total_answers)}</td>
+            <td>${escapeHtml(formatNumber(player.precision))}%</td>
+            <td>${escapeHtml(formatNumber(player.avg_response_time))}s</td>
+            <td>${escapeHtml(formatNumber(player.avg_difficulty, 1))} / 5</td>
         `;
 
         tbody.appendChild(row);
@@ -361,11 +361,11 @@ function renderCategories(categories) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${item.category}</td>
-            <td>${item.correct_answers} / ${item.total_answers}</td>
-            <td>${formatNumber(item.precision)}%</td>
-            <td>${formatNumber(item.avg_response_time)}s</td>
-            <td>${formatNumber(item.avg_difficulty, 1)} / 5</td>
+            <td>${escapeHtml(item.category)}</td>
+            <td>${escapeHtml(item.correct_answers)} / ${escapeHtml(item.total_answers)}</td>
+            <td>${escapeHtml(formatNumber(item.precision))}%</td>
+            <td>${escapeHtml(formatNumber(item.avg_response_time))}s</td>
+            <td>${escapeHtml(formatNumber(item.avg_difficulty, 1))} / 5</td>
         `;
 
         tbody.appendChild(row);
@@ -385,12 +385,12 @@ function renderFailedQuestions(questions) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${item.question}</td>
-            <td>${item.category}</td>
-            <td>${item.incorrect_answers} / ${item.total_answers}</td>
-            <td>${formatNumber(item.failure_rate)}%</td>
+            <td>${escapeHtml(item.question)}</td>
+            <td>${escapeHtml(item.category)}</td>
+            <td>${escapeHtml(item.incorrect_answers)} / ${escapeHtml(item.total_answers)}</td>
+            <td>${escapeHtml(formatNumber(item.failure_rate))}%</td>
             <td>${escapeHtml(formatOptionLabel(item, item.most_selected_wrong_option))}</td>
-            <td>${formatNumber(item.avg_response_time)}s</td>
+            <td>${escapeHtml(formatNumber(item.avg_response_time))}s</td>
         `;
 
         tbody.appendChild(row);
@@ -425,10 +425,10 @@ function renderQuestionStatistics(items) {
                     <div class="question-option-stat-row">
                         <strong>${option}</strong>
                         <span>${escapeHtml(item.options?.[option] || "")}</span>
-                        <em>${count}</em>
+                        <em>${escapeHtml(count)}</em>
                     </div>
                     <div class="question-option-track">
-                        <span style="width:${percent}%"></span>
+                        <span style="width:${escapeHtml(percent)}%"></span>
                     </div>
                 </li>
             `;
@@ -437,21 +437,21 @@ function renderQuestionStatistics(items) {
         return `
             <details class="question-stat-card">
                 <summary>
-                    <span>#${item.question_id}</span>
+                    <span>#${escapeHtml(item.question_id)}</span>
                     <strong>${escapeHtml(item.question)}</strong>
-                    <em>${REPORT_I18N.failureRate}: ${formatNumber(item.failure_rate)}%</em>
+                    <em>${escapeHtml(REPORT_I18N.failureRate)}: ${escapeHtml(formatNumber(item.failure_rate))}%</em>
                 </summary>
 
                 <div class="question-stat-body">
                     <div class="question-stat-metrics">
-                        <span>${REPORT_I18N.answeredCount}: <strong>${item.total_answers}</strong></span>
-                        <span>${REPORT_I18N.correctAnswers}: <strong>${item.correct_answers}</strong></span>
-                        <span>${REPORT_I18N.incorrectAnswers}: <strong>${item.incorrect_answers}</strong></span>
-                        <span>${REPORT_I18N.correctOption}: <strong>${item.correct_option}</strong></span>
-                        <span>${REPORT_I18N.mostSelectedWrongOption}: <strong>${escapeHtml(formatOptionLabel(item, item.most_selected_wrong_option))}</strong></span>
+                        <span>${escapeHtml(REPORT_I18N.answeredCount)}: <strong>${escapeHtml(item.total_answers)}</strong></span>
+                        <span>${escapeHtml(REPORT_I18N.correctAnswers)}: <strong>${escapeHtml(item.correct_answers)}</strong></span>
+                        <span>${escapeHtml(REPORT_I18N.incorrectAnswers)}: <strong>${escapeHtml(item.incorrect_answers)}</strong></span>
+                        <span>${escapeHtml(REPORT_I18N.correctOption)}: <strong>${escapeHtml(item.correct_option)}</strong></span>
+                        <span>${escapeHtml(REPORT_I18N.mostSelectedWrongOption)}: <strong>${escapeHtml(formatOptionLabel(item, item.most_selected_wrong_option))}</strong></span>
                     </div>
 
-                    <h3>${REPORT_I18N.answerDistribution}</h3>
+                    <h3>${escapeHtml(REPORT_I18N.answerDistribution)}</h3>
                     <ul class="question-option-stats">
                         ${optionRows}
                     </ul>

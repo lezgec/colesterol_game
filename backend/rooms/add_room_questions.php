@@ -166,7 +166,7 @@ try {
     echo json_encode([
         "success" => false,
         "message" => "No se pudieron agregar las preguntas",
-        "error" => $exception->getMessage()
+        "error" => app_error_detail($exception)
     ], JSON_UNESCAPED_UNICODE);
 }
 

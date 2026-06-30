@@ -463,12 +463,12 @@ function renderOpenRooms(rooms) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${room.room_code}</td>
-            <td>${room.name || "-"}</td>
-            <td>${formatDashboardRoomStatus(room.status)}</td>
-            <td>${room.total_players ?? 0}</td>
-            <td>${room.question_count ?? 0}</td>
-            <td>${room.created_at || "-"}</td>
+            <td>${escapeDashboardHtml(room.room_code)}</td>
+            <td>${escapeDashboardHtml(room.name || "-")}</td>
+            <td>${escapeDashboardHtml(formatDashboardRoomStatus(room.status))}</td>
+            <td>${escapeDashboardHtml(room.total_players ?? 0)}</td>
+            <td>${escapeDashboardHtml(room.question_count ?? 0)}</td>
+            <td>${escapeDashboardHtml(room.created_at || "-")}</td>
             <td>
                 <a
                     href="${appUrl(`pages/rooms/lobby_admin.php?code=${encodeURIComponent(room.room_code)}`)}"
@@ -575,8 +575,8 @@ fetchDashboardJson(dashboardEndpoint(appUrl("backend/dashboard/get_admin_analyti
                 const row = document.createElement("tr");
 
                 row.innerHTML = `
-                    <td>${item.difficulty}</td>
-                    <td>${item.percentage}%</td>
+                    <td>${escapeDashboardHtml(item.difficulty)}</td>
+                    <td>${escapeDashboardHtml(item.percentage)}%</td>
                 `;
 
                 difficultyBody.appendChild(row);
@@ -593,9 +593,9 @@ fetchDashboardJson(dashboardEndpoint(appUrl("backend/dashboard/get_admin_analyti
                 const row = document.createElement("tr");
 
                 row.innerHTML = `
-                    <td>${index + 1}</td>
-                    <td>${player.player_name ?? "-"}</td>
-                    <td>${player.best_score}</td>
+                    <td>${escapeDashboardHtml(index + 1)}</td>
+                    <td>${escapeDashboardHtml(player.player_name ?? "-")}</td>
+                    <td>${escapeDashboardHtml(player.best_score)}</td>
                 `;
 
                 playersBody.appendChild(row);

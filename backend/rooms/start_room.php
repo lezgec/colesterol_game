@@ -99,7 +99,7 @@ if ($stmt->execute()) {
     echo json_encode([
         "success" => false,
         "message" => "No se pudo iniciar",
-        "error" => $stmt->error
+        "error" => app_error_detail($stmt->error)
     ], JSON_UNESCAPED_UNICODE);
 }
 

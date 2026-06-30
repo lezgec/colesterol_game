@@ -52,7 +52,7 @@ if (!$stmtRoom) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar consulta de sala",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

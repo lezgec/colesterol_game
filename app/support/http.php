@@ -7,6 +7,18 @@ function json_response($payload, $statusCode = 200) {
     exit;
 }
 
+function app_error_detail($error = null) {
+    if (!env_bool('APP_DEBUG', false)) {
+        return null;
+    }
+
+    if ($error instanceof Throwable) {
+        return $error->getMessage();
+    }
+
+    return $error === null ? null : (string)$error;
+}
+
 function request_json() {
     $raw = file_get_contents('php://input');
     $data = json_decode($raw, true);
@@ -45,15 +57,6 @@ function verify_csrf_token($token) {
 
 function require_csrf_token() {
     $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? '';
-
-    if ($token === '' && str_contains((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')) {
-        $raw = file_get_contents('php://input');
-        $data = json_decode($raw, true);
-
-        if (is_array($data)) {
-            $token = $data['csrf_token'] ?? '';
-        }
-    }
 
     if (!verify_csrf_token($token)) {
         json_response([

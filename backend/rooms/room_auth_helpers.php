@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 require_once __DIR__ . '/../support/api_response.php';
 
@@ -27,7 +27,7 @@ function require_room_owner_or_super_admin(mysqli $conn, string $roomCode): arra
         room_json_response([
             "success" => false,
             "message" => "Error al validar sala",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 

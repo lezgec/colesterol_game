@@ -34,7 +34,7 @@ if (!$stmtRoom) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar sala",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -75,7 +75,7 @@ if (!$check) {
     echo json_encode([
         "success" => false,
         "message" => "Error al validar resultado",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -103,7 +103,7 @@ if ($checkResult->num_rows > 0) {
         echo json_encode([
             "success" => false,
             "message" => "Error al preparar actualización",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -146,7 +146,7 @@ if ($checkResult->num_rows > 0) {
         echo json_encode([
             "success" => false,
             "message" => "Error al preparar inserción",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -172,7 +172,7 @@ if ($stmt->execute()) {
     echo json_encode([
         "success" => false,
         "message" => "Error al guardar resultado",
-        "error" => $stmt->error
+        "error" => app_error_detail($stmt->error)
     ], JSON_UNESCAPED_UNICODE);
 }
 

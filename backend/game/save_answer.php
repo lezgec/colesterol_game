@@ -94,7 +94,7 @@ if (!$stmtQuestion) {
     echo json_encode([
         "success" => false,
         "message" => "Error preparando pregunta",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -144,7 +144,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error prepare",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -181,7 +181,7 @@ if ($stmt->execute()) {
     echo json_encode([
         "success" => false,
         "message" => "Error insert",
-        "error" => $stmt->error
+        "error" => app_error_detail($stmt->error)
     ], JSON_UNESCAPED_UNICODE);
 }
 

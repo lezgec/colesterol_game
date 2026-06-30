@@ -33,7 +33,7 @@ if (!ensure_question_workflow_columns($conn)) {
     echo json_encode([
         "success" => false,
         "message" => "No se pudo preparar el flujo de preguntas",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -249,7 +249,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar insert",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

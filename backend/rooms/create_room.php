@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
@@ -159,7 +159,7 @@ try {
     echo json_encode([
         "success" => false,
         "message" => "Error al crear la sala",
-        "error" => $e->getMessage()
+        "error" => app_error_detail($e)
     ], JSON_UNESCAPED_UNICODE);
 }
 

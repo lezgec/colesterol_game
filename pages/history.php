@@ -71,6 +71,12 @@ const HISTORY_I18N = {
     solo: "<?php echo t('solo'); ?>"
 };
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 fetch(appUrl("backend/game/get_user_results.php"))
 .then(res => res.json())
 .then(response => {
@@ -106,13 +112,13 @@ fetch(appUrl("backend/game/get_user_results.php"))
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${item.played_at}</td>
-            <td>${item.score}</td>
-            <td>${item.correct_answers} / ${item.total_questions}</td>
-            <td>${item.precision}%</td>
-            <td>${item.lives_remaining}</td>
-            <td>${item.final_difficulty} / 5</td>
-            <td>${mode}</td>
+            <td>${escapeHtml(item.played_at)}</td>
+            <td>${escapeHtml(item.score)}</td>
+            <td>${escapeHtml(item.correct_answers)} / ${escapeHtml(item.total_questions)}</td>
+            <td>${escapeHtml(item.precision)}%</td>
+            <td>${escapeHtml(item.lives_remaining)}</td>
+            <td>${escapeHtml(item.final_difficulty)} / 5</td>
+            <td>${escapeHtml(mode)}</td>
         `;
 
         tbody.appendChild(row);

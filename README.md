@@ -9,7 +9,7 @@ Esta guía explica cómo instalar el proyecto en otro servidor PHP, desde cero, 
 Antes de subir el proyecto, verifica que el servidor tenga:
 
 - PHP 8.1 o superior.
-- MySQL 5.7+ o MariaDB 10.4+.
+- MySQL 8.0.29+ o MariaDB 10.4+.
 - Apache, Nginx o servidor compatible con PHP.
 - Composer 2 si vas a reinstalar dependencias.
 - Extensiones PHP: `mysqli`, `curl`, `mbstring`, `openssl`, `gd`, `json`, `fileinfo`.
@@ -102,6 +102,8 @@ Si usas phpMyAdmin:
 5. Importa `database/seed.sql`.
 
 Importante: `schema.sql` contiene `DROP TABLE`, por eso solo debe ejecutarse en una instalación limpia o en una base sin datos reales.
+
+Las migraciones están pensadas para ejecutarse de forma controlada. `001_add_foreign_keys.sql` debe ejecutarse una sola vez; si necesitas un sistema de migraciones repetibles, agrega una tabla `schema_migrations` antes de automatizar despliegues.
 
 ## 6. Crear el archivo `.env`
 
@@ -262,6 +264,8 @@ composer install --no-dev --optimize-autoloader
 - Cambia el superadministrador inicial.
 - Usa contraseñas fuertes.
 - Verifica que `assets/uploads/avatars/.htaccess` exista si usas Apache.
+- En Nginx, replica la protección de `assets/uploads/avatars/.htaccess` en la configuración del servidor, porque Nginx no lee `.htaccess`.
+- Los avatares aceptan JPG, PNG y WebP; el servidor re-codifica la imagen antes de guardarla.
 - No guardes claves SMTP o Gemini dentro del código fuente.
 - Usa HTTPS en producción.
 - Revisa `docs/SECURITY_CHECKLIST.md` antes de publicar.
@@ -277,6 +281,7 @@ assets/uploads/                             Archivos subidos por usuarios.
 docs/ARCHITECTURE.md                        Arquitectura general.
 docs/SECURITY_CHECKLIST.md                  Checklist de seguridad.
 docs/TEST_RUN_2026-06-29.md                 Registro de pruebas funcionales.
+docs/TEST_RUN_2026-06-30.md                 Validación de seguridad y despliegue.
 ```
 
 ## 15. Problemas comunes

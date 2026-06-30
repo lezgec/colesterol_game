@@ -263,6 +263,12 @@ function renderCategoriesComparisonChart(categories) {
     });
 }
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 function renderDifficultyComparisonChart(levels) {
     const ctx = document.getElementById("difficultyComparisonChart");
     if (!ctx || levels.length === 0) return;
@@ -302,12 +308,12 @@ function renderModes(modes) {
     modes.forEach(mode => {
         tbody.innerHTML += `
             <tr>
-                <td>${mode.game_mode}</td>
-                <td>${mode.total_answers}</td>
-                <td>${mode.correct_answers}</td>
-                <td>${mode.precision}%</td>
-                <td>${mode.avg_response_time}s</td>
-                <td>${mode.avg_difficulty} / 5</td>
+                <td>${escapeHtml(mode.game_mode)}</td>
+                <td>${escapeHtml(mode.total_answers)}</td>
+                <td>${escapeHtml(mode.correct_answers)}</td>
+                <td>${escapeHtml(mode.precision)}%</td>
+                <td>${escapeHtml(mode.avg_response_time)}s</td>
+                <td>${escapeHtml(mode.avg_difficulty)} / 5</td>
             </tr>
         `;
     });
@@ -325,13 +331,13 @@ function renderPlayers(players) {
     players.forEach(player => {
         tbody.innerHTML += `
             <tr>
-                <td>${player.label}</td>
-                <td>${player.total_score}</td>
-                <td>${player.correct_answers} / ${player.total_answers}</td>
-                <td>${player.precision}%</td>
-                <td>${player.avg_response_time}s</td>
-                <td>${player.avg_difficulty} / 5</td>
-                <td>${player.max_difficulty} / 5</td>
+                <td>${escapeHtml(player.label)}</td>
+                <td>${escapeHtml(player.total_score)}</td>
+                <td>${escapeHtml(player.correct_answers)} / ${escapeHtml(player.total_answers)}</td>
+                <td>${escapeHtml(player.precision)}%</td>
+                <td>${escapeHtml(player.avg_response_time)}s</td>
+                <td>${escapeHtml(player.avg_difficulty)} / 5</td>
+                <td>${escapeHtml(player.max_difficulty)} / 5</td>
             </tr>
         `;
     });
@@ -349,13 +355,13 @@ function renderRooms(rooms) {
     rooms.forEach(room => {
         tbody.innerHTML += `
             <tr>
-                <td>${room.room_code}</td>
-                <td>${room.name}</td>
-                <td>${room.total_players}</td>
-                <td>${room.total_answers}</td>
-                <td>${room.precision}%</td>
-                <td>${room.avg_response_time}s</td>
-                <td>${room.avg_difficulty} / 5</td>
+                <td>${escapeHtml(room.room_code)}</td>
+                <td>${escapeHtml(room.name)}</td>
+                <td>${escapeHtml(room.total_players)}</td>
+                <td>${escapeHtml(room.total_answers)}</td>
+                <td>${escapeHtml(room.precision)}%</td>
+                <td>${escapeHtml(room.avg_response_time)}s</td>
+                <td>${escapeHtml(room.avg_difficulty)} / 5</td>
             </tr>
         `;
     });
@@ -373,12 +379,12 @@ function renderCategories(categories) {
     categories.forEach(category => {
         tbody.innerHTML += `
             <tr>
-                <td>${category.category}</td>
-                <td>${category.total_answers}</td>
-                <td>${category.correct_answers}</td>
-                <td>${category.precision}%</td>
-                <td>${category.avg_response_time}s</td>
-                <td>${category.avg_difficulty} / 5</td>
+                <td>${escapeHtml(category.category)}</td>
+                <td>${escapeHtml(category.total_answers)}</td>
+                <td>${escapeHtml(category.correct_answers)}</td>
+                <td>${escapeHtml(category.precision)}%</td>
+                <td>${escapeHtml(category.avg_response_time)}s</td>
+                <td>${escapeHtml(category.avg_difficulty)} / 5</td>
             </tr>
         `;
     });

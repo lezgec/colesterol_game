@@ -217,7 +217,8 @@ try {
 
     echo json_encode([
         "success" => false,
-        "message" => $e->getMessage()
+        "message" => "No se pudieron cargar las recomendaciones",
+        "error" => app_error_detail($e)
     ], JSON_UNESCAPED_UNICODE);
 }
 

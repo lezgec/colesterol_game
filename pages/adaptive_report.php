@@ -123,6 +123,12 @@ const ADAPTIVE_I18N = {
     no: "<?php echo t('no'); ?>"
 };
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 const endpoint = ROOM_CODE
     ? appUrl(`backend/reports/adaptive_report.php?code=${encodeURIComponent(ROOM_CODE)}`)
     : appUrl("backend/reports/adaptive_report.php");
@@ -160,13 +166,13 @@ function renderTimeline(items) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${item.player_name}</td>
-            <td>${item.question}</td>
-            <td>${item.category}</td>
-            <td>${item.is_correct ? ADAPTIVE_I18N.yes : ADAPTIVE_I18N.no}</td>
-            <td>${item.response_time}s</td>
-            <td>${item.difficulty_level} / 5</td>
-            <td>${item.score_earned}</td>
+            <td>${escapeHtml(item.player_name)}</td>
+            <td>${escapeHtml(item.question)}</td>
+            <td>${escapeHtml(item.category)}</td>
+            <td>${escapeHtml(item.is_correct ? ADAPTIVE_I18N.yes : ADAPTIVE_I18N.no)}</td>
+            <td>${escapeHtml(item.response_time)}s</td>
+            <td>${escapeHtml(item.difficulty_level)} / 5</td>
+            <td>${escapeHtml(item.score_earned)}</td>
         `;
 
         tbody.appendChild(row);
@@ -186,11 +192,11 @@ function renderPlayers(players) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${player.player_name}</td>
-            <td>${player.correct_answers} / ${player.total_answers}</td>
-            <td>${player.precision}%</td>
-            <td>${player.avg_response_time}s</td>
-            <td>${player.avg_difficulty} / 5</td>
+            <td>${escapeHtml(player.player_name)}</td>
+            <td>${escapeHtml(player.correct_answers)} / ${escapeHtml(player.total_answers)}</td>
+            <td>${escapeHtml(player.precision)}%</td>
+            <td>${escapeHtml(player.avg_response_time)}s</td>
+            <td>${escapeHtml(player.avg_difficulty)} / 5</td>
         `;
 
         tbody.appendChild(row);

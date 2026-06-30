@@ -20,3 +20,5 @@ Orden recomendado para actualizar una base existente:
 Antes de aplicar `001_add_foreign_keys.sql`, valida que no haya registros huérfanos en tablas relacionadas con usuarios, salas, preguntas, respuestas y badges.
 
 Antes de desplegar código nuevo en una base ya creada, aplica las migraciones pendientes. El runtime ya no debe crear tablas ni columnas automáticamente.
+
+Compatibilidad: estas migraciones usan sintaxis como `ADD COLUMN IF NOT EXISTS`; se recomiendan MariaDB 10.4+ o MySQL 8.0.29+. `001_add_foreign_keys.sql` no es idempotente y debe ejecutarse una sola vez, después de validar datos huérfanos.

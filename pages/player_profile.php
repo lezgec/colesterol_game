@@ -379,6 +379,12 @@ function profileEndpoint(path, query = PROFILE_TARGET_QUERY) {
     return `${base}${separator}lang=${encodeURIComponent(PROFILE_I18N.lang)}`;
 }
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 let profileAvatars = {};
 
 function avatarClass(key) {
@@ -394,7 +400,7 @@ function renderAvatarPicker(avatars, selectedKey, currentAvatar = null) {
         customLabel.className = "avatar-choice";
         customLabel.innerHTML = `
             <input type="radio" name="profile_avatar_key" value="custom" ${selectedKey === "custom" ? "checked" : ""}>
-            <span class="profile-avatar profile-avatar-image"><img src="${currentAvatar.url}" alt="Avatar actual"></span>
+            <span class="profile-avatar profile-avatar-image"><img src="${escapeHtml(currentAvatar.url)}" alt="Avatar actual"></span>
             <em><?php echo current_lang() === "en" ? "Current avatar" : "Avatar actual"; ?></em>
         `;
         picker.appendChild(customLabel);
@@ -404,9 +410,9 @@ function renderAvatarPicker(avatars, selectedKey, currentAvatar = null) {
         const label = document.createElement("label");
         label.className = "avatar-choice";
         label.innerHTML = `
-            <input type="radio" name="profile_avatar_key" value="${key}" ${key === selectedKey ? "checked" : ""}>
-            <span class="${avatarClass(key)}">${window.uiIcon ? window.uiIcon(avatar.icon || "heart", "ui-icon profile-avatar-svg") : ""}</span>
-            <em>${avatar.label}</em>
+            <input type="radio" name="profile_avatar_key" value="${escapeHtml(key)}" ${key === selectedKey ? "checked" : ""}>
+            <span class="${escapeHtml(avatarClass(key))}">${window.uiIcon ? window.uiIcon(avatar.icon || "heart", "ui-icon profile-avatar-svg") : ""}</span>
+            <em>${escapeHtml(avatar.label)}</em>
         `;
         picker.appendChild(label);
     });
@@ -529,9 +535,9 @@ function ensureProfileStreakStats(summary) {
         const wrapper = document.createElement("div");
         wrapper.className = "streak-card";
         wrapper.innerHTML = `
-            <strong id="${item.id}">${item.value}</strong>
-            <span>${item.label}</span>
-            <small>${item.hint}</small>
+            <strong id="${escapeHtml(item.id)}">${escapeHtml(item.value)}</strong>
+            <span>${escapeHtml(item.label)}</span>
+            <small>${escapeHtml(item.hint)}</small>
         `;
         stats.appendChild(wrapper);
     });
@@ -656,11 +662,11 @@ function renderCategories(categories) {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-            <td>${item.category}</td>
-            <td>${item.correct} / ${item.total}</td>
-            <td>${item.precision}%</td>
-            <td>${item.avg_time}s</td>
-            <td>${item.avg_difficulty} / 5</td>
+            <td>${escapeHtml(item.category)}</td>
+            <td>${escapeHtml(item.correct)} / ${escapeHtml(item.total)}</td>
+            <td>${escapeHtml(item.precision)}%</td>
+            <td>${escapeHtml(item.avg_time)}s</td>
+            <td>${escapeHtml(item.avg_difficulty)} / 5</td>
         `;
 
         tbody.appendChild(row);
@@ -696,31 +702,31 @@ function renderMistakes(mistakes) {
 
             return `
                 <li class="${classes.join(" ")}">
-                    <strong>${letter}</strong>
-                    <span>${options[letter] || ""}</span>
+                    <strong>${escapeHtml(letter)}</strong>
+                    <span>${escapeHtml(options[letter] || "")}</span>
                     ${badges.length > 0
-                        ? `<em>${badges.join(" / ")}</em>`
+                        ? `<em>${escapeHtml(badges.join(" / "))}</em>`
                         : ""}
                 </li>
             `;
         }).join("");
 
         card.innerHTML = `
-            <h3>${item.question}</h3>
+            <h3>${escapeHtml(item.question)}</h3>
 
             <p>
-                <strong>${item.category}</strong> -
-                ${PROFILE_I18N.difficulty} ${item.difficulty_level} / 5 -
-                ${item.response_time}s
+                <strong>${escapeHtml(item.category)}</strong> -
+                ${escapeHtml(PROFILE_I18N.difficulty)} ${escapeHtml(item.difficulty_level)} / 5 -
+                ${escapeHtml(item.response_time)}s
             </p>
 
             <ul class="mistake-options-list">
                 ${optionRows}
             </ul>
 
-            <p>${item.explanation}</p>
+            <p>${escapeHtml(item.explanation)}</p>
 
-            <small>${item.answered_at}</small>
+            <small>${escapeHtml(item.answered_at)}</small>
         `;
 
         container.appendChild(card);
@@ -906,10 +912,10 @@ function renderInsights(insights) {
         card.innerHTML = `
             <div class="insight-header">
                 ${getInsightIcon(insight.type)}
-                <h3>${insight.title}</h3>
+                <h3>${escapeHtml(insight.title)}</h3>
             </div>
 
-            <p>${insight.message}</p>
+            <p>${escapeHtml(insight.message)}</p>
         `;
 
         container.appendChild(card);
@@ -1003,12 +1009,12 @@ function renderBadges(badges) {
             </div>
 
             <div class="badge-content">
-                <h3>${badge.badge_name}</h3>
+                <h3>${escapeHtml(badge.badge_name)}</h3>
 
-                <p>${badge.badge_description}</p>
+                <p>${escapeHtml(badge.badge_description)}</p>
 
                 <small>
-                    ${formatBadgeDate(badge.earned_at)}
+                    ${escapeHtml(formatBadgeDate(badge.earned_at))}
                 </small>
             </div>
         `;

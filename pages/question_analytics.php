@@ -172,6 +172,12 @@ const QA_I18N = {
     noData: "<?php echo t('no_data_available'); ?>"
 };
 
+function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value ?? "";
+    return div.innerHTML;
+}
+
 fetch(appUrl("backend/reports/question_analytics_report.php"))
     .then(res => res.json())
     .then(data => {
@@ -207,12 +213,12 @@ function renderFailed(items) {
     items.forEach(item => {
         tbody.innerHTML += `
             <tr>
-                <td>${item.question_id}</td>
-                <td>${item.question}</td>
-                <td>${item.category}</td>
-                <td>${item.incorrect_answers} / ${item.total_answers}</td>
-                <td>${item.failure_rate}%</td>
-                <td>${item.avg_response_time}s</td>
+                <td>${escapeHtml(item.question_id)}</td>
+                <td>${escapeHtml(item.question)}</td>
+                <td>${escapeHtml(item.category)}</td>
+                <td>${escapeHtml(item.incorrect_answers)} / ${escapeHtml(item.total_answers)}</td>
+                <td>${escapeHtml(item.failure_rate)}%</td>
+                <td>${escapeHtml(item.avg_response_time)}s</td>
             </tr>
         `;
     });
@@ -230,11 +236,11 @@ function renderHardest(items) {
     items.forEach(item => {
         tbody.innerHTML += `
             <tr>
-                <td>${item.question_id}</td>
-                <td>${item.question}</td>
-                <td>${item.category}</td>
-                <td>${item.avg_adaptive_difficulty} / 5</td>
-                <td>${item.precision}%</td>
+                <td>${escapeHtml(item.question_id)}</td>
+                <td>${escapeHtml(item.question)}</td>
+                <td>${escapeHtml(item.category)}</td>
+                <td>${escapeHtml(item.avg_adaptive_difficulty)} / 5</td>
+                <td>${escapeHtml(item.precision)}%</td>
             </tr>
         `;
     });
@@ -252,11 +258,11 @@ function renderSlowest(items) {
     items.forEach(item => {
         tbody.innerHTML += `
             <tr>
-                <td>${item.question_id}</td>
-                <td>${item.question}</td>
-                <td>${item.category}</td>
-                <td>${item.avg_response_time}s</td>
-                <td>${item.precision}%</td>
+                <td>${escapeHtml(item.question_id)}</td>
+                <td>${escapeHtml(item.question)}</td>
+                <td>${escapeHtml(item.category)}</td>
+                <td>${escapeHtml(item.avg_response_time)}s</td>
+                <td>${escapeHtml(item.precision)}%</td>
             </tr>
         `;
     });
@@ -274,11 +280,11 @@ function renderBest(items) {
     items.forEach(item => {
         tbody.innerHTML += `
             <tr>
-                <td>${item.question_id}</td>
-                <td>${item.question}</td>
-                <td>${item.category}</td>
-                <td>${item.precision}%</td>
-                <td>${item.total_answers}</td>
+                <td>${escapeHtml(item.question_id)}</td>
+                <td>${escapeHtml(item.question)}</td>
+                <td>${escapeHtml(item.category)}</td>
+                <td>${escapeHtml(item.precision)}%</td>
+                <td>${escapeHtml(item.total_answers)}</td>
             </tr>
         `;
     });
@@ -301,26 +307,26 @@ function renderAllQuestions(items) {
 
         tbody.innerHTML += `
             <tr>
-                <td>${item.question_id}</td>
+                <td>${escapeHtml(item.question_id)}</td>
 
-                <td>${item.question}</td>
+                <td>${escapeHtml(item.question)}</td>
 
-                <td>${item.category}</td>
+                <td>${escapeHtml(item.category)}</td>
 
                 <td>
-                    ${item.base_difficulty} / 5
+                    ${escapeHtml(item.base_difficulty)} / 5
                 </td>
 
                 <td>
-                    ${item.precision}%
+                    ${escapeHtml(item.precision)}%
                 </td>
 
                 <td>
-                    ${item.avg_response_time}s
+                    ${escapeHtml(item.avg_response_time)}s
                 </td>
 
                 <td>
-                    ${item.total_answers}
+                    ${escapeHtml(item.total_answers)}
                 </td>
             </tr>
         `;

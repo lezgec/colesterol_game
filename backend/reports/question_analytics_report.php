@@ -84,7 +84,7 @@ if (!$result) {
     echo json_encode([
         "success" => false,
         "message" => "Error obteniendo analítica",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
 
     exit;

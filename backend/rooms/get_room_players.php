@@ -23,7 +23,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar consulta",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -58,7 +58,7 @@ if (!$stmtPlayers) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar jugadores",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

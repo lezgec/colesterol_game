@@ -255,7 +255,7 @@ try {
     echo json_encode([
         "success" => false,
         "message" => "No se pudo actualizar la configuracion",
-        "error" => $error->getMessage()
+        "error" => app_error_detail($error)
     ], JSON_UNESCAPED_UNICODE);
 }
 

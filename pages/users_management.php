@@ -368,7 +368,7 @@ function renderUsers() {
             : appUrl(`pages/player_profile.php?user_id=${user.id}`);
 
         row.innerHTML = `
-            <td class="user-id-cell">${user.id}</td>
+            <td class="user-id-cell">${escapeHtml(user.id)}</td>
 
             <td>
                 <input class="table-input user-table-input" id="name-${user.id}" value="${escapeHtml(user.name)}" aria-label="Nombre">
@@ -393,7 +393,7 @@ function renderUsers() {
                 </select>
             </td>
 
-            <td class="user-created-cell">${user.created_at}</td>
+            <td class="user-created-cell">${escapeHtml(user.created_at)}</td>
 
             <td>
                 <div class="user-actions">

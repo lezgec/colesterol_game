@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 
 ini_set('display_errors', 0);
@@ -60,7 +60,7 @@ if ($method === "GET" && $action === "list") {
         jsonResponse([
             "success" => false,
             "message" => "Error al listar usuarios",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 
@@ -138,7 +138,7 @@ if ($method === "POST" && $action === "create") {
         jsonResponse([
             "success" => false,
             "message" => "Error prepare",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 
@@ -155,7 +155,7 @@ if ($method === "POST" && $action === "create") {
         jsonResponse([
             "success" => false,
             "message" => "No se pudo crear el usuario",
-            "error" => $stmt->error
+            "error" => app_error_detail($stmt->error)
         ]);
     }
 
@@ -236,7 +236,7 @@ if ($method === "POST" && $action === "update") {
         jsonResponse([
             "success" => false,
             "message" => "Error prepare",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 
@@ -253,7 +253,7 @@ if ($method === "POST" && $action === "update") {
         jsonResponse([
             "success" => false,
             "message" => "No se pudo actualizar",
-            "error" => $stmt->error
+            "error" => app_error_detail($stmt->error)
         ]);
     }
 
@@ -304,7 +304,7 @@ if ($method === "POST" && $action === "reset_password") {
         jsonResponse([
             "success" => false,
             "message" => "No se pudo preparar la seguridad de sesion",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 
@@ -320,7 +320,7 @@ if ($method === "POST" && $action === "reset_password") {
         jsonResponse([
             "success" => false,
             "message" => "Error prepare",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 
@@ -330,7 +330,7 @@ if ($method === "POST" && $action === "reset_password") {
         jsonResponse([
             "success" => false,
             "message" => "No se pudo resetear contrasena",
-            "error" => $stmt->error
+            "error" => app_error_detail($stmt->error)
         ]);
     }
 
@@ -370,7 +370,7 @@ if ($method === "POST" && $action === "toggle_status") {
         jsonResponse([
             "success" => false,
             "message" => "Error prepare",
-            "error" => $conn->error
+            "error" => app_error_detail($conn->error)
         ]);
     }
 
@@ -380,7 +380,7 @@ if ($method === "POST" && $action === "toggle_status") {
         jsonResponse([
             "success" => false,
             "message" => "No se pudo cambiar estado",
-            "error" => $stmt->error
+            "error" => app_error_detail($stmt->error)
         ]);
     }
 

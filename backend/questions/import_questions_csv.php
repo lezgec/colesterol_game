@@ -20,7 +20,7 @@ if (!ensure_question_workflow_columns($conn)) {
     echo json_encode([
         "success" => false,
         "message" => "No se pudo preparar el flujo de preguntas",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -138,7 +138,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar consulta",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     fclose($handle);
     exit;
@@ -253,7 +253,9 @@ while (($row = fgetcsv($handle)) !== false) {
         $inserted++;
     } else {
         $skipped++;
-        $errors[] = $stmt->error;
+        if (env_bool("APP_DEBUG", false)) {
+            $errors[] = $stmt->error;
+        }
     }
 }
 
@@ -266,6 +268,6 @@ echo json_encode([
     "message" => "Importación finalizada. Insertadas: $inserted. Omitidas: $skipped.",
     "inserted" => $inserted,
     "skipped" => $skipped,
-    "errors" => $errors
+    "errors" => env_bool("APP_DEBUG", false) ? $errors : []
 ], JSON_UNESCAPED_UNICODE);
 ?>

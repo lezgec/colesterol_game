@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -50,7 +50,7 @@ if (!$result) {
     echo json_encode([
         "success" => false,
         "message" => "Error al obtener preguntas",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

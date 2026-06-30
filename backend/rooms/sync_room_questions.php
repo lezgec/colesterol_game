@@ -246,7 +246,7 @@ try {
     echo json_encode([
         "success" => false,
         "message" => "No se pudieron sincronizar las preguntas",
-        "error" => $e->getMessage()
+        "error" => app_error_detail($e)
     ], JSON_UNESCAPED_UNICODE);
 }
 

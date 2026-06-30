@@ -36,7 +36,7 @@ if (!ensure_question_workflow_columns($conn)) {
     echo json_encode([
         "success" => false,
         "message" => "No se pudo preparar el flujo de preguntas",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -138,7 +138,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar consulta",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -187,7 +187,7 @@ if ($stmt->execute()) {
     echo json_encode([
         "success" => false,
         "message" => "Error al crear pregunta",
-        "error" => $stmt->error
+        "error" => app_error_detail($stmt->error)
     ], JSON_UNESCAPED_UNICODE);
 }
 

@@ -34,7 +34,7 @@ if (!ensure_password_resets_table($conn)) {
     jsonResponse([
         "success" => false,
         "message" => "No se pudo preparar la recuperación de contraseña.",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -50,7 +50,7 @@ if (!$stmt) {
     jsonResponse([
         "success" => false,
         "message" => "Error al preparar la consulta.",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -94,7 +94,7 @@ if (!$stmt) {
     jsonResponse([
         "success" => false,
         "message" => "Error al crear el token.",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ]);
 }
 
@@ -104,7 +104,7 @@ if (!$stmt->execute()) {
     jsonResponse([
         "success" => false,
         "message" => "No se pudo crear la solicitud de recuperación.",
-        "error" => $stmt->error
+        "error" => app_error_detail($stmt->error)
     ]);
 }
 

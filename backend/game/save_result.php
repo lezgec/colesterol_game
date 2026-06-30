@@ -67,7 +67,7 @@ if (!$stmt) {
     echo json_encode([
         "success" => false,
         "message" => "Error en prepare",
-        "details" => $conn->error
+        "details" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -102,7 +102,7 @@ if ($stmt->execute()) {
     echo json_encode([
         "success" => false,
         "message" => "Error al ejecutar INSERT",
-        "details" => $stmt->error
+        "details" => app_error_detail($stmt->error)
     ], JSON_UNESCAPED_UNICODE);
 }
 

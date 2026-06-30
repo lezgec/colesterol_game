@@ -69,7 +69,7 @@ if (!$stmtDelete) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar eliminación",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

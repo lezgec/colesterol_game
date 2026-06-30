@@ -225,7 +225,7 @@ try {
     echo json_encode([
         "success" => false,
         "message" => "No se pudo cargar la configuración de preguntas",
-        "error" => $e->getMessage()
+        "error" => app_error_detail($e)
     ], JSON_UNESCAPED_UNICODE);
 }
 

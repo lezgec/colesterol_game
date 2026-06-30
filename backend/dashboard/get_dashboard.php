@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
 header("Content-Type: application/json; charset=utf-8");
@@ -35,7 +35,7 @@ if (!$stmtSummary) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar la consulta resumen",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -80,7 +80,7 @@ if (!$stmtRecent) {
     echo json_encode([
         "success" => false,
         "message" => "Error al preparar la consulta de resultados recientes",
-        "error" => $conn->error
+        "error" => app_error_detail($conn->error)
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
