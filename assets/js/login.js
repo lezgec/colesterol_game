@@ -24,8 +24,6 @@ form.addEventListener("submit", async (e) => {
 
         const result = await response.json();
 
-        console.log("LOGIN RESULT:", result);
-
         if (result.success) {
 
             message.textContent = LOGIN_I18N.success;

@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../lang/translate.php';
 
-if (!is_logged_in()) {
+if (!current_session_is_active()) {
     echo json_encode([
         "success" => false,
         "message" => "Usuario no autenticado"

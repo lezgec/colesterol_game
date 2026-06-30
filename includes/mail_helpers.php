@@ -88,9 +88,19 @@ function send_app_email($recipientEmail, $recipientName, $subject, $htmlBody, $t
 
     $config = load_mail_config();
     $required = ["host", "port", "username", "password", "from_email", "from_name"];
+    $placeholderValues = [
+        "APP_SPECIFIC_PASSWORD",
+        "change_me",
+        "change_me_app_password",
+        "your_password",
+        "tu_clave",
+        "tu_clave_smtp_brevo"
+    ];
 
     foreach ($required as $key) {
-        if (empty($config[$key]) || $config[$key] === "APP_SPECIFIC_PASSWORD") {
+        $value = trim((string)($config[$key] ?? ""));
+
+        if ($value === "" || in_array($value, $placeholderValues, true)) {
             log_email_event(
                 $emailType,
                 $recipientEmail,

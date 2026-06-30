@@ -14,6 +14,7 @@ $data = json_decode($input, true);
 
 $email = trim($data["email"] ?? "");
 $password = $data["password"] ?? "";
+$invalidLoginMessage = "Correo o contraseña incorrectos";
 
 require_rate_limit($conn, "login:" . strtolower($email), 8, 900);
 
@@ -43,9 +44,10 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 if ($result->num_rows === 0) {
+    error_log("Login failed: user not found for " . strtolower($email));
     echo json_encode([
         "success" => false,
-        "message" => "Usuario no encontrado"
+        "message" => $invalidLoginMessage
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -53,9 +55,10 @@ if ($result->num_rows === 0) {
 $user = $result->fetch_assoc();
 
 if (!password_verify($password, $user["password"])) {
+    error_log("Login failed: invalid password for user " . (int)$user["id"]);
     echo json_encode([
         "success" => false,
-        "message" => "Contraseña incorrecta"
+        "message" => $invalidLoginMessage
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

@@ -10,7 +10,13 @@ $dbname = env_value("DB_DATABASE", "colesterol_game_db");
 $conn = new mysqli($host, $user, $password, $dbname, $port);
 
 if ($conn->connect_error) {
-    die("Error de conexion: " . $conn->connect_error);
+    error_log("DB connection error: " . $conn->connect_error);
+
+    if (env_bool("APP_DEBUG", false)) {
+        die("Error de conexión: " . $conn->connect_error);
+    }
+
+    die("No se pudo conectar con la base de datos.");
 }
 
 $conn->set_charset("utf8mb4");

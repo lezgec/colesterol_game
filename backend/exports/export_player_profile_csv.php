@@ -5,7 +5,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/export_helpers.php';
 
-if (!is_logged_in()) {
+if (!current_session_is_active()) {
     die("No autorizado");
 }
 

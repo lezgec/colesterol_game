@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../../vendor/autoload.php';
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-if (!is_logged_in()) {
+if (!current_session_is_active()) {
     die("No autorizado");
 }
 

@@ -14,7 +14,7 @@ require_csrf_token();
 
 ensure_adaptive_difficulty_columns($conn);
 
-if (!is_logged_in()) {
+if (!current_session_is_active()) {
     echo json_encode([
         "success" => false,
         "message" => "Usuario no autenticado"

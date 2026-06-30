@@ -103,15 +103,15 @@ function current_user_id() {
 }
 
 function is_player() {
-    return current_user_role() === "player";
+    return current_session_is_active() && current_user_role() === "player";
 }
 
 function is_teacher() {
-    return current_user_role() === "teacher";
+    return current_session_is_active() && current_user_role() === "teacher";
 }
 
 function is_super_admin() {
-    return current_user_role() === "super_admin";
+    return current_session_is_active() && current_user_role() === "super_admin";
 }
 
 function has_role($roles) {

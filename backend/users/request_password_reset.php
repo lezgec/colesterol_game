@@ -117,10 +117,12 @@ $resetLink = $appUrl . "/pages/reset_password.php?token=" . urlencode($token);
 try {
     send_password_reset_email($user["email"], $user["name"], $resetLink);
 } catch (RuntimeException $exception) {
+    error_log("Password reset email failed for user {$userId}: " . $exception->getMessage());
+
     jsonResponse([
         "success" => false,
         "message" => "La solicitud fue creada, pero el correo no pudo enviarse.",
-        "error" => $exception->getMessage()
+        "error" => env_bool("APP_DEBUG", false) ? $exception->getMessage() : null
     ]);
 }
 

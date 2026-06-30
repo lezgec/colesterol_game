@@ -1,5 +1,5 @@
 -- Requisitos de esquema que antes se intentaban reparar en runtime.
--- Aplicar despues de `001_add_foreign_keys.sql` en bases existentes.
+-- En bases existentes, aplicar antes de `001_add_foreign_keys.sql`.
 
 CREATE TABLE IF NOT EXISTS `rate_limits` (
   `id` int(11) NOT NULL AUTO_INCREMENT,

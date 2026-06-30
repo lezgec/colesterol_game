@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../lang/translate.php';
 require_once __DIR__ . '/badge_translations.php';
 
-if (!is_logged_in()) {
+if (!current_session_is_active()) {
     echo json_encode([
         "success" => false,
         "message" => "No autorizado"
