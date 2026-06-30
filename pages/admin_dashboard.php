@@ -7,6 +7,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../lang/translate.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/user_menu.php';
+require_once __DIR__ . '/../config/db.php';
 require_role(["teacher", "super_admin"]);
 
 $canManageUsers = can_manage_users();
@@ -22,6 +23,24 @@ $dashboardDescription = $isTeacherOnly
 $toolsTitle = $isTeacherOnly
     ? (current_lang() === "en" ? "Teaching tools" : "Herramientas docentes")
     : t("admin_tools");
+$pendingSuperAdminNotifications = 0;
+
+if (is_super_admin()) {
+    $notificationsTable = $conn->query("SHOW TABLES LIKE 'app_notifications'");
+
+    if ($notificationsTable && $notificationsTable->num_rows > 0) {
+        $notificationResult = $conn->query("
+            SELECT COUNT(*) AS total
+            FROM app_notifications
+            WHERE target_role = 'super_admin'
+              AND read_at IS NULL
+        ");
+
+        if ($notificationResult) {
+            $pendingSuperAdminNotifications = (int)($notificationResult->fetch_assoc()["total"] ?? 0);
+        }
+    }
+}
 
 function admin_tool_icon($name) {
     $icons = [
@@ -186,7 +205,15 @@ $themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
 
                 <a href="<?php echo app_path('pages/notifications.php'); ?>"
                    class="dashboard-card dashboard-link tool-card">
-                    <h3><?php echo admin_tool_icon("notifications"); ?><span><?php echo t("notifications"); ?></span></h3>
+                    <h3>
+                        <?php echo admin_tool_icon("notifications"); ?>
+                        <span><?php echo t("notifications"); ?></span>
+                        <?php if (is_super_admin() && $pendingSuperAdminNotifications > 0): ?>
+                            <span class="tool-pending-badge" aria-label="<?php echo htmlspecialchars(t("pending")); ?>">
+                                <?php echo $pendingSuperAdminNotifications; ?>
+                            </span>
+                        <?php endif; ?>
+                    </h3>
                 </a>
 
                 <?php if ($canManageUsers): ?>
