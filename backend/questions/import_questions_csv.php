@@ -94,6 +94,7 @@ if (!$headers) {
 }
 
 $headers = array_map(function ($header) {
+    $header = preg_replace('/^\xEF\xBB\xBF/', '', (string)$header);
     return strtolower(trim($header));
 }, $headers);
 
@@ -157,7 +158,7 @@ while (($row = fgetcsv($handle)) !== false) {
     $correct_option = strtoupper(trim($row[$headerIndexes["correct_option"]] ?? ""));
     $explanation = trim($row[$headerIndexes["explanation"]] ?? "");
     $category = trim($row[$headerIndexes["category"]] ?? "");
-    $difficulty_level = (int)round((float)($row[$headerIndexes["difficulty_level"]] ?? 1));
+    $difficulty_level = (float)($row[$headerIndexes["difficulty_level"]] ?? 1);
     $language = trim($row[$headerIndexes["language"]] ?? "es");
     $status = isset($headerIndexes["status"])
         ? strtolower(trim($row[$headerIndexes["status"]] ?? "verified"))
@@ -204,6 +205,10 @@ while (($row = fgetcsv($handle)) !== false) {
         $status = "verified";
     }
 
+    if ($origin === "ai_generated") {
+        $origin = "ai";
+    }
+
     if (!in_array($origin, ["manual", "ai", "csv"], true)) {
         $origin = "csv";
     }
@@ -229,7 +234,7 @@ while (($row = fgetcsv($handle)) !== false) {
     $globalRequestedAt = $workflow["global_requested_at"];
 
     $stmt->bind_param(
-        "ssssssssisssiisss",
+        "ssssssssdsssiisss",
         $question,
         $option_a,
         $option_b,

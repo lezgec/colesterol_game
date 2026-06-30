@@ -34,14 +34,14 @@ fputcsv($output, [
 
 fputcsv($output, [
     "¿Cuál lipoproteína se conoce comúnmente como colesterol malo?",
-    "Lipoproteína de alta densidad (HDL)",
-    "Lipoproteína de baja densidad (LDL)",
+    "Lipoproteína de alta densidad, conocida como HDL",
+    "Lipoproteína de baja densidad, conocida como LDL",
     "Triglicéridos",
     "Hemoglobina",
     "B",
-    "La lipoproteína de baja densidad (LDL) puede depositar colesterol en las arterias cuando está elevada.",
-    "Risk Factors",
-    "2",
+    "La lipoproteína de baja densidad, conocida como LDL, puede depositar colesterol en las arterias cuando está elevada.",
+    "Factores de riesgo",
+    "2.0",
     "es",
     "verified",
     "csv",
@@ -49,3 +49,4 @@ fputcsv($output, [
 ]);
 
 fclose($output);
+?>
