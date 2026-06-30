@@ -6,6 +6,7 @@
 assets/uploads/*
 !assets/uploads/.gitkeep
 !assets/uploads/avatars/
+assets/uploads/avatars/*
 !assets/uploads/avatars/.htaccess
 
 database/*.bak
