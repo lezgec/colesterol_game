@@ -1,6 +1,6 @@
 -- colesterol_game_full.sql
 -- Instalacion completa de la base de datos para Cholesterol Game.
--- Incluye schema.sql + migrations + seed.sql en un solo archivo.
+-- Archivo unico oficial para crear una base limpia.
 -- Recomendado: MySQL 8.0.29+ o MariaDB 10.4+
 
 SET NAMES utf8mb4;

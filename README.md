@@ -97,7 +97,7 @@ En phpMyAdmin:
 
 Importante: `database/colesterol_game_full.sql` contiene `DROP TABLE`, por eso solo debe usarse en una instalación limpia o en una base sin datos reales.
 
-Los archivos `database/schema.sql`, `database/seed.sql` y `database/migrations/` se mantienen como referencia técnica y para casos de actualización de bases existentes.
+Este repositorio mantiene un solo archivo SQL oficial para instalación limpia: `database/colesterol_game_full.sql`.
 
 ## 6. Crear `.env`
 
@@ -241,22 +241,21 @@ Antes de entregar, prueba:
 
 ## 12. Actualizar una base existente
 
-Si ya tienes datos reales, no ejecutes `database/colesterol_game_full.sql` ni `database/schema.sql`.
+Si ya tienes datos reales, no ejecutes `database/colesterol_game_full.sql`, porque es destructivo y contiene `DROP TABLE`.
 
-Usa las migraciones de forma controlada:
+Para actualizar una base existente:
 
-```bash
-mysql -u usuario -p colesterol_game_db < database/migrations/002_runtime_schema_requirements.sql
-# Valida registros huérfanos antes del siguiente paso.
-mysql -u usuario -p colesterol_game_db < database/migrations/001_add_foreign_keys.sql
-```
-
-Luego actualiza el código:
+1. Haz backup completo de la base.
+2. Compara tu base actual contra `database/colesterol_game_full.sql`.
+3. Aplica manualmente solo los cambios necesarios con `ALTER TABLE`.
+4. Luego actualiza el código:
 
 ```bash
 git pull origin main
 composer install --no-dev --optimize-autoloader
 ```
+
+Para despliegues nuevos o servidores limpios, usa siempre `database/colesterol_game_full.sql`.
 
 ## 13. Seguridad
 
@@ -275,9 +274,6 @@ composer install --no-dev --optimize-autoloader
 
 ```text
 database/colesterol_game_full.sql           Instalador unificado para una base limpia.
-database/schema.sql                         Estructura base separada.
-database/seed.sql                           Usuario inicial separado.
-database/migrations/                        Migraciones para bases existentes.
 .env.example                                Plantilla de configuración.
 assets/uploads/                             Archivos subidos por usuarios.
 docs/ARCHITECTURE.md                        Arquitectura general.
