@@ -23,22 +23,26 @@ $dashboardDescription = $isTeacherOnly
 $toolsTitle = $isTeacherOnly
     ? (current_lang() === "en" ? "Teaching tools" : "Herramientas docentes")
     : t("admin_tools");
-$pendingSuperAdminNotifications = 0;
+$pendingNotifications = 0;
 
-if (is_super_admin()) {
-    $notificationsTable = $conn->query("SHOW TABLES LIKE 'app_notifications'");
+$notificationsTable = $conn->query("SHOW TABLES LIKE 'app_notifications'");
 
-    if ($notificationsTable && $notificationsTable->num_rows > 0) {
-        $notificationResult = $conn->query("
+if ($notificationsTable && $notificationsTable->num_rows > 0) {
+    $notificationStmt = $conn->prepare("
             SELECT COUNT(*) AS total
             FROM app_notifications
-            WHERE target_role = 'super_admin'
-              AND read_at IS NULL
+            WHERE read_at IS NULL
+              AND (target_role = ? OR user_id = ?)
         ");
 
-        if ($notificationResult) {
-            $pendingSuperAdminNotifications = (int)($notificationResult->fetch_assoc()["total"] ?? 0);
-        }
+    if ($notificationStmt) {
+        $currentRole = current_user_role();
+        $currentUserId = current_user_id();
+        $notificationStmt->bind_param("si", $currentRole, $currentUserId);
+        $notificationStmt->execute();
+        $notificationResult = $notificationStmt->get_result();
+        $pendingNotifications = (int)($notificationResult->fetch_assoc()["total"] ?? 0);
+        $notificationStmt->close();
     }
 }
 
@@ -208,9 +212,9 @@ $themeVersion = filemtime(__DIR__ . '/../assets/js/theme.js');
                     <h3>
                         <?php echo admin_tool_icon("notifications"); ?>
                         <span><?php echo t("notifications"); ?></span>
-                        <?php if (is_super_admin() && $pendingSuperAdminNotifications > 0): ?>
+                        <?php if ($pendingNotifications > 0): ?>
                             <span class="tool-pending-badge" aria-label="<?php echo htmlspecialchars(t("pending")); ?>">
-                                <?php echo $pendingSuperAdminNotifications; ?>
+                                <?php echo $pendingNotifications; ?>
                             </span>
                         <?php endif; ?>
                     </h3>

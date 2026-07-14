@@ -2,6 +2,27 @@
 
 Serious game educativo sobre colesterol con modo individual, salas docentes, banco de preguntas, generación con IA, reportes, perfiles, insignias, rachas, correos y paneles por rol.
 
+## Descripción del juego
+
+Colesterol Game es una plataforma educativa tipo serious game para reforzar el aprendizaje sobre colesterol, factores de riesgo, estilos de vida saludables, prevención y conceptos clínicos básicos. El sistema permite jugar partidas individuales con dificultad adaptativa, crear salas guiadas por docentes, competir en rankings, ganar insignias, revisar rachas, exportar reportes y administrar un banco de preguntas validado.
+
+El proyecto incluye:
+
+- Modo jugador con partida individual, historial, ranking global, perfil, insignias y rachas.
+- Modo docente para crear salas, dirigir partidas, revisar resultados y proponer preguntas al banco global.
+- Modo superadministrador para gestionar usuarios, banco de preguntas, reportes, notificaciones, correos enviados y configuración general del contenido.
+- Banco de preguntas con creación manual, importación CSV, generación con Gemini y flujo de revisión antes de publicar.
+- Reportes CSV/PDF para jugadores, salas y analítica general.
+- Correos transaccionales para bienvenida, recuperación de contraseña, cambios de rol y avisos administrativos.
+
+## Dificultad adaptativa
+
+Las preguntas se clasifican en niveles de dificultad de `1` a `5`. Internamente, el motor puede manejar valores decimales para ajustar el progreso con más precisión, pero al seleccionar preguntas busca el nivel entero más cercano disponible en el banco.
+
+La dificultad sube cuando el jugador responde correctamente y con buen tiempo de respuesta. Si el jugador falla, responde tarde o agota el tiempo, la dificultad baja o se mantiene según su desempeño. De esta forma, el sistema intenta mantener la partida desafiante sin bloquear al estudiante con preguntas demasiado difíciles ni dejarlo demasiado tiempo en preguntas simples.
+
+En salas docentes, la sala puede iniciar con una configuración base y luego el docente o administrador puede ajustar cantidad de preguntas, tiempo por pregunta y selección de preguntas desde el lobby. Las preguntas generadas por IA o importadas por CSV no quedan publicadas automáticamente como disponibles: primero deben revisarse y activarse.
+
 Esta guía explica cómo instalar el proyecto en otro servidor PHP usando Apache/Nginx con PHP y MySQL/MariaDB.
 
 ## 1. Requisitos
