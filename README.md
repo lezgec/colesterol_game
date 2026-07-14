@@ -49,14 +49,14 @@ Ejemplos:
 ```text
 XAMPP Windows: C:\xampp\htdocs\colesterol_game
 Apache Linux: /var/www/html/colesterol_game
-cPanel: public_html/SGCholesterol
+cPanel: public_html/tu-carpeta
 ```
 
 Con Git:
 
 ```bash
-git clone https://github.com/lezgec/colesterol_game.git SGCholesterol
-cd SGCholesterol
+git clone https://github.com/lezgec/colesterol_game.git tu-carpeta
+cd tu-carpeta
 ```
 
 Si el servidor no trae `vendor/`, instala dependencias:
@@ -136,13 +136,13 @@ Copy-Item .env.example .env
 
 Edita `.env` con los datos reales.
 
-Ejemplo para un proyecto instalado en `https://franklinparrales.es/SGCholesterol/`:
+Ejemplo para un proyecto instalado en una subcarpeta pública:
 
 ```env
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://franklinparrales.es/SGCholesterol
-APP_BASE_PATH=/SGCholesterol
+APP_URL=https://tu-dominio.com/tu-carpeta
+APP_BASE_PATH=/tu-carpeta
 APP_SUPPORT_EMAIL=support@example.com
 
 DB_HOST=localhost
@@ -226,7 +226,7 @@ Después del primer inicio:
 Ejemplo con subcarpeta:
 
 ```text
-https://franklinparrales.es/SGCholesterol/
+https://tu-dominio.com/tu-carpeta/
 ```
 
 Ejemplo en raíz:
@@ -235,11 +235,11 @@ Ejemplo en raíz:
 https://tu-dominio.com/
 ```
 
-Si la página carga sin estilos, revisa `APP_BASE_PATH`. Por ejemplo, si el proyecto está en `/SGCholesterol`, debe ser:
+Si la página carga sin estilos, revisa `APP_BASE_PATH`. Por ejemplo, si el proyecto está en `/tu-carpeta`, debe ser:
 
 ```env
-APP_BASE_PATH=/SGCholesterol
-APP_URL=https://franklinparrales.es/SGCholesterol
+APP_BASE_PATH=/tu-carpeta
+APP_URL=https://tu-dominio.com/tu-carpeta
 ```
 
 ## 11. Pruebas rápidas
