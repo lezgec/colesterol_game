@@ -1150,6 +1150,65 @@ form > .primary-btn {
     background: rgba(254, 226, 226, 0.68);
 }
 
+.game-result-feedback-section {
+    margin-bottom: 24px;
+}
+
+.game-result-feedback-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(240px, 0.8fr);
+    gap: 18px;
+    padding: 20px;
+    border-radius: 18px;
+    background:
+        linear-gradient(135deg, rgba(91, 91, 232, 0.14), rgba(20, 184, 166, 0.12)),
+        var(--theme-section-bg);
+    border: 1px solid var(--theme-container-border);
+    color: var(--theme-section-text);
+}
+
+.game-result-feedback-card h3 {
+    margin: 0 0 8px;
+    color: var(--theme-section-text);
+}
+
+.game-result-feedback-card p {
+    margin: 0;
+    color: var(--theme-section-muted);
+}
+
+.game-result-feedback-card ul {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding-left: 18px;
+    color: var(--theme-section-text);
+    font-weight: 700;
+}
+
+.game-result-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+.game-result-charts-grid .chart-card {
+    min-height: 340px;
+    border: 1px solid var(--theme-container-border);
+    background: var(--theme-section-bg);
+    color: var(--theme-section-text);
+}
+
+.game-result-charts-grid .chart-card h3 {
+    color: var(--theme-section-text) !important;
+}
+
+.game-result-charts-grid .chart-card canvas {
+    width: 100%;
+    max-height: 280px;
+}
+
 .section-heading-row {
     display: flex;
     align-items: center;
@@ -1164,7 +1223,7 @@ form > .primary-btn {
 
 .section-heading-row p {
     margin: 0;
-    color: var(--muted-text);
+    color: var(--theme-muted);
 }
 
 .empty-state-panel {
@@ -2697,6 +2756,11 @@ form > .primary-btn {
     .game-over-actions .play-again-btn {
         width: 100%;
         max-width: none;
+    }
+
+    .game-result-feedback-card,
+    .game-result-charts-grid {
+        grid-template-columns: 1fr;
     }
 
     .logout-btn,

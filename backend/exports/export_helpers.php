@@ -18,6 +18,14 @@ function export_label($key) {
             "failure_rate" => "Tasa de error",
             "explanation" => "Explicacion",
             "generated_at" => "Generado el",
+            "downloaded_by" => "Descargado por",
+            "report_type" => "Tipo de reporte",
+            "report_version" => "Version del reporte",
+            "report_source" => "Fuente",
+            "system_source" => "Serious Game: Colesterol",
+            "game_result_report" => "Reporte de partida",
+            "result_id" => "ID de resultado",
+            "game_mode" => "Modo de juego",
             "global_precision" => "Precision global",
             "incorrect" => "Incorrectas",
             "incorrect_answers" => "Respuestas incorrectas",
@@ -75,6 +83,14 @@ function export_label($key) {
             "failure_rate" => "Failure rate",
             "explanation" => "Explanation",
             "generated_at" => "Generated at",
+            "downloaded_by" => "Downloaded by",
+            "report_type" => "Report type",
+            "report_version" => "Report version",
+            "report_source" => "Source",
+            "system_source" => "Serious Game: Cholesterol",
+            "game_result_report" => "Game result report",
+            "result_id" => "Result ID",
+            "game_mode" => "Game mode",
             "global_precision" => "Global precision",
             "incorrect" => "Incorrect",
             "incorrect_answers" => "Incorrect answers",
@@ -181,5 +197,51 @@ function export_pdf_logo_html() {
     }
 
     return "<img class='report-logo' src='" . htmlspecialchars($logo, ENT_QUOTES, "UTF-8") . "' alt='Serious Game: Colesterol'>";
+}
+
+function export_report_version() {
+    return "1.0";
+}
+
+function export_pdf_trace_html($reportType, array $extraRows = []) {
+    $downloadedBy = trim((string)($_SESSION["user_name"] ?? ""));
+    $email = trim((string)($_SESSION["user_email"] ?? ""));
+    $role = trim((string)($_SESSION["user_role"] ?? ""));
+
+    if ($downloadedBy === "") {
+        $downloadedBy = "Sistema";
+    }
+
+    if ($email !== "") {
+        $downloadedBy .= " <" . $email . ">";
+    }
+
+    if ($role !== "") {
+        $downloadedBy .= " (" . $role . ")";
+    }
+
+    $rows = [
+        export_label("generated_at") => date("Y-m-d H:i:s"),
+        export_label("downloaded_by") => $downloadedBy,
+        export_label("report_type") => $reportType,
+        export_label("report_version") => export_report_version(),
+        export_label("report_source") => export_label("system_source")
+    ];
+
+    foreach ($extraRows as $label => $value) {
+        $rows[$label] = (string)$value;
+    }
+
+    $html = "<div class='meta trace-meta'>";
+
+    foreach ($rows as $label => $value) {
+        $safeLabel = htmlspecialchars((string)$label, ENT_QUOTES, "UTF-8");
+        $safeValue = htmlspecialchars((string)$value, ENT_QUOTES, "UTF-8");
+        $html .= "{$safeLabel}: <strong>{$safeValue}</strong><br>";
+    }
+
+    $html .= "</div>";
+
+    return $html;
 }
 ?>

@@ -175,6 +175,9 @@ $options->set("defaultFont", "Helvetica");
 $dompdf = new Dompdf($options);
 $reportTitle = export_label("player_report");
 $logoHtml = export_pdf_logo_html();
+$traceHtml = export_pdf_trace_html($reportTitle, [
+    export_label("player") => $userName
+]);
 
 $html = "
 <!DOCTYPE html>
@@ -277,10 +280,7 @@ $html = "
 
 <div class='report-header'>{$logoHtml}<h1>" . htmlspecialchars($reportTitle) . "</h1></div>
 
-<div class='meta'>
-    " . export_label("player") . ": <strong>" . htmlspecialchars($userName) . "</strong><br>
-    " . export_label("generated_at") . ": " . date("Y-m-d H:i:s") . "
-</div>
+{$traceHtml}
 
 <div class='summary'>
     <div class='card'>" . export_label("answers") . "<strong>{$totalAnswers}</strong></div>

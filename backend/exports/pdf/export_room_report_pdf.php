@@ -172,6 +172,11 @@ $options->set("defaultFont", "Helvetica");
 $dompdf = new Dompdf($options);
 $reportTitle = export_label("room_report");
 $logoHtml = export_pdf_logo_html();
+$traceHtml = export_pdf_trace_html($reportTitle, [
+    export_label("room") => $room["name"],
+    export_label("code") => $room["room_code"],
+    export_label("status") => $roomStatusLabel
+]);
 
 $html = "
 <!DOCTYPE html>
@@ -274,12 +279,7 @@ $html = "
 
 <div class='report-header'>{$logoHtml}<h1>" . htmlspecialchars($reportTitle) . "</h1></div>
 
-<div class='meta'>
-    " . export_label("room") . ": <strong>" . htmlspecialchars($room["name"]) . "</strong><br>
-    " . export_label("code") . ": <strong>" . htmlspecialchars($room["room_code"]) . "</strong><br>
-    " . export_label("status") . ": " . htmlspecialchars($roomStatusLabel) . "<br>
-    " . export_label("generated_at") . ": " . date("Y-m-d H:i:s") . "
-</div>
+{$traceHtml}
 
 <div class='summary'>
     <div class='card'>" . export_label("players") . "<strong>{$totalPlayers}</strong></div>

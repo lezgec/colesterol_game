@@ -226,6 +226,7 @@ $options->set("defaultFont", "Helvetica");
 $dompdf = new Dompdf($options);
 $reportTitle = export_label("analytics_report");
 $logoHtml = export_pdf_logo_html();
+$traceHtml = export_pdf_trace_html($reportTitle);
 
 $html = "
 <!DOCTYPE html>
@@ -328,9 +329,7 @@ $html = "
 
 <div class='report-header'>{$logoHtml}<h1>" . htmlspecialchars($reportTitle) . "</h1></div>
 
-<div class='meta'>
-    " . export_label("generated_at") . ": " . date("Y-m-d H:i:s") . "
-</div>
+{$traceHtml}
 
 <div class='summary'>
     <div class='card'>" . export_label("users") . "<strong>" . (int)$summary["total_users"] . "</strong></div>
