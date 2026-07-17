@@ -33,6 +33,13 @@ const appConfirmClose = document.getElementById("app-confirm-close");
 const TABLE_COLS = 10;
 const CUSTOM_CATEGORY_VALUE = "__custom__";
 let questionsCache = [];
+
+function formatApiMessage(data, fallback) {
+    return [data?.message, data?.action]
+        .filter(Boolean)
+        .join(" ")
+        || fallback;
+}
 let confirmResolver = null;
 let generatedQuestionIdsFilter = [];
 let aiProgressTimer = null;
@@ -439,7 +446,7 @@ async function loadQuestions() {
         const data = await res.json();
 
         if (!Array.isArray(data)) {
-            tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">${data.message || ADMIN_I18N.error}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${TABLE_COLS}">${escapeHtml(formatApiMessage(data, ADMIN_I18N.error))}</td></tr>`;
             console.error(data);
             return;
         }

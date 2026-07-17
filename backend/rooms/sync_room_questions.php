@@ -7,15 +7,9 @@ require_once __DIR__ . '/room_auth_helpers.php';
 require_once __DIR__ . '/../../config/room_question_requirements.php';
 require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
-require_csrf_token();
+require_json_role(["teacher", "super_admin"]);
 
-if (!has_role(["teacher", "super_admin"])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "No autorizado"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+require_csrf_token();
 
 $data = json_decode(file_get_contents("php://input"), true);
 $roomCode = strtoupper(trim($data["room_code"] ?? ""));

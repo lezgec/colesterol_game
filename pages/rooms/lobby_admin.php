@@ -456,6 +456,13 @@ function setLobbyMessage(text, type = "") {
     }
 }
 
+function formatApiMessage(data, fallback) {
+    return [data?.message, data?.action]
+        .filter(Boolean)
+        .join(" ")
+        || fallback;
+}
+
 document.getElementById("copy-link-btn").addEventListener("click", async () => {
     try {
         await navigator.clipboard.writeText(joinLink);
@@ -741,6 +748,7 @@ async function loadRoomQuestionBank() {
         const data = await res.json();
 
         if (!Array.isArray(data)) {
+            setLobbyMessage(formatApiMessage(data, LOBBY_I18N.error), "error");
             return;
         }
 
@@ -936,7 +944,7 @@ async function loadRoomQuestionSetup() {
         const setup = await res.json();
 
         if (!setup.success) {
-            setLobbyMessage(setup.message || LOBBY_I18N.error, "error");
+            setLobbyMessage(formatApiMessage(setup, LOBBY_I18N.error), "error");
             return;
         }
 
@@ -956,7 +964,7 @@ async function syncRoomQuestions() {
         const result = await postRoomAction("sync_room_questions.php");
 
         if (!result.success) {
-            setLobbyMessage(result.error || result.message || LOBBY_I18N.error, "error");
+            setLobbyMessage(result.error || formatApiMessage(result, LOBBY_I18N.error), "error");
             return;
         }
 
@@ -1009,7 +1017,7 @@ async function saveRoomSettings() {
         const result = await res.json();
 
         if (!result.success) {
-            setLobbyMessage(result.error || result.message || LOBBY_I18N.error, "error");
+            setLobbyMessage(result.error || formatApiMessage(result, LOBBY_I18N.error), "error");
             return;
         }
 
@@ -1070,7 +1078,7 @@ async function removeRoomQuestion(questionId) {
         const result = await res.json();
 
         if (!result.success) {
-            setLobbyMessage(result.error || result.message || LOBBY_I18N.error, "error");
+            setLobbyMessage(result.error || formatApiMessage(result, LOBBY_I18N.error), "error");
             return;
         }
 
@@ -1106,7 +1114,7 @@ async function addSelectedRoomQuestions() {
         const result = await res.json();
 
         if (!result.success) {
-            setLobbyMessage(result.error || result.message || LOBBY_I18N.error, "error");
+            setLobbyMessage(result.error || formatApiMessage(result, LOBBY_I18N.error), "error");
             return;
         }
 
@@ -1146,7 +1154,7 @@ async function removeSelectedRoomQuestions() {
         const result = await res.json();
 
         if (!result.success) {
-            setLobbyMessage(result.error || result.message || LOBBY_I18N.error, "error");
+            setLobbyMessage(result.error || formatApiMessage(result, LOBBY_I18N.error), "error");
             return;
         }
 

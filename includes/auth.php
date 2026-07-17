@@ -122,6 +122,108 @@ function has_role($roles) {
     return current_session_is_active() && in_array(current_user_role(), $roles, true);
 }
 
+function auth_role_label($role) {
+    $labels = [
+        "player" => "jugador",
+        "teacher" => "docente",
+        "super_admin" => "superadministrador",
+        "guest" => "invitado"
+    ];
+
+    return $labels[$role] ?? $role;
+}
+
+function auth_allowed_roles_label($roles) {
+    if (!is_array($roles)) {
+        $roles = [$roles];
+    }
+
+    $labels = array_map("auth_role_label", $roles);
+
+    if (count($labels) <= 1) {
+        return $labels[0] ?? "usuario autorizado";
+    }
+
+    $last = array_pop($labels);
+
+    return implode(", ", $labels) . " o " . $last;
+}
+
+function auth_failure_payload($roles = null) {
+    $roles = $roles === null
+        ? []
+        : (is_array($roles) ? $roles : [$roles]);
+
+    $wasLoggedIn = is_logged_in();
+    $hadSessionToken = isset($_SESSION["session_token"]);
+    $currentRole = current_user_role();
+    $isActive = $wasLoggedIn ? current_session_is_active() : false;
+
+    if (!$wasLoggedIn) {
+        return [
+            "success" => false,
+            "code" => "session_missing",
+            "message" => "No hay una sesión activa.",
+            "action" => "Inicia sesión nuevamente y vuelve a intentar."
+        ];
+    }
+
+    if (!$isActive) {
+        return [
+            "success" => false,
+            "code" => $hadSessionToken ? "session_replaced" : "session_expired",
+            "message" => $hadSessionToken
+                ? "Tu sesión fue reemplazada por otro inicio de sesión."
+                : "Tu sesión expiró o no pudo validarse.",
+            "action" => "Cierra esta pestaña, inicia sesión otra vez y evita usar la misma cuenta en dos navegadores al mismo tiempo."
+        ];
+    }
+
+    if ($roles && !in_array($currentRole, $roles, true)) {
+        return [
+            "success" => false,
+            "code" => "role_not_allowed",
+            "message" => "Tu rol actual (" . auth_role_label($currentRole) . ") no tiene permiso para esta sección.",
+            "action" => "Entra con una cuenta de " . auth_allowed_roles_label($roles) . " o pide a un superadministrador que revise tu rol."
+        ];
+    }
+
+    return [
+        "success" => true
+    ];
+}
+
+function json_auth_error($roles = null, $statusCode = 403) {
+    $payload = auth_failure_payload($roles);
+
+    if (($payload["success"] ?? false) === true) {
+        $payload = [
+            "success" => false,
+            "code" => "authorization_failed",
+            "message" => "No se pudo validar tu autorización.",
+            "action" => "Actualiza la página e inicia sesión nuevamente si el problema continúa."
+        ];
+    }
+
+    json_response($payload, $statusCode);
+}
+
+function require_json_role($roles) {
+    $payload = auth_failure_payload($roles);
+
+    if (!$payload["success"]) {
+        json_response($payload, 403);
+    }
+}
+
+function require_json_login() {
+    $payload = auth_failure_payload();
+
+    if (!$payload["success"]) {
+        json_response($payload, 401);
+    }
+}
+
 function require_login() {
     if (!is_logged_in()) {
         header("Location: " . app_base_path() . "/pages/login.php");

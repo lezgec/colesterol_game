@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
@@ -8,13 +8,7 @@ require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/question_workflow_helpers.php';
 
-if (!has_role(["teacher", "super_admin"])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "No autorizado"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+require_json_role(["teacher", "super_admin"]);
 
 $accessSql = question_access_sql("");
 ensure_question_workflow_columns($conn);

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 header("Content-Type: application/json; charset=utf-8");
 
 require_once __DIR__ . '/../../config/db.php';
@@ -6,13 +6,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/question_categories.php';
 require_once __DIR__ . '/../questions/question_workflow_helpers.php';
 
-if (!has_role(["teacher", "super_admin"])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "No autorizado"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+require_json_role(["teacher", "super_admin"]);
 
 $language = $_GET["lang"] ?? "es";
 $category = trim($_GET["category"] ?? "");

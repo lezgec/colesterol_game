@@ -8,15 +8,9 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/rate_limit.php';
 require_once __DIR__ . '/question_option_helpers.php';
 
-require_csrf_token();
+require_json_role(["teacher", "super_admin"]);
 
-if (!has_role(["teacher", "super_admin"])) {
-    echo json_encode([
-        "success" => false,
-        "message" => "No autorizado"
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+require_csrf_token();
 
 require_rate_limit($conn, "gemini-single:" . current_user_id(), 12, 900);
 

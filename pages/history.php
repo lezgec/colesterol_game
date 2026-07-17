@@ -77,6 +77,13 @@ function escapeHtml(value) {
     return div.innerHTML;
 }
 
+function formatApiMessage(data, fallback) {
+    return [data?.message, data?.action]
+        .filter(Boolean)
+        .join(" ")
+        || fallback;
+}
+
 fetch(appUrl("backend/game/get_user_results.php"))
 .then(res => res.json())
 .then(response => {
@@ -86,7 +93,7 @@ fetch(appUrl("backend/game/get_user_results.php"))
     if (!response.success || !Array.isArray(response.results)) {
 
         tbody.innerHTML =
-            `<tr><td colspan="7">${HISTORY_I18N.error}</td></tr>`;
+            `<tr><td colspan="7">${escapeHtml(formatApiMessage(response, HISTORY_I18N.error))}</td></tr>`;
 
         return;
     }
