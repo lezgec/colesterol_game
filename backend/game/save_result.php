@@ -83,6 +83,7 @@ $stmt->bind_param(
 );
 
 if ($stmt->execute()) {
+    $resultId = (int)$conn->insert_id;
 
     if (isset($_SESSION["user_id"])) {
         $newBadges = [];
@@ -94,6 +95,7 @@ if ($stmt->execute()) {
     echo json_encode([
         "success" => true,
         "message" => "Resultado guardado correctamente",
+        "result_id" => $resultId,
         "final_difficulty" => $final_difficulty,
         "new_badges" => $newBadges
     ], JSON_UNESCAPED_UNICODE);

@@ -381,6 +381,10 @@ function formatDisplayOption(index) {
     return text ? `${label}. ${text}` : label;
 }
 
+function formatCorrectDisplayOption() {
+    return formatDisplayOption(getCorrectOptionIndex());
+}
+
 function getCorrectOptionIndex() {
     if (!currentQuestion) {
         return -1;
@@ -598,7 +602,10 @@ async function submitSelectedAnswer(index, isTimeout = false) {
 
     const isCorrect = Boolean(answerResult.is_correct);
     const earnedPoints = Number(answerResult.score_earned || 0);
-    const correctOption = answerResult.correct_answer || "";
+    const correctOption =
+        formatCorrectDisplayOption() ||
+        answerResult.correct_answer ||
+        "";
     currentQuestion.explanation = answerResult.explanation || "";
 
     window.GameSounds?.play(
@@ -698,9 +705,17 @@ async function endGame(message) {
                 </div>
             </div>
 
-            <div id="save-status"
-                 class="save-status-pill is-saving">
-                ${safeText(I18N.savingResult)}
+            <div class="game-over-save-actions">
+                <div id="save-status"
+                     class="save-status-pill is-saving">
+                    ${safeText(I18N.savingResult)}
+                </div>
+                <a id="view-result-stats-btn"
+                   class="primary-btn secondary-btn game-stats-link"
+                   href="#"
+                   hidden>
+                    ${safeText(I18N.viewGameStats)}
+                </a>
             </div>
         </div>
     `;
@@ -774,6 +789,16 @@ async function endGame(message) {
 
             saveStatus.textContent =
                 I18N.resultSaved;
+
+            const statsButton =
+                document.getElementById("view-result-stats-btn");
+
+            if (statsButton && result.result_id) {
+                statsButton.href = appUrl(
+                    `pages/game_result_stats.php?result_id=${encodeURIComponent(result.result_id)}`
+                );
+                statsButton.hidden = false;
+            }
 
         } else {
 
@@ -894,10 +919,14 @@ async function fetchQuestions(
             );
 
             questionText.textContent =
-                I18N.resultNotSaved;
+                data.code === "no_questions_for_language"
+                    ? I18N.noQuestionsTitle
+                    : I18N.resultNotSaved;
 
             feedback.textContent =
-                data.message || "Error";
+                [data.message, data.action]
+                    .filter(Boolean)
+                    .join(" ") || "Error";
 
             setLanguageSwitchDisabled(false);
 

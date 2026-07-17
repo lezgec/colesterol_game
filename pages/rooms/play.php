@@ -158,6 +158,9 @@ const ROOM_I18N = {
     nextQuestionIn: "<?php echo t('next_question_in'); ?>",
     savingAnswer: "<?php echo t('saving_answer'); ?>",
     waitingRoom: "<?php echo t('waiting_room'); ?>",
+    viewGameStats: "<?php echo t('view_game_stats'); ?>",
+    resultSaved: "<?php echo t('result_saved'); ?>",
+    ranking: "<?php echo t('ranking'); ?>",
     roomPaused: "<?php echo t('room_paused'); ?>",
     unknownStatus: "<?php echo t('room_status_unknown'); ?>",
     statuses: {

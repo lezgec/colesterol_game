@@ -10,6 +10,7 @@ $user_id = (int)$_SESSION["user_id"];
 
 $sql = "
     SELECT
+        id,
         score,
         correct_answers,
         total_questions,
@@ -54,6 +55,7 @@ while ($row = $result->fetch_assoc()) {
     }
 
     $data[] = [
+        "id" => (int)$row["id"],
         "score" => (int)$row["score"],
         "correct_answers" => $correct,
         "total_questions" => $total,

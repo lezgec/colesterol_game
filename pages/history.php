@@ -49,6 +49,7 @@ header("Pragma: no-cache");
                 <th><?php echo t("lives"); ?></th>
                 <th><?php echo t("average_difficulty"); ?></th>
                 <th><?php echo t("mode"); ?></th>
+                <th><?php echo t("actions"); ?></th>
             </tr>
         </thead>
 
@@ -68,7 +69,9 @@ const HISTORY_I18N = {
 
     room: "<?php echo t('room'); ?>",
 
-    solo: "<?php echo t('solo'); ?>"
+    solo: "<?php echo t('solo'); ?>",
+
+    viewGameStats: "<?php echo t('view_game_stats'); ?>"
 };
 
 function escapeHtml(value) {
@@ -93,7 +96,7 @@ fetch(appUrl("backend/game/get_user_results.php"))
     if (!response.success || !Array.isArray(response.results)) {
 
         tbody.innerHTML =
-            `<tr><td colspan="7">${escapeHtml(formatApiMessage(response, HISTORY_I18N.error))}</td></tr>`;
+            `<tr><td colspan="8">${escapeHtml(formatApiMessage(response, HISTORY_I18N.error))}</td></tr>`;
 
         return;
     }
@@ -103,7 +106,7 @@ fetch(appUrl("backend/game/get_user_results.php"))
     if (data.length === 0) {
 
         tbody.innerHTML =
-            `<tr><td colspan="7">${HISTORY_I18N.noGames}</td></tr>`;
+            `<tr><td colspan="8">${HISTORY_I18N.noGames}</td></tr>`;
 
         return;
     }
@@ -117,6 +120,9 @@ fetch(appUrl("backend/game/get_user_results.php"))
             : HISTORY_I18N.solo;
 
         const row = document.createElement("tr");
+        const statsUrl = appUrl(
+            `pages/game_result_stats.php?result_id=${encodeURIComponent(item.id)}`
+        );
 
         row.innerHTML = `
             <td>${escapeHtml(item.played_at)}</td>
@@ -126,6 +132,11 @@ fetch(appUrl("backend/game/get_user_results.php"))
             <td>${escapeHtml(item.lives_remaining)}</td>
             <td>${escapeHtml(item.final_difficulty)} / 5</td>
             <td>${escapeHtml(mode)}</td>
+            <td>
+                <a class="table-btn edit-btn" href="${escapeHtml(statsUrl)}">
+                    ${escapeHtml(HISTORY_I18N.viewGameStats)}
+                </a>
+            </td>
         `;
 
         tbody.appendChild(row);
@@ -140,7 +151,7 @@ fetch(appUrl("backend/game/get_user_results.php"))
     const tbody = document.querySelector("#historyTable tbody");
 
     tbody.innerHTML =
-        `<tr><td colspan="7">${HISTORY_I18N.error}</td></tr>`;
+        `<tr><td colspan="8">${HISTORY_I18N.error}</td></tr>`;
 
 });
 </script>

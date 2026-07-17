@@ -87,6 +87,7 @@ $checkResult = $check->get_result();
 if ($checkResult->num_rows > 0) {
     $existing = $checkResult->fetch_assoc();
     $existingId = (int)$existing["id"];
+    $resultId = $existingId;
 
     $stmt = $conn->prepare("
         UPDATE game_results
@@ -95,7 +96,9 @@ if ($checkResult->num_rows > 0) {
             correct_answers = ?,
             total_questions = ?,
             lives_remaining = 0,
-            final_difficulty = ?
+            final_difficulty = ?,
+            game_mode = 'room',
+            played_at = CURRENT_TIMESTAMP
         WHERE id = ?
     ");
 
@@ -117,6 +120,8 @@ if ($checkResult->num_rows > 0) {
         $existingId
     );
 } else {
+    $resultId = 0;
+
     $stmt = $conn->prepare("
         INSERT INTO game_results
             (
@@ -127,7 +132,8 @@ if ($checkResult->num_rows > 0) {
                 correct_answers,
                 total_questions,
                 lives_remaining,
-                final_difficulty
+                final_difficulty,
+                game_mode
             )
         VALUES
             (
@@ -138,7 +144,8 @@ if ($checkResult->num_rows > 0) {
                 ?,
                 ?,
                 0,
-                ?
+                ?,
+                'room'
             )
     ");
 
@@ -163,9 +170,14 @@ if ($checkResult->num_rows > 0) {
 }
 
 if ($stmt->execute()) {
+    if ($resultId === 0) {
+        $resultId = (int)$conn->insert_id;
+    }
+
     echo json_encode([
         "success" => true,
         "message" => "Resultado guardado",
+        "result_id" => $resultId,
         "final_difficulty" => $final_difficulty
     ], JSON_UNESCAPED_UNICODE);
 } else {

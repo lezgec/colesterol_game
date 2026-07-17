@@ -230,7 +230,7 @@ async function handleRoomTimeout() {
     renderRoomFeedbackCard({
         isCorrect: false,
         selectedOption: null,
-        correctOption: answerResult?.correct_answer || "",
+        correctOption: formatRoomCorrectDisplayOption() || answerResult?.correct_answer || "",
         earnedPoints: Number(answerResult?.score_earned || 0),
         responseTime,
         isTimeout: true
@@ -381,6 +381,10 @@ function formatRoomDisplayOption(index) {
     const text = currentQuestion?.options?.[index] || "";
 
     return text ? `${label}. ${text}` : label;
+}
+
+function formatRoomCorrectDisplayOption() {
+    return formatRoomDisplayOption(getRoomCorrectOptionIndex());
 }
 
 function getRoomCorrectOptionIndex() {
@@ -563,7 +567,7 @@ async function submitRoomAnswer(index) {
     renderRoomFeedbackCard({
         isCorrect,
         selectedOption: formatRoomDisplayOption(index),
-        correctOption: answerResult.correct_answer || "",
+        correctOption: formatRoomCorrectDisplayOption() || answerResult.correct_answer || "",
         earnedPoints,
         responseTime
     });
@@ -671,6 +675,30 @@ async function saveProgress() {
         console.error("Error saving progress:", error);
     }
 }
+
+async function saveFinalRoomResult() {
+    try {
+        const response = await fetch(appUrl("backend/rooms/save_room_result.php"), {
+            method: "POST",
+            headers: csrfHeaders({"Content-Type": "application/json"}),
+            body: JSON.stringify({
+                score: score,
+                correct_answers: correctAnswers,
+                total_questions: questions.length,
+                room_code: ROOM_CODE,
+                player_name: PLAYER_NAME,
+                final_difficulty: currentDifficulty
+            })
+        });
+
+        return await response.json();
+    } catch (error) {
+        console.error("Error saving final room result:", error);
+        return {
+            success: false
+        };
+    }
+}
 async function saveAnswer(answerData) {
     try {
         const response = await fetch(appUrl("backend/game/save_answer.php"), {
@@ -742,18 +770,59 @@ async function endGame(message) {
     window.GameSounds?.confetti({ count: 120, mode: "side" });
     clearLocalQuestionTimer();
     document.getElementById("question-text").textContent = message;
-    document.getElementById("options-container").innerHTML = "";
+    document.getElementById("options-container").innerHTML = `
+        <div class="game-over-actions">
+            <a class="primary-btn play-again-btn"
+               href="${escapeHtml(appUrl(`pages/rooms/ranking.php?code=${encodeURIComponent(ROOM_CODE)}&name=${encodeURIComponent(PLAYER_NAME)}`))}">
+                ${escapeHtml(ROOM_I18N.ranking)}
+            </a>
+        </div>
+    `;
     document.getElementById("progress").textContent = ROOM_I18N.gameFinished;
     document.getElementById("feedback").innerHTML = `
-        ${ROOM_I18N.finalScore}: ${score}<br>
-        ${ROOM_I18N.correctAnswers}: ${correctAnswers} ${ROOM_I18N.of} ${questions.length}<br>
-        ${ROOM_I18N.finalDifficulty || "Dificultad final"}: ${formatDifficulty()} / 5<br>
-        ${ROOM_I18N.savingResult}
+        <div class="game-over-card">
+            <div class="game-over-stats">
+                <div class="game-over-stat">
+                    <span>${escapeHtml(ROOM_I18N.finalScore)}</span>
+                    <strong>${escapeHtml(score)}</strong>
+                </div>
+                <div class="game-over-stat">
+                    <span>${escapeHtml(ROOM_I18N.correctAnswers)}</span>
+                    <strong>${escapeHtml(correctAnswers)} ${escapeHtml(ROOM_I18N.of)} ${escapeHtml(questions.length)}</strong>
+                </div>
+                <div class="game-over-stat">
+                    <span>${escapeHtml(ROOM_I18N.finalDifficulty || "Dificultad final")}</span>
+                    <strong>${escapeHtml(formatDifficulty())} / 5</strong>
+                </div>
+            </div>
+            <div class="game-over-save-actions">
+                <div id="save-status" class="save-status-pill is-saving">
+                    ${escapeHtml(ROOM_I18N.savingResult)}
+                </div>
+                <a id="view-result-stats-btn"
+                   class="primary-btn secondary-btn game-stats-link"
+                   href="#"
+                   hidden>
+                    ${escapeHtml(ROOM_I18N.viewGameStats)}
+                </a>
+            </div>
+        </div>
     `;
-    await saveProgress();
-    setTimeout(() => {
-        window.location.href =
-            appUrl(`pages/rooms/ranking.php?code=${encodeURIComponent(ROOM_CODE)}&name=${encodeURIComponent(PLAYER_NAME)}`);
-    }, 1500);
+    const savedResult = await saveFinalRoomResult();
+    const saveStatus = document.getElementById("save-status");
+    const statsButton = document.getElementById("view-result-stats-btn");
+
+    if (savedResult?.success && saveStatus) {
+        saveStatus.className = "save-status-pill is-saved";
+        saveStatus.textContent = ROOM_I18N.resultSaved;
+    }
+
+    if (savedResult?.result_id && statsButton) {
+        statsButton.href = appUrl(
+            `pages/game_result_stats.php?result_id=${encodeURIComponent(savedResult.result_id)}`
+        );
+        statsButton.hidden = false;
+    }
+
 }
 fetchQuestions();

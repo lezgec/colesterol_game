@@ -177,6 +177,7 @@ const I18N = {
     resultNotSaved: "<?php echo t('result_not_saved'); ?>",
 
     noQuestions: "<?php echo t('no_questions_available'); ?>",
+    noQuestionsTitle: "<?php echo t('no_questions_for_language_title'); ?>",
 
     gameFinished: "<?php echo t('game_finished'); ?>",
 
@@ -197,6 +198,7 @@ const I18N = {
     chooseAnswer: "<?php echo t('choose_answer'); ?>",
     timeOut: "<?php echo t('time_out'); ?>",
     playAgain: "<?php echo t('play_again'); ?>",
+    viewGameStats: "<?php echo t('view_game_stats'); ?>",
     newBadgeUnlocked: "<?php echo current_lang() === "en" ? "New achievement unlocked" : "Nuevo logro desbloqueado"; ?>",
     close: "<?php echo t('close'); ?>"
 };

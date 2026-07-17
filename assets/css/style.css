@@ -1076,11 +1076,34 @@ form > .primary-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 16px;
     padding: 12px 14px;
     border-radius: 14px;
     font-weight: 800;
     text-align: center;
+}
+
+.game-over-save-actions {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.game-over-save-actions .save-status-pill {
+    flex: 1 1 auto;
+}
+
+.game-stats-link {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 220px;
+    margin: 0;
+    text-decoration: none;
+}
+
+.game-stats-link[hidden] {
+    display: none;
 }
 
 .save-status-pill.is-saving {
@@ -1106,6 +1129,46 @@ form > .primary-btn {
 
 .game-over-actions .play-again-btn {
     max-width: 280px;
+}
+
+.game-result-stats-page .game-result-summary {
+    margin: 16px 0 24px;
+}
+
+.game-result-answer-table td:nth-child(2),
+.game-result-answer-table td:nth-child(4),
+.game-result-answer-table td:nth-child(5) {
+    white-space: normal;
+    line-height: 1.35;
+}
+
+.game-result-answer-table tr.is-correct td {
+    background: rgba(220, 252, 231, 0.68);
+}
+
+.game-result-answer-table tr.is-incorrect td {
+    background: rgba(254, 226, 226, 0.68);
+}
+
+.section-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.section-heading-row h2 {
+    margin: 0 0 6px;
+}
+
+.section-heading-row p {
+    margin: 0;
+    color: var(--muted-text);
+}
+
+.empty-state-panel {
+    text-align: center;
 }
 
 .option-radio {
@@ -2619,6 +2682,16 @@ form > .primary-btn {
 
     .game-over-stat strong {
         font-size: 18px;
+    }
+
+    .game-over-save-actions {
+        flex-direction: column;
+    }
+
+    .game-over-save-actions .save-status-pill,
+    .game-over-save-actions .game-stats-link {
+        width: 100%;
+        min-width: 0;
     }
 
     .game-over-actions .play-again-btn {
