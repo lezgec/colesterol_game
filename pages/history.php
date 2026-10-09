@@ -71,7 +71,11 @@ const HISTORY_I18N = {
 
     solo: "<?php echo t('solo'); ?>",
 
-    viewGameStats: "<?php echo t('view_game_stats'); ?>"
+    viewGameStats: "<?php echo t('view_game_stats'); ?>",
+
+    view: "<?php echo current_lang() === 'en' ? 'View' : 'Ver'; ?>",
+
+    statsIcon: <?php echo json_encode(ui_icon("analytics"), JSON_UNESCAPED_SLASHES); ?>
 };
 
 function escapeHtml(value) {
@@ -133,8 +137,9 @@ fetch(appUrl("backend/game/get_user_results.php"))
             <td>${escapeHtml(item.final_difficulty)} / 5</td>
             <td>${escapeHtml(mode)}</td>
             <td>
-                <a class="table-btn edit-btn" href="${escapeHtml(statsUrl)}">
-                    ${escapeHtml(HISTORY_I18N.viewGameStats)}
+                <a class="table-btn history-stats-btn" href="${escapeHtml(statsUrl)}" aria-label="${escapeHtml(HISTORY_I18N.viewGameStats)}" title="${escapeHtml(HISTORY_I18N.viewGameStats)}">
+                    ${HISTORY_I18N.statsIcon}
+                    <span>${escapeHtml(HISTORY_I18N.view)}</span>
                 </a>
             </td>
         `;

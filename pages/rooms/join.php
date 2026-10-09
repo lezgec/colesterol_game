@@ -49,6 +49,12 @@ $themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
                 ? t("back_to_player_dashboard")
                 : t("back_to_rooms");
         ?>
+
+        <div class="top-links room-page-top-links">
+            <a href="<?php echo htmlspecialchars($backHref); ?>" class="logout-btn secondary-btn">
+                <?php echo htmlspecialchars($backLabel); ?>
+            </a>
+        </div>
     </div>
 
     <h1><?php echo t("join_room"); ?></h1>
@@ -75,10 +81,6 @@ $themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 
         <p id="join-message" class="room-status-message" aria-live="polite"></p>
     </form>
-
-    <a href="<?php echo htmlspecialchars($backHref); ?>" class="secondary-link room-back-link">
-        <?php echo htmlspecialchars($backLabel); ?>
-    </a>
 
 </div>
 

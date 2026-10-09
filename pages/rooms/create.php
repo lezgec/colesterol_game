@@ -37,6 +37,11 @@ $themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
             <a href="?lang=en">EN</a>
         </div>
 
+        <div class="top-links room-page-top-links">
+            <a href="<?php echo app_path('pages/admin_dashboard.php'); ?>" class="logout-btn secondary-btn">
+                <?php echo t("back_to_admin"); ?>
+            </a>
+        </div>
     </div>
 
     <h1><?php echo t("create_room"); ?></h1>
@@ -68,10 +73,6 @@ $themeVersion = filemtime(__DIR__ . '/../../assets/js/theme.js');
 
         <p id="create-room-message" class="room-status-message" aria-live="polite"></p>
     </form>
-
-    <a href="<?php echo app_path('pages/admin_dashboard.php'); ?>" class="secondary-link room-back-link">
-        <?php echo t("back_to_admin"); ?>
-    </a>
 
 </div>
 
